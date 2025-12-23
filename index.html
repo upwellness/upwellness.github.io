@@ -15,7 +15,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Lucide React Icons (Fixed Version for Browser) -->
+    <!-- Lucide React Icons -->
     <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.min.js"></script>
     
     <!-- Supabase SDK -->
@@ -32,35 +32,52 @@
 
     <div id="root"></div>
 
+    <!-- Error Handling Script -->
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("Global Error:", message, error);
+            // ถ้าหน้าขาวยังแก้ไม่หาย ให้ uncomment บรรทัดล่างเพื่อดู error
+            // alert("เกิดข้อผิดพลาด: " + message);
+        };
+    </script>
+
     <script type="text/babel">
         // 1. ดึงตัวแปรจาก Global Object
         const { useState, useEffect } = React;
         
-        // ดึง Icon ทั้งหมดจาก lucideReact (ถ้าไม่เจอให้ใช้ Object ว่างป้องกันจอขาว)
-        const { 
-            ChevronRight, 
-            ChevronLeft, 
-            Activity, 
-            Scale, 
-            Ruler, 
-            User, 
-            CheckCircle, 
-            AlertCircle, 
-            ArrowRight, 
-            ClipboardList, 
-            Utensils, 
-            Battery, 
-            Phone, 
-            MessageSquare, 
-            Info, 
-            Lock, 
-            Unlock, 
-            Gift, 
-            RefreshCw, 
-            XCircle, 
-            Dumbbell, 
-            Zap 
-        } = window.lucideReact || {};
+        // 2. ระบบจัดการไอคอนแบบปลอดภัย (Fail-safe Icons)
+        // ถ้าโหลด Lucide ไม่ได้ ให้สร้าง Component ว่างๆ แทน เพื่อไม่ให้ React พัง (White Screen)
+        const FallbackIcon = (props) => <span style={{display:'inline-block', width:'1em', height:'1em', background:'#ccc', borderRadius:'4px'}} {...props}></span>;
+        
+        const LucideIcons = window.lucideReact || {};
+        
+        // Helper function to safely get icon or fallback
+        const getIcon = (name) => LucideIcons[name] || FallbackIcon;
+
+        // Map icons manually to ensure they are never undefined
+        const ChevronRight = getIcon('ChevronRight');
+        const ChevronLeft = getIcon('ChevronLeft');
+        const Activity = getIcon('Activity');
+        const Scale = getIcon('Scale');
+        const Ruler = getIcon('Ruler');
+        const User = getIcon('User');
+        const CheckCircle = getIcon('CheckCircle');
+        const AlertCircle = getIcon('AlertCircle');
+        const ArrowRight = getIcon('ArrowRight');
+        const ClipboardList = getIcon('ClipboardList');
+        const Utensils = getIcon('Utensils');
+        const Battery = getIcon('Battery');
+        const Phone = getIcon('Phone');
+        const MessageSquare = getIcon('MessageSquare');
+        const Info = getIcon('Info');
+        const Lock = getIcon('Lock');
+        const Unlock = getIcon('Unlock');
+        const Gift = getIcon('Gift');
+        const RefreshCw = getIcon('RefreshCw');
+        const XCircle = getIcon('XCircle');
+        const Dumbbell = getIcon('Dumbbell');
+        const Zap = getIcon('Zap');
+
 
         // --- Supabase Configuration Placeholder ---
         // ใส่ค่า Key ของคุณที่นี่เมื่อนำไปใช้จริง
