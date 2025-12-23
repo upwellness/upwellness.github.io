@@ -1,1153 +1,810 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Trash2, TrendingUp, Calendar, DollarSign, Car, 
-  Save, X, MapPin, Clock, BarChart3, ChevronLeft, Navigation,
-  LayoutDashboard, PieChart, Upload, Image as ImageIcon, Eye,
-  Sparkles, Loader2, MessageSquareQuote, ScanLine, CheckCircle2,
-  LogOut, Database, Cloud, Download, FileSpreadsheet
+  ChevronRight, 
+  ChevronLeft, 
+  Activity, 
+  Scale, 
+  Ruler, 
+  User, 
+  CheckCircle, 
+  AlertCircle,
+  ArrowRight,
+  ClipboardList,
+  Utensils,
+  Battery,
+  Phone,
+  MessageSquare,
+  Info,
+  Lock,
+  Unlock,
+  Gift,
+  RefreshCw,
+  XCircle,
+  Dumbbell,
+  Zap // Icon for Optimization
 } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, 
-  query, orderBy, Timestamp 
-} from 'firebase/firestore';
-import { 
-  getAuth, signInAnonymously, onAuthStateChanged, 
-  signInWithCustomToken, User 
-} from 'firebase/auth';
 
-// --- Configuration ---
-const apiKey = ""; // System provides this at runtime
-const firebaseConfig = JSON.parse(__firebase_config || '{}');
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'driver-analytics-pro';
+// --- Supabase Configuration Placeholder ---
+// ใส่ค่า Key ของคุณที่นี่เมื่อนำไปใช้จริง
+const SUPABASE_URL = "YOUR_SUPABASE_URL"; 
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// --- Database Data ---
+const SNACK_DATABASE = [
+  { name: 'ชานมไข่มุก (1 แก้ว)', kcal: 350, c: 60, f: 10, p: 1, icon: '🧋' },
+  { name: 'กล้วยแขก (3 ชิ้น)', kcal: 280, c: 45, f: 12, p: 1, icon: '🍌' },
+  { name: 'คุกกี้เนย (2 ชิ้น)', kcal: 180, c: 20, f: 10, p: 2, icon: '🍪' },
+  { name: 'ลูกชิ้นทอด (5 ลูก)', kcal: 250, c: 30, f: 12, p: 8, icon: '🍡' },
+  { name: 'ขนมปังไส้ครีม', kcal: 320, c: 45, f: 14, p: 6, icon: '🥯' },
+  { name: 'ไอศกรีมกะทิ', kcal: 220, c: 25, f: 12, p: 2, icon: '🍨' },
+  { name: 'กาแฟเย็นหวานมัน', kcal: 280, c: 35, f: 12, p: 3, icon: '☕' },
+  { name: 'ข้าวเหนียวมะม่วง(เล็ก)', kcal: 350, c: 65, f: 8, p: 4, icon: '🥭' },
+  { name: 'ปาท่องโก๋ (1 คู่)', kcal: 150, c: 18, f: 8, p: 2, icon: '🥖' },
+  { name: 'มันฝรั่งทอด (ถุงเล็ก)', kcal: 160, c: 15, f: 10, p: 2, icon: '🥔' },
+];
 
-// --- Data Models ---
+const HEALTHY_SNACK_DATABASE = [
+  { name: 'อัลมอนด์ (1 กำมือ)', kcal: 160, c: 6, f: 14, p: 6, icon: '🥜' },
+  { name: 'ฝรั่ง (1 ลูก)', kcal: 60, c: 15, f: 0, p: 2, icon: '🍈' },
+  { name: 'ดาร์กช็อกโกแลต 85%', kcal: 120, c: 8, f: 10, p: 2, icon: '🍫' },
+  { name: 'เบอร์รี่รวม', kcal: 50, c: 12, f: 0, p: 1, icon: '🫐' },
+  { name: 'ไข่ต้มสมุนไพร', kcal: 70, c: 0, f: 5, p: 6, icon: '🥚' },
+];
 
-interface Trip {
-  id: string;
-  startTime: string; // HH:mm
-  endTime: string;   // HH:mm
-  pickup: string;
-  dropoff: string;
-  distance: number;
-  earnings: number;
-  zone: string;      // e.g., CBD, Sukhumvit, Thonburi
-  screenshot?: string; // Base64 string of the image
-}
+const PROTEIN_DATABASE = [
+  { name: 'ไข่ต้ม (2 ฟอง)', protein: 14, kcal: 140, icon: '🥚' },
+  { name: 'อกไก่ลวก (100g)', protein: 23, kcal: 120, icon: '🍗' },
+  { name: 'ปลาแซลมอน (100g)', protein: 20, kcal: 200, icon: '🐟' },
+  { name: 'เต้าหู้ขาว (1 ก้อน)', protein: 10, kcal: 90, icon: '🧊' },
+  { name: 'กรีกโยเกิร์ต (1 ถ้วย)', protein: 10, kcal: 60, icon: '🥣' },
+  { name: 'ทูน่ากระป๋อง (ครึ่ง)', protein: 16, kcal: 70, icon: '🥫' },
+  { name: 'ถั่วแระญี่ปุ่น (1 ถ้วย)', protein: 11, kcal: 120, icon: '🥜' },
+  { name: 'กุ้งลวก (10 ตัว)', protein: 20, kcal: 100, icon: '🦐' },
+  { name: 'นมถั่วเหลือง (1 แก้ว)', protein: 8, kcal: 80, icon: '🥛' },
+  { name: 'โปรตีนเชค (1.5 สกู๊ป)', protein: 30, kcal: 130, icon: '🥤', highlight: true },
+];
 
-interface DailyLog {
-  id: string;
-  date: string;
-  startOdometer: number;
-  endOdometer: number;
-  trips: Trip[];
-  dailyBonus: number; 
-  notes: string;
-  aiAnalysis?: string; // Cache AI analysis result
-  updatedAt?: number; // timestamp
-}
+// --- Sub-components ---
 
-// --- API Helpers ---
-
-async function callGeminiVision(base64Image: string): Promise<Partial<Trip>> {
-  try {
-    const base64Data = base64Image.split(',')[1];
-    
-    const promptText = `
-      Analyze this image of a ride-hailing receipt (e.g., Grab, Bolt, LineMan) which may contain Thai text.
-      Extract the following data precisely:
-      1. earnings: The net earnings or total fare (number only, remove currency symbols).
-      2. distance: Trip distance in km (number only).
-      3. startTime: Job start time (HH:mm 24-hour format).
-      4. endTime: Job finish time (HH:mm 24-hour format). If only one time is shown, use it as endTime and estimate startTime based on distance (approx 2 mins/km).
-      5. pickup: Origin location name (in Thai or English).
-      6. dropoff: Destination location name (in Thai or English).
-      7. zone: Infer the broader zone/area based on the locations (e.g., 'Sukhumvit', 'Sathorn', 'CBD', 'Thonburi', 'Ladprao', 'Airport', 'Rama 9', 'Siam'). Use 'Other' if unsure.
-
-      Return ONLY a raw JSON object with these keys: earnings, distance, startTime, endTime, pickup, dropoff, zone.
-      Do not wrap in markdown code blocks.
-    `;
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: promptText },
-            { inlineData: { mimeType: "image/jpeg", data: base64Data } }
-          ]
-        }],
-        generationConfig: { responseMimeType: "application/json" }
-      })
-    });
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("No data returned");
-    
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanText);
-  } catch (error) {
-    console.error("Gemini Vision Error:", error);
-    throw error;
-  }
-}
-
-async function callGeminiAnalysis(log: DailyLog): Promise<string> {
-  try {
-    const tripSummary = log.trips.map(t => 
-      `Time: ${t.startTime}-${t.endTime}, Earnings: ${t.earnings}, Zone: ${t.zone}, Dist: ${t.distance}`
-    ).join('\n');
-
-    const prompt = `
-      Act as a professional driver coach for a ride-hailing driver in Thailand.
-      Analyze this daily log:
-      Date: ${log.date}
-      Total Daily Bonus: ${log.dailyBonus}
-      Trips:
-      ${tripSummary}
-
-      Please provide a short, encouraging summary in Thai language (3-4 sentences).
-      Highlight:
-      1. What went well (e.g. high earnings per trip, good zone selection).
-      2. One suggestion for improvement or observation (e.g. gap in schedule, potential better zones).
-      Use emojis. Keep it friendly.
-    `;
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
-    });
-
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "ไม่สามารถวิเคราะห์ได้ในขณะนี้";
-  } catch (error) {
-    console.error("Gemini Analysis Error:", error);
-    return "เกิดข้อผิดพลาดในการเชื่อมต่อ AI";
-  }
-}
-
-// --- Components ---
-
-export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [logs, setLogs] = useState<DailyLog[]>([]);
-  const [view, setView] = useState<'list' | 'analytics' | 'day_detail'>('list');
-  const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Export State
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-
-  // Auth & Data Subscription
-  useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
-    initAuth();
-
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (!currentUser) setIsLoading(false);
-    });
-    return () => unsubscribeAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    
-    // Firestore Path: artifacts/{appId}/users/{userId}/dailyLogs
-    const logsRef = collection(db, 'artifacts', appId, 'users', user.uid, 'dailyLogs');
-    
-    // Using onSnapshot to keep data synced, but we need to handle form inputs carefully
-    const unsubscribe = onSnapshot(logsRef, (snapshot) => {
-      const fetchedLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DailyLog));
-      fetchedLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setLogs(fetchedLogs);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Firestore Error:", error);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  const currentLog = useMemo(() => logs.find(l => l.id === selectedDateId), [logs, selectedDateId]);
-
-  // --- Database Actions ---
-
-  const handleAddDay = async () => {
-    if (!user) return;
-    const newId = Date.now().toString();
-    const today = new Date().toISOString().split('T')[0];
-    
-    const newLog: DailyLog = {
-      id: newId,
-      date: today,
-      startOdometer: 0,
-      endOdometer: 0,
-      dailyBonus: 0,
-      notes: '',
-      trips: [],
-      updatedAt: Date.now()
-    };
-    
-    // Save to Firestore
-    try {
-      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'dailyLogs', newId), newLog);
-      setSelectedDateId(newId);
-      setView('day_detail');
-    } catch (err) {
-      alert("ไม่สามารถสร้างข้อมูลใหม่ได้: " + err);
-    }
-  };
-
-  const updateLog = async (updatedLog: DailyLog) => {
-    if (!user) return;
-    try {
-      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'dailyLogs', updatedLog.id), {
-        ...updatedLog,
-        updatedAt: Date.now()
-      }, { merge: true });
-    } catch (err) {
-      console.error("Save error:", err);
-      alert("บันทึกไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต");
-    }
-  };
-
-  const deleteLog = async (id: string) => {
-    if (!user) return;
-    if (confirm('ยืนยันการลบข้อมูลของวันนี้? ข้อมูลจะหายไปถาวร')) {
-      try {
-        await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'dailyLogs', id));
-        if (selectedDateId === id) setView('list');
-      } catch (err) {
-        alert("ลบข้อมูลไม่สำเร็จ: " + err);
-      }
-    }
-  };
-
-  // --- Export Logic ---
-  const handleExportCSV = (startDate: string, endDate: string) => {
-    // Filter logs by date range
-    const filteredLogs = logs.filter(log => 
-      log.date >= startDate && log.date <= endDate
-    );
-
-    if (filteredLogs.length === 0) {
-      alert("ไม่พบข้อมูลในช่วงเวลาที่เลือก");
-      return;
-    }
-
-    // Generate CSV Content
-    // Headers suitable for Excel opening
-    const headers = [
-      "วันที่", "ไมล์เริ่ม", "ไมล์จบ", "ระยะทางวิ่งรวม(ไมล์)", "โบนัสรายวัน", 
-      "เวลาเริ่มงาน", "เวลาจบงาน", "จุดรับ", "จุดส่ง", "ระยะทาง(กม.)", "ค่าโดยสาร", "โซน"
-    ];
-
-    let csvContent = "\uFEFF"; // BOM for UTF-8 in Excel
-    csvContent += headers.join(",") + "\n";
-
-    filteredLogs.forEach(log => {
-      const dailyOdometerDist = (log.endOdometer > 0 && log.startOdometer > 0) 
-        ? log.endOdometer - log.startOdometer 
-        : 0;
-
-      // If no trips, print just the daily summary line
-      if (!log.trips || log.trips.length === 0) {
-        const row = [
-          log.date,
-          log.startOdometer,
-          log.endOdometer,
-          dailyOdometerDist,
-          log.dailyBonus,
-          "-", "-", "-", "-", "-", "-", "-" // Empty trip data
-        ];
-        csvContent += row.map(item => `"${item}"`).join(",") + "\n";
-      } else {
-        // Print each trip with daily info repeated (or you could leave blank for cleaner look)
-        log.trips.forEach(trip => {
-          const row = [
-            log.date,
-            log.startOdometer,
-            log.endOdometer,
-            dailyOdometerDist,
-            log.dailyBonus,
-            trip.startTime,
-            trip.endTime,
-            trip.pickup.replace(/"/g, '""'), // Escape quotes
-            trip.dropoff.replace(/"/g, '""'),
-            trip.distance,
-            trip.earnings,
-            trip.zone
-          ];
-          csvContent += row.map(item => `"${item}"`).join(",") + "\n";
-        });
-      }
-    });
-
-    // Trigger Download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `driver_data_${startDate}_to_${endDate}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setIsExportModalOpen(false);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 flex-col gap-4">
-        <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
-        <p>กำลังโหลดข้อมูลจาก Cloud...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-20">
-      
-      {/* Header */}
-      <header className="bg-emerald-600 text-white p-4 shadow-lg sticky top-0 z-20">
-        <div className="max-w-md mx-auto flex justify-between items-center">
-          {view !== 'list' ? (
-            <button onClick={() => setView('list')} className="flex items-center gap-1 font-semibold text-white/90 hover:text-white group">
-              <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
-              <span>กลับ</span>
-            </button>
-          ) : (
-            <h1 className="text-xl font-bold flex items-center gap-2">
-              <Car className="w-6 h-6" /> Driver Analytics
-            </h1>
-          )}
-          
-          <div className="flex items-center gap-2">
-             {view === 'day_detail' && (
-                <span className="font-bold text-lg">
-                  {currentLog && new Date(currentLog.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
-                </span>
-             )}
-             
-             {view === 'list' && (
-               <>
-                 <button 
-                   onClick={() => setIsExportModalOpen(true)}
-                   className="bg-emerald-700/50 p-2 rounded-full hover:bg-emerald-700 transition backdrop-blur-sm"
-                   title="Export CSV"
-                 >
-                   <Download className="w-5 h-5" />
-                 </button>
-                 <button 
-                   onClick={() => setView('analytics')}
-                   className="bg-emerald-700/50 p-2 rounded-full hover:bg-emerald-700 transition backdrop-blur-sm"
-                   title="ดูสถิติ"
-                 >
-                   <BarChart3 className="w-5 h-5" />
-                 </button>
-                 <button 
-                   onClick={handleAddDay}
-                   className="bg-white text-emerald-700 px-3 py-1.5 rounded-full font-bold text-sm shadow hover:bg-emerald-50 flex items-center gap-1 transition-transform active:scale-95"
-                 >
-                   <Plus className="w-4 h-4" /> เพิ่มวัน
-                 </button>
-               </>
-             )}
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-md mx-auto p-4">
-        {view === 'list' && <DailyListView logs={logs} onSelectDay={(id) => { setSelectedDateId(id); setView('day_detail'); }} />}
-        {view === 'day_detail' && currentLog && (
-          <DayDetailView 
-            key={currentLog.id} 
-            log={currentLog} 
-            onUpdate={updateLog} 
-            onDelete={() => deleteLog(currentLog.id)} 
-            onClose={() => setView('list')}
-          />
-        )}
-        {view === 'analytics' && <AnalyticsView logs={logs} />}
-      </main>
-
-      {/* Export Modal */}
-      {isExportModalOpen && (
-        <ExportModal 
-          onClose={() => setIsExportModalOpen(false)} 
-          onExport={handleExportCSV}
-          defaultStartDate={logs.length > 0 ? logs[logs.length-1].date : new Date().toISOString().split('T')[0]}
-          defaultEndDate={new Date().toISOString().split('T')[0]}
-        />
-      )}
-
-    </div>
-  );
-}
-
-// --- Component: Export Modal ---
-
-function ExportModal({ onClose, onExport, defaultStartDate, defaultEndDate }: { onClose: () => void, onExport: (start: string, end: string) => void, defaultStartDate: string, defaultEndDate: string }) {
-  const [startDate, setStartDate] = useState(defaultStartDate);
-  const [endDate, setEndDate] = useState(defaultEndDate);
-
-  return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <FileSpreadsheet className="w-6 h-6 text-emerald-600" /> Export Data
-          </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-slate-500 mb-1">ตั้งแต่วันที่</label>
-            <input 
-              type="date" 
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-500 mb-1">ถึงวันที่</label>
-            <input 
-              type="date" 
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-            />
-          </div>
-          
-          <button 
-            onClick={() => onExport(startDate, endDate)}
-            className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 active:scale-95 transition-all mt-2 flex justify-center items-center gap-2"
-          >
-            <Download className="w-5 h-5" /> ดาวน์โหลด CSV
-          </button>
-        </div>
+const WelcomeStep = ({ setStep }) => (
+  <div className="text-center space-y-6 py-8">
+    <div className="flex justify-center mb-6">
+      <div className="bg-teal-100 p-4 rounded-full">
+        <Activity className="w-12 h-12 text-teal-600" />
       </div>
     </div>
-  );
-}
-
-
-// --- View: Daily List ---
-
-function DailyListView({ logs, onSelectDay }: { logs: DailyLog[], onSelectDay: (id: string) => void }) {
-  const totalEarnings = logs.reduce((sum, log) => sum + log.dailyBonus + log.trips.reduce((tSum, t) => tSum + t.earnings, 0), 0);
-  const totalTrips = logs.reduce((sum, log) => sum + log.trips.length, 0);
-
-  if (logs.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400 animate-in fade-in">
-        <div className="bg-white p-6 rounded-full shadow-sm mb-4">
-          <Database className="w-12 h-12 text-emerald-200" />
-        </div>
-        <h3 className="text-lg font-bold text-slate-600">ยังไม่มีข้อมูล</h3>
-        <p className="text-sm mb-6">เริ่มบันทึกการขับรถของคุณวันนี้</p>
-        <p className="text-xs text-slate-400 flex items-center gap-1">
-          <Cloud className="w-3 h-3 text-emerald-500" /> ข้อมูลปลอดภัยบน Cloud
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-2xl p-6 text-white shadow-xl shadow-emerald-200">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <p className="text-emerald-100 text-sm font-medium mb-1">รายได้รวมทั้งหมด</p>
-            <h2 className="text-4xl font-bold tracking-tight">฿{totalEarnings.toLocaleString()}</h2>
-          </div>
-          <div className="bg-white/20 p-2 rounded-lg">
-             <DollarSign className="w-6 h-6 text-white" />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4 border-t border-white/20 pt-4">
-          <div>
-            <p className="text-2xl font-bold">{totalTrips}</p>
-            <p className="text-xs text-emerald-100">เที่ยววิ่งทั้งหมด</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold">{logs.length}</p>
-            <p className="text-xs text-emerald-100">วันทำงาน</p>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
-          <Calendar className="w-4 h-4" /> ประวัติรายวัน
-        </h3>
-        <div className="space-y-3">
-          {logs.map(log => {
-             const dayEarnings = log.trips.reduce((s, t) => s + t.earnings, 0) + log.dailyBonus;
-             const mileage = log.endOdometer - log.startOdometer;
-             
-             return (
-              <div 
-                key={log.id} 
-                onClick={() => onSelectDay(log.id)}
-                className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-bold text-lg text-slate-800">
-                      {new Date(log.date).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    </div>
-                    <div className="text-sm text-slate-500 mt-1 flex flex-wrap gap-2">
-                       <span className="bg-slate-100 px-2 py-0.5 rounded-md text-slate-600 text-xs font-medium">{log.trips.length} เที่ยว</span>
-                       {mileage > 0 && <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md text-xs font-medium">🚗 {mileage} กม.</span>}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-emerald-600 text-lg">฿{dayEarnings.toLocaleString()}</div>
-                    {log.dailyBonus > 0 && <div className="text-xs text-amber-500 font-medium">+โบนัส {log.dailyBonus}</div>}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+    <h1 className="text-3xl font-bold text-gray-800">เช็กสุขภาพระบบเผาผลาญของคุณ</h1>
+    <p className="text-gray-600 text-lg">
+      รู้หรือไม่? BMI อาจหลอกคุณได้! <br/>
+      ตรวจลึกถึงระดับ <strong>"ไขมันแฝงในช่องท้อง"</strong> ด้วยหลักวิทยาศาสตร์
+    </p>
+    <div className="flex flex-col gap-3 mt-8">
+      <button 
+        onClick={() => setStep(1)}
+        className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transform transition hover:-translate-y-1 flex items-center justify-center text-lg"
+      >
+        เริ่มทำแบบประเมิน <ArrowRight className="ml-2 w-5 h-5" />
+      </button>
+      <p className="text-xs text-gray-400 mt-2">ไม่มีค่าใช้จ่าย • รู้ผลทันที</p>
     </div>
-  );
-}
+  </div>
+);
 
-// --- View: Day Detail ---
-
-function DayDetailView({ log, onUpdate, onDelete, onClose }: { log: DailyLog, onUpdate: (l: DailyLog) => void, onDelete: () => void, onClose: () => void }) {
-  // Use Local State for form fields to prevent "jumping" cursor due to async Firestore updates
-  const [localLog, setLocalLog] = useState<DailyLog>(log);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isAddingTrip, setIsAddingTrip] = useState(false);
-  const [viewingImage, setViewingImage] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
-  // Update local state if the prop changes externally (e.g. from another device), 
-  // but be careful not to overwrite user's active typing. 
-  // Simple strategy: Only sync trips and AI analysis from props, keep text inputs local until saved.
-  useEffect(() => {
-    setLocalLog(prev => ({
-      ...prev,
-      trips: log.trips, // Always sync trips as they are added via modal
-      aiAnalysis: log.aiAnalysis // Sync AI results
-    }));
-  }, [log.trips, log.aiAnalysis]);
-
-  // Trip Form
-  const [tripForm, setTripForm] = useState<Omit<Trip, 'id'>>({
-    startTime: '', endTime: '', pickup: '', dropoff: '', distance: 0, earnings: 0, zone: '', screenshot: ''
-  });
-  const [isScanning, setIsScanning] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // --- Handlers ---
-
-  const saveToCloud = async () => {
-    setIsSaving(true);
-    await onUpdate(localLog);
-    // Simulate short delay for visual feedback
-    setTimeout(() => setIsSaving(false), 500);
-  };
-
-  const handleManualChange = (field: keyof DailyLog, value: any) => {
-    setLocalLog(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleBlur = () => {
-    // Auto-save when leaving a field
-    saveToCloud();
-  };
-
-  const handleTripSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const newTrip: Trip = { ...tripForm, id: Date.now().toString() };
-    const sortedTrips = [newTrip, ...localLog.trips].sort((a, b) => b.startTime.localeCompare(a.startTime));
+const BasicInfoStep = ({ formData, setFormData, handleInputChange, setStep }) => (
+  <div className="space-y-6">
+    <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+      <User className="mr-2 text-teal-600" /> ข้อมูลร่างกาย
+    </h2>
     
-    // Update both local and cloud immediately for trips
-    const updatedLog = { ...localLog, trips: sortedTrips };
-    setLocalLog(updatedLog);
-    await onUpdate(updatedLog);
-    
-    setIsAddingTrip(false);
-    setTripForm({ startTime: '', endTime: '', pickup: '', dropoff: '', distance: 0, earnings: 0, zone: '', screenshot: '' });
-  };
+    <div className="grid grid-cols-2 gap-4 mb-4">
+      <button 
+        onClick={() => setFormData(prev => ({...prev, gender: 'male'}))}
+        className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center transition ${formData.gender === 'male' ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-500'}`}
+      >
+        <span className="text-2xl mb-1">👨</span> ชาย
+      </button>
+      <button 
+        onClick={() => setFormData(prev => ({...prev, gender: 'female'}))}
+        className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center transition ${formData.gender === 'female' ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-500'}`}
+      >
+        <span className="text-2xl mb-1">👩</span> หญิง
+      </button>
+    </div>
 
-  const removeTrip = (tripId: string) => {
-    if(!confirm("ลบเที่ยววิ่งนี้?")) return;
-    const updatedTrips = localLog.trips.filter(t => t.id !== tripId);
-    const updatedLog = { ...localLog, trips: updatedTrips };
-    setLocalLog(updatedLog);
-    onUpdate(updatedLog);
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        setTripForm(prev => ({ ...prev, screenshot: base64 }));
-        
-        setIsScanning(true);
-        try {
-            const aiData = await callGeminiVision(base64);
-            setTripForm(prev => ({
-              ...prev,
-              ...aiData,
-              earnings: aiData.earnings || prev.earnings,
-              distance: aiData.distance || prev.distance,
-              startTime: aiData.startTime || prev.startTime,
-              endTime: aiData.endTime || prev.endTime,
-              pickup: aiData.pickup || prev.pickup,
-              dropoff: aiData.dropoff || prev.dropoff,
-              zone: aiData.zone || prev.zone
-            }));
-        } catch (err) {
-          alert("AI อ่านข้อมูลไม่ครบถ้วน กรุณาตรวจสอบและกรอกเพิ่มเติม");
-        } finally {
-          setIsScanning(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAIAnalysis = async () => {
-    if (localLog.trips.length === 0) return alert("เพิ่มข้อมูลการวิ่งก่อนให้ AI วิเคราะห์นะครับ");
-    setIsAnalyzing(true);
-    const analysis = await callGeminiAnalysis(localLog);
-    const updatedLog = { ...localLog, aiAnalysis: analysis };
-    setLocalLog(updatedLog);
-    await onUpdate(updatedLog);
-    setIsAnalyzing(false);
-  };
-
-  const odometerDistance = (localLog.endOdometer > 0 && localLog.startOdometer > 0) ? localLog.endOdometer - localLog.startOdometer : 0;
-
-  return (
-    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-      
-      {/* 1. Odometer & Summary Section */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative">
-        {/* Status Indicator */}
-        <div className={`absolute top-5 right-12 text-[10px] flex items-center gap-1 font-medium px-2 py-1 rounded-full transition-all ${isSaving ? 'bg-amber-100 text-amber-700' : 'bg-emerald-50 text-emerald-600'}`}>
-           {isSaving ? (
-             <><Loader2 className="w-3 h-3 animate-spin" /> Saving...</>
-           ) : (
-             <><CheckCircle2 className="w-3 h-3" /> Cloud Sync</>
-           )}
-        </div>
-
-        <div className="flex justify-between items-center mb-4">
-           <h3 className="font-bold text-slate-700 flex items-center gap-2">
-             <LayoutDashboard className="w-5 h-5 text-emerald-600" /> ข้อมูลสรุปวัน
-           </h3>
-           <button onClick={onDelete} className="text-slate-400 hover:text-red-500 transition-colors">
-             <Trash2 className="w-5 h-5" />
-           </button>
-        </div>
-
-        {/* Date Picker */}
-        <div className="mb-4">
-          <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">วันที่</label>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">อายุ (ปี)</label>
           <input 
-              type="date" 
-              value={localLog.date}
-              onChange={(e) => handleManualChange('date', e.target.value)}
-              onBlur={handleBlur}
-              className="w-full p-2.5 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-700"
-            />
+            type="number" 
+            name="age"
+            value={formData.age}
+            onChange={handleInputChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            placeholder="เช่น 35"
+          />
         </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500 uppercase">ไมล์เริ่ม</label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">รอบเอว (นิ้ว)</label>
+          <div className="relative">
             <input 
               type="number" 
-              value={localLog.startOdometer || ''}
-              onChange={(e) => handleManualChange('startOdometer', Number(e.target.value))}
-              onBlur={handleBlur}
-              placeholder="00000"
-              className="w-full p-2.5 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-center font-mono"
+              name="waist"
+              value={formData.waist}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none pl-10"
+              placeholder="เช่น 32"
             />
+            <Ruler className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500 uppercase">ไมล์จบ</label>
-            <input 
-              type="number" 
-              value={localLog.endOdometer || ''}
-              onChange={(e) => handleManualChange('endOdometer', Number(e.target.value))}
-              onBlur={handleBlur}
-              placeholder="00000"
-              className="w-full p-2.5 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-center font-mono"
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-1 mb-4">
-           <label className="text-xs font-semibold text-slate-500 uppercase">โบนัสรายวัน</label>
-           <div className="relative">
-             <DollarSign className="w-4 h-4 absolute left-3 top-3 text-amber-500" />
-             <input 
-               type="number" 
-               value={localLog.dailyBonus || ''}
-               onChange={(e) => handleManualChange('dailyBonus', Number(e.target.value))}
-               onBlur={handleBlur}
-               placeholder="0"
-               className="w-full pl-9 p-2.5 bg-amber-50 text-amber-900 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none font-bold"
-             />
-           </div>
-        </div>
-
-        {/* --- Gemini Feature: Daily Coach --- */}
-        <div className="mt-6 border-t border-slate-100 pt-4">
-          {!localLog.aiAnalysis ? (
-            <button 
-              onClick={handleAIAnalysis}
-              disabled={isAnalyzing || localLog.trips.length === 0}
-              className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-yellow-300" />}
-              {isAnalyzing ? 'AI กำลังวิเคราะห์...' : 'ให้ AI วิเคราะห์ภาพรวมวันนี้'}
-            </button>
-          ) : (
-            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 relative animate-in fade-in slide-in-from-top-2">
-               <div className="flex items-center gap-2 mb-2">
-                 <div className="bg-indigo-100 p-1.5 rounded-lg">
-                   <MessageSquareQuote className="w-5 h-5 text-indigo-600" />
-                 </div>
-                 <span className="font-bold text-indigo-800 text-sm">AI Daily Coach</span>
-               </div>
-               <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">{localLog.aiAnalysis}</p>
-               <button 
-                 onClick={async () => {
-                   const cleared = { ...localLog, aiAnalysis: undefined };
-                   setLocalLog(cleared);
-                   await onUpdate(cleared);
-                 }}
-                 className="absolute top-2 right-2 text-indigo-300 hover:text-indigo-500"
-               >
-                 <X className="w-4 h-4" />
-               </button>
-            </div>
-          )}
+          <p className="text-xs text-teal-600 mt-1">*สำคัญ: ใช้วัดไขมันช่องท้อง</p>
         </div>
       </div>
 
-      {/* 2. Trip List Section */}
-      <div>
-        <div className="flex justify-between items-end mb-4">
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">รายการวิ่ง ({localLog.trips.length})</h3>
-            <p className="text-xs text-slate-500">รวมรายได้: ฿{localLog.trips.reduce((s,t)=>s+t.earnings,0).toLocaleString()}</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">ส่วนสูง (ซม.)</label>
+          <div className="relative">
+            <input 
+              type="number" 
+              name="height"
+              value={formData.height}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none pl-10"
+              placeholder="165"
+            />
+            <Ruler className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
           </div>
-          <button 
-            onClick={() => setIsAddingTrip(true)}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 hover:scale-105 transition-all flex items-center gap-1"
-          >
-            <Plus className="w-4 h-4" /> เพิ่มเที่ยว
-          </button>
         </div>
-
-        <div className="space-y-3 pb-6">
-          {localLog.trips.length === 0 ? (
-            <div className="text-center py-10 bg-white rounded-xl border border-dashed border-slate-300">
-               <Car className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-               <p className="text-slate-400">ยังไม่มีรายการวิ่ง</p>
-            </div>
-          ) : (
-            localLog.trips.map((trip) => (
-              <div key={trip.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 relative group animate-in slide-in-from-bottom-2">
-                <button 
-                    onClick={() => removeTrip(trip.id)}
-                    className="absolute top-3 right-3 text-slate-300 hover:text-red-500 hover:bg-red-50 p-1 rounded-full transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {trip.startTime} - {trip.endTime}
-                  </div>
-                  <div className="ml-auto flex items-center gap-3">
-                     {trip.screenshot && (
-                        <button 
-                          onClick={() => setViewingImage(trip.screenshot!)}
-                          className="text-slate-400 hover:text-emerald-600 flex items-center gap-1 text-xs bg-slate-50 px-2 py-1 rounded-full"
-                        >
-                          <ImageIcon className="w-4 h-4" /> ดูรูป
-                        </button>
-                     )}
-                     <div className="font-bold text-emerald-600 text-lg">
-                       ฿{trip.earnings}
-                     </div>
-                  </div>
-                </div>
-
-                <div className="relative pl-3 border-l-2 border-slate-100 ml-1 space-y-4 my-2">
-                   <div className="relative">
-                      <div className="absolute -left-[19px] top-1 w-3 h-3 bg-emerald-500 rounded-full ring-4 ring-white"></div>
-                      <div className="text-sm font-medium text-slate-800">{trip.pickup}</div>
-                   </div>
-                   <div className="relative">
-                      <div className="absolute -left-[19px] top-1 w-3 h-3 bg-red-500 rounded-full ring-4 ring-white"></div>
-                      <div className="text-sm font-medium text-slate-800">{trip.dropoff}</div>
-                   </div>
-                </div>
-
-                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-50 text-xs text-slate-500">
-                  <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded">
-                    <Navigation className="w-3 h-3" /> {trip.distance} กม.
-                  </span>
-                  <span className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">
-                    <MapPin className="w-3 h-3" /> {trip.zone}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">น้ำหนัก (กก.)</label>
+          <div className="relative">
+            <input 
+              type="number" 
+              name="weight"
+              value={formData.weight}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none pl-10"
+              placeholder="60"
+            />
+            <Scale className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
+          </div>
         </div>
+      </div>
+    </div>
 
-        {/* --- Primary Save Button --- */}
-        <button 
-          onClick={async () => {
-            await saveToCloud();
-            onClose();
-          }}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 active:scale-95 transition-all flex items-center justify-center gap-2 sticky bottom-4 z-10"
+    <button 
+      disabled={!formData.age || !formData.height || !formData.weight || !formData.waist}
+      onClick={() => setStep(2)}
+      className="w-full bg-teal-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl mt-6 flex justify-center items-center"
+    >
+      ถัดไป <ChevronRight className="ml-1" />
+    </button>
+  </div>
+);
+
+const ActivityStep = ({ formData, setFormData, setStep }) => (
+  <div className="space-y-6">
+    <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+      <Activity className="mr-2 text-teal-600" /> ระดับกิจกรรม
+    </h2>
+    <p className="text-gray-600 text-sm">การเคลื่อนไหวมีผลต่อการใช้อินซูลินในร่างกาย</p>
+    
+    <div className="space-y-3">
+      {[
+        { id: 'sedentary', label: 'นั่งทำงานเป็นหลัก', desc: 'ออกกำลังกายน้อยมาก หรือไม่ได้ออกเลย' },
+        { id: 'light', label: 'ขยับตัวบ้าง', desc: 'ออกกำลังกายเบาๆ 1-3 วัน/สัปดาห์' },
+        { id: 'moderate', label: 'ปานกลาง', desc: 'ออกกำลังกาย 3-5 วัน/สัปดาห์' },
+        { id: 'active', label: 'แอคทีฟมาก', desc: 'ออกกำลังกายหนัก หรือทำงานใช้แรงทุกวัน' }
+      ].map((option) => (
+        <button
+          key={option.id}
+          onClick={() => setFormData(prev => ({...prev, activity: option.id}))}
+          className={`w-full text-left p-4 rounded-xl border-2 transition hover:border-teal-300 ${formData.activity === option.id ? 'border-teal-500 bg-teal-50' : 'border-gray-200'}`}
         >
-          {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
-          {isSaving ? 'กำลังบันทึก...' : 'บันทึกและปิด'}
+          <div className={`font-bold ${formData.activity === option.id ? 'text-teal-800' : 'text-gray-700'}`}>{option.label}</div>
+          <div className="text-sm text-gray-500">{option.desc}</div>
         </button>
-      </div>
+      ))}
+    </div>
 
-      {/* Image Viewer Modal */}
-      {viewingImage && (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setViewingImage(null)}>
-           <div className="relative max-w-lg w-full">
-             <button 
-               onClick={() => setViewingImage(null)}
-               className="absolute -top-12 right-0 text-white p-2 hover:bg-white/20 rounded-full"
-             >
-               <X className="w-8 h-8" />
-             </button>
-             <img src={viewingImage} alt="Trip Evidence" className="w-full rounded-lg shadow-2xl border-2 border-white/20" />
-           </div>
-        </div>
-      )}
+    <div className="flex gap-3 mt-6">
+      <button onClick={() => setStep(1)} className="px-6 py-3 border border-gray-300 rounded-xl text-gray-600">ย้อนกลับ</button>
+      <button onClick={() => setStep(3)} className="flex-1 bg-teal-600 text-white font-bold py-3 rounded-xl flex justify-center items-center">
+        ถัดไป <ChevronRight className="ml-1" />
+      </button>
+    </div>
+  </div>
+);
 
-      {/* Add Trip Modal */}
-      {isAddingTrip && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm p-0 sm:p-4">
-          <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center mb-6 flex-shrink-0">
-              <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
-                บันทึกเที่ยววิ่งใหม่
-                {isScanning && <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full animate-pulse flex items-center gap-1"><ScanLine className="w-3 h-3" /> AI Scanning...</span>}
-              </h3>
-              <button onClick={() => setIsAddingTrip(false)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
-                <X className="w-5 h-5" />
-              </button>
+const SymptomsStep = ({ formData, toggleSymptom, setStep, calculateResult }) => (
+  <div className="space-y-6">
+    <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+      <ClipboardList className="mr-2 text-teal-600" /> อาการที่พบ (Metabolic Signs)
+    </h2>
+    <p className="text-gray-600 text-sm">เลือกอาการที่คุณเป็นบ่อยๆ (เลือกได้มากกว่า 1 ข้อ)</p>
+    
+    <div className="grid grid-cols-1 gap-3">
+      {[
+        { id: 'craving', label: 'หิวบ่อย / ติดหวาน', icon: <Utensils className="w-4 h-4" /> },
+        { id: 'hangry', label: 'โมโหหิว (Hangry) ง่าย', icon: <AlertCircle className="w-4 h-4" /> },
+        { id: 'fatigue', label: 'ง่วงนอนหลังมื้ออาหาร', icon: <Battery className="w-4 h-4" /> },
+        { id: 'yo-yo', label: 'น้ำหนักขึ้นง่าย ลงยาก', icon: <Scale className="w-4 h-4" /> },
+        { id: 'stress', label: 'เครียดง่าย / นอนไม่หลับ', icon: <Activity className="w-4 h-4" /> },
+        { id: 'none', label: 'ไม่มีอาการข้างต้น', icon: <CheckCircle className="w-4 h-4" /> }
+      ].map((item) => (
+        <button
+          key={item.id}
+          onClick={() => toggleSymptom(item.id)}
+          className={`flex items-center p-4 rounded-xl border-2 transition ${formData.symptoms.includes(item.id) ? 'border-teal-500 bg-teal-50 text-teal-800' : 'border-gray-200 text-gray-600'}`}
+        >
+          <div className={`mr-3 p-2 rounded-full ${formData.symptoms.includes(item.id) ? 'bg-teal-200' : 'bg-gray-100'}`}>
+            {item.icon}
+          </div>
+          {item.label}
+        </button>
+      ))}
+    </div>
+
+    <div className="flex gap-3 mt-6">
+      <button onClick={() => setStep(2)} className="px-6 py-3 border border-gray-300 rounded-xl text-gray-600">ย้อนกลับ</button>
+      <button onClick={calculateResult} className="flex-1 bg-teal-600 text-white font-bold py-3 rounded-xl shadow-lg flex justify-center items-center">
+        ประมวลผล <Activity className="ml-2 animate-pulse" />
+      </button>
+    </div>
+  </div>
+);
+
+const ResultStep = ({ result, formData, setStep }) => {
+  const [showFact, setShowFact] = useState(false);
+  const [showSnackCheck, setShowSnackCheck] = useState(false);
+  const [currentSnacks, setCurrentSnacks] = useState([]);
+  const [showProteinCheck, setShowProteinCheck] = useState(false);
+  const [currentProteins, setCurrentProteins] = useState([]);
+  const [proteinGoal, setProteinGoal] = useState(0);
+
+  const isHealthy = result.bmi >= 18.5 && result.bmi < 23 && result.whtrStatus === 'normal';
+
+  // Calculate Gauge Position (Piece-wise function for accuracy)
+  const getGaugePosition = (bmi) => {
+    if (bmi < 18.5) {
+      return (bmi / 18.5) * 18.5; // 0-18.5 mapped to 0-18.5%
+    } else if (bmi < 23) {
+      return 18.5 + ((bmi - 18.5) / (23 - 18.5)) * 13.5; // 18.5-23 mapped to 18.5-32%
+    } else if (bmi < 25) {
+      return 32 + ((bmi - 23) / (25 - 23)) * 11; // 23-25 mapped to 32-43%
+    } else if (bmi < 30) {
+      return 43 + ((bmi - 25) / (30 - 25)) * 20; // 25-30 mapped to 43-63%
+    } else {
+      // 30+ mapped to 63-100% (cap at BMI 40)
+      const cappedBmi = Math.min(bmi, 40);
+      return 63 + ((cappedBmi - 30) / (40 - 30)) * 37;
+    }
+  };
+
+  const gaugePosition = getGaugePosition(parseFloat(result.bmi));
+
+  const getRandomItems = (array, count) => {
+    const shuffled = [...array].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  };
+
+  const handleSnackCheck = () => {
+    if (!showSnackCheck) {
+      // If healthy, show healthy snacks options instead of warning
+      const db = isHealthy ? HEALTHY_SNACK_DATABASE : SNACK_DATABASE;
+      setCurrentSnacks(getRandomItems(db, 3));
+    }
+    setShowSnackCheck(!showSnackCheck);
+  };
+
+  const shuffleSnacks = () => {
+    const db = isHealthy ? HEALTHY_SNACK_DATABASE : SNACK_DATABASE;
+    setCurrentSnacks(getRandomItems(db, 3));
+  };
+
+  const handleProteinCheck = () => {
+    if (!showProteinCheck) {
+      const shake = PROTEIN_DATABASE.find(p => p.highlight);
+      const others = PROTEIN_DATABASE.filter(p => !p.highlight);
+      const randomOthers = getRandomItems(others, 2);
+      const mix = [...randomOthers, shake].sort(() => 0.5 - Math.random());
+      
+      // Healthy people might aim for higher protein for muscle (e.g., 2.0g), others 1.5g
+      const multiplier = isHealthy ? 1.8 : 1.5;
+      setProteinGoal(Math.round(parseFloat(formData.weight) * multiplier)); 
+      setCurrentProteins(mix);
+    }
+    setShowProteinCheck(!showProteinCheck);
+  };
+
+  const shuffleProtein = () => {
+    const shake = PROTEIN_DATABASE.find(p => p.highlight);
+    const others = PROTEIN_DATABASE.filter(p => !p.highlight);
+    const randomOthers = getRandomItems(others, 2);
+    const mix = [...randomOthers, shake].sort(() => 0.5 - Math.random());
+    setCurrentProteins(mix);
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {/* --- Section 1: ผลลัพธ์สุขภาพ (Health Score) --- */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-gray-50 p-4 border-b border-gray-100 text-center">
+          <h3 className="text-gray-500 text-sm uppercase tracking-wider font-semibold">ผลการประเมินร่างกาย</h3>
+          
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="bg-white p-3 rounded-xl border border-gray-200">
+                <span className="text-xs text-gray-400 block mb-1">BMI Value</span>
+                <span className={`text-2xl font-bold ${result.category.color}`}>{result.bmi}</span>
+                <div className="text-xs text-gray-500">{result.category.label}</div>
             </div>
             
-            <form onSubmit={handleTripSubmit} className="space-y-5 overflow-y-auto pr-1">
-              
-              {/* Image Upload Area with Gemini Trigger */}
-              <div 
-                className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors relative overflow-hidden group ${tripForm.screenshot ? 'border-emerald-300 bg-emerald-50' : 'border-slate-300 hover:border-emerald-400 hover:bg-slate-50'}`}
-                onClick={() => !isScanning && fileInputRef.current?.click()}
-              >
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  disabled={isScanning}
-                />
-                
-                {isScanning && (
-                   <div className="absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center text-indigo-600 backdrop-blur-sm">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-indigo-200 rounded-full animate-ping opacity-20"></div>
-                        <Loader2 className="w-10 h-10 animate-spin mb-2 relative z-10" />
-                      </div>
-                      <span className="text-sm font-bold animate-pulse">กำลังอ่านสลิปและกรอกข้อมูล...</span>
-                   </div>
-                )}
-                
-                {tripForm.screenshot ? (
-                  <div className="relative">
-                    <img src={tripForm.screenshot} alt="Preview" className="h-32 mx-auto rounded-lg object-contain shadow-md" />
-                    <div className="mt-2 text-emerald-600 text-xs font-bold flex items-center justify-center gap-1">
-                       <Upload className="w-3 h-3" /> เปลี่ยนรูปภาพ / สแกนใหม่
-                    </div>
+            <div className="bg-white p-3 rounded-xl border border-gray-200 relative">
+                <div className="absolute top-2 right-2 cursor-pointer" onClick={() => setShowFact(!showFact)}>
+                   <Info className="w-4 h-4 text-gray-400 hover:text-teal-500" />
+                </div>
+                <span className="text-xs text-gray-400 block mb-1">อัตราส่วนเอว/สูง</span>
+                <span className={`text-2xl font-bold ${result.whtrStatus === 'risk' ? 'text-red-500' : 'text-green-500'}`}>
+                    {result.whtr}
+                </span>
+                <div className="text-xs text-gray-500">
+                    {result.whtrStatus === 'risk' ? 'ไขมันช่องท้องสูง' : 'สมส่วน'}
+                </div>
+            </div>
+          </div>
+          
+          {showFact && (
+              <div className="mt-3 bg-blue-50 text-blue-800 text-xs text-left p-3 rounded-lg border border-blue-100">
+                  <strong>Did you know?</strong> งานวิจัยระบุว่า "รอบเอวหารด้วยส่วนสูง" (WHtR) บอกความเสี่ยงโรคหัวใจได้แม่นยำกว่า BMI โดยค่าไม่ควรเกิน 0.5
+              </div>
+          )}
+        </div>
+
+        {/* Visual Gauge - Fixed Scale */}
+        <div className="px-6 py-4">
+          <div className="relative pt-6 pb-2">
+            <div className="h-4 bg-gray-200 rounded-full overflow-hidden flex">
+              <div className="w-[18.5%] bg-blue-300"></div> 
+              <div className="w-[13.5%] bg-green-400"></div> 
+              <div className="w-[11%] bg-yellow-400"></div> 
+              <div className="w-[20%] bg-orange-400"></div> 
+              <div className="w-[37%] bg-red-400"></div>   
+            </div>
+            <div 
+              className="absolute top-0 transform -translate-x-1/2 transition-all duration-1000"
+              style={{ left: `${gaugePosition}%` }}
+            >
+              <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-gray-800 mx-auto mb-1"></div>
+              <div className="bg-gray-800 text-white text-xs py-0.5 px-2 rounded-md font-bold text-center w-max mx-auto -mt-1">คุณ</div>
+            </div>
+          </div>
+          <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-mono">
+             <span className="w-[18.5%] text-right pr-1">18.5</span>
+             <span className="w-[13.5%] text-right pr-1">23</span>
+             <span className="w-[11%] text-right pr-1">25</span>
+             <span className="w-[20%] text-right pr-1">30</span>
+             <span className="w-[37%]"></span>
+          </div>
+          
+          {result.whtrStatus === 'risk' ? (
+              <div className="mt-4 bg-red-50 border border-red-100 rounded-lg p-3 flex items-start">
+                  <AlertCircle className="w-5 h-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <div>
+                      <p className="text-sm font-bold text-red-700">ระวังภาวะ "Skinny Fat" (อ้วนลงพุง)</p>
+                      <p className="text-xs text-red-600 mt-1">ไขมันช่องท้องสูงกว่าเกณฑ์ ขัดขวางระบบเผาผลาญ</p>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2 py-4">
-                    <div className="bg-gradient-to-br from-emerald-100 to-teal-100 p-4 rounded-full text-emerald-600 relative group-hover:scale-110 transition-transform shadow-sm">
-                      <Upload className="w-6 h-6" />
-                      <div className="absolute -right-1 -top-1 bg-indigo-500 text-white p-1 rounded-full ring-2 ring-white shadow-sm">
-                        <Sparkles className="w-3 h-3" />
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-700">แตะเพื่ออัปโหลดสลิป</p>
-                      <p className="text-xs text-slate-400">✨ ระบบจะอ่านและกรอกข้อมูลให้อัตโนมัติ</p>
-                    </div>
-                  </div>
-                )}
               </div>
-
-              {/* Time Inputs */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                   <label className="text-xs font-bold text-slate-500">เริ่มเวลา</label>
-                   <input 
-                      type="time" 
-                      required 
-                      value={tripForm.startTime} 
-                      onChange={e => setTripForm({...tripForm, startTime: e.target.value})} 
-                      className="w-full p-2.5 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors" 
-                   />
-                </div>
-                <div className="space-y-1">
-                   <label className="text-xs font-bold text-slate-500">จบเวลา</label>
-                   <input 
-                      type="time" 
-                      required 
-                      value={tripForm.endTime} 
-                      onChange={e => setTripForm({...tripForm, endTime: e.target.value})} 
-                      className="w-full p-2.5 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors" 
-                   />
-                </div>
-              </div>
-
-              {/* Locations */}
-              <div className="space-y-3">
-                <div className="relative group">
-                  <div className="absolute left-3 top-3.5"><div className="w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-emerald-100"></div></div>
-                  <input type="text" placeholder="จุดรับ (From)" required value={tripForm.pickup} onChange={e => setTripForm({...tripForm, pickup: e.target.value})} className="w-full p-3 pl-9 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
-                </div>
-                <div className="relative group">
-                  <div className="absolute left-3 top-3.5"><div className="w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-red-100"></div></div>
-                  <input type="text" placeholder="จุดส่ง (To)" required value={tripForm.dropoff} onChange={e => setTripForm({...tripForm, dropoff: e.target.value})} className="w-full p-3 pl-9 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">ระยะทาง (กม.)</label>
-                    <input type="number" step="0.1" placeholder="0.0" required value={tripForm.distance || ''} onChange={e => setTripForm({...tripForm, distance: Number(e.target.value)})} className="w-full p-3 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none" />
-                 </div>
-                 <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">ค่าโดยสาร (฿)</label>
-                    <input type="number" placeholder="0" required value={tripForm.earnings || ''} onChange={e => setTripForm({...tripForm, earnings: Number(e.target.value)})} className="w-full p-3 bg-emerald-50 text-emerald-800 font-bold rounded-lg border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none" />
-                 </div>
-              </div>
-
-              {/* Zone */}
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 flex justify-between">
-                  โซนพื้นที่
-                  {tripForm.zone && <span className="text-[10px] text-indigo-500 font-normal bg-indigo-50 px-1 rounded">AI Suggested</span>}
-                </label>
-                <div className="relative">
-                   <MapPin className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
-                   <input 
-                    type="text" 
-                    list="zones"
-                    placeholder="เช่น สาทร, สุขุมวิท..." 
-                    required 
-                    value={tripForm.zone} 
-                    onChange={e => setTripForm({...tripForm, zone: e.target.value})} 
-                    className="w-full p-3 pl-9 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none" 
-                   />
-                </div>
-                <datalist id="zones">
-                  <option value="Sukhumvit" />
-                  <option value="Sathorn" />
-                  <option value="Silom" />
-                  <option value="CBD" />
-                  <option value="Thonburi" />
-                  <option value="Rama 9" />
-                </datalist>
-              </div>
-
-              <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 active:scale-95 transition-all mt-2">
-                บันทึกเที่ยววิ่ง
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// --- View: Analytics Dashboard ---
-
-function AnalyticsView({ logs }: { logs: DailyLog[] }) {
-  const hourlyData = useMemo(() => {
-    const hours = new Array(24).fill(0);
-    logs.forEach(log => {
-      log.trips.forEach(trip => {
-        if (trip.startTime) {
-          const hour = parseInt(trip.startTime.split(':')[0]);
-          if (!isNaN(hour)) hours[hour]++;
-        }
-      });
-    });
-    return hours;
-  }, [logs]);
-
-  const zoneData = useMemo(() => {
-    const zones: Record<string, number> = {};
-    logs.forEach(log => {
-      log.trips.forEach(trip => {
-        const z = trip.zone || 'ไม่ระบุ';
-        zones[z] = (zones[z] || 0) + 1;
-      });
-    });
-    return Object.entries(zones).sort((a, b) => b[1] - a[1]);
-  }, [logs]);
-
-  const maxHourlyJobs = Math.max(...hourlyData, 1);
-  const bestHour = hourlyData.indexOf(Math.max(...hourlyData));
-
-  if (logs.length === 0) {
-    return (
-       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-         <BarChart3 className="w-12 h-12 mb-2 text-slate-300" />
-         <p>บันทึกข้อมูลก่อนเพื่อดูสถิตินะครับ</p>
-       </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-      
-      {/* Chart 1: Hourly Pattern */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-blue-100 rounded-xl text-blue-600 shadow-sm"><Clock className="w-6 h-6" /></div>
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">ช่วงเวลาทอง (Peak Hours)</h3>
-            <p className="text-sm text-slate-500">กราฟจำนวนงานรายชั่วโมง</p>
-          </div>
-        </div>
-        
-        <div className="h-48 flex items-end gap-1.5 mt-4 relative">
-          {hourlyData.map((count, hour) => {
-             const heightPercent = (count / maxHourlyJobs) * 100;
-             const isPeak = heightPercent > 60;
-             return (
-               <div key={hour} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                 <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 bg-slate-800 text-white text-[10px] px-2 py-1 rounded shadow-lg pointer-events-none transition-all z-10 whitespace-nowrap -translate-y-1">
-                   {hour}:00 น. | {count} งาน
-                 </div>
-                 <div 
-                   className={`w-full min-w-[6px] rounded-t-md transition-all duration-700 ease-out ${isPeak ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-slate-200 hover:bg-slate-300'}`}
-                   style={{ height: `${Math.max(heightPercent, 4)}%` }}
-                 ></div>
-                 {(hour % 3 === 0) && (
-                   <span className="absolute -bottom-5 text-[10px] text-slate-400 font-medium">{hour}</span>
-                 )}
-               </div>
-             )
-          })}
-        </div>
-        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between text-xs text-slate-500">
-             <span>00:00</span>
-             <span>12:00</span>
-             <span>23:00</span>
-        </div>
-      </div>
-
-      {/* Chart 2: Top Zones */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-purple-100 rounded-xl text-purple-600 shadow-sm"><MapPin className="w-6 h-6" /></div>
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">โซนทำเงิน (Top Zones)</h3>
-            <p className="text-sm text-slate-500">พื้นที่ที่คุณรับงานบ่อยที่สุด</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {zoneData.length === 0 ? (
-            <div className="text-center text-slate-400 py-6 text-sm bg-slate-50 rounded-lg">ยังไม่มีข้อมูลโซน</div>
           ) : (
-            zoneData.slice(0, 5).map(([zone, count], index) => (
-              <div key={zone} className="flex items-center gap-4">
-                 <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shadow-inner">
-                   {index + 1}
-                 </div>
-                 <div className="flex-1">
-                   <div className="flex justify-between text-sm mb-1.5">
-                     <span className="font-bold text-slate-700">{zone}</span>
-                     <span className="text-slate-500 font-medium">{count} งาน</span>
-                   </div>
-                   <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                     <div 
-                        className="bg-gradient-to-r from-purple-500 to-purple-400 h-full rounded-full shadow-sm" 
-                        style={{ width: `${(count / zoneData[0][1]) * 100}%` }}
-                     ></div>
-                   </div>
-                 </div>
+             <div className="mt-4 bg-green-50 border border-green-100 rounded-lg p-3 flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <div>
+                      <p className="text-sm font-bold text-green-700">ยอดเยี่ยม! รูปร่างสมส่วน</p>
+                      <p className="text-xs text-green-600 mt-1">คุณมีพื้นฐานที่ดี เหมาะแก่การพัฒนาสู่ระดับ Metabolic Flexibility</p>
+                  </div>
               </div>
-            ))
           )}
         </div>
       </div>
 
-      {/* Insight Summary */}
-      <div className="grid grid-cols-2 gap-4">
-         <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-2xl border border-orange-100 shadow-sm">
-           <h4 className="text-orange-800/70 text-xs font-bold uppercase mb-2">เวลาที่ดีที่สุด</h4>
-           <div className="flex items-center gap-2">
-             <Clock className="w-5 h-5 text-orange-500" />
-             <p className="text-xl font-bold text-slate-800">
-               {bestHour}:00 - {bestHour + 1}:00
-             </p>
-           </div>
-         </div>
-         <div className="bg-gradient-to-br from-emerald-50 to-green-50 p-5 rounded-2xl border border-emerald-100 shadow-sm">
-           <h4 className="text-emerald-800/70 text-xs font-bold uppercase mb-2">โซนอันดับ 1</h4>
-           <div className="flex items-center gap-2">
-             <MapPin className="w-5 h-5 text-emerald-500" />
-             <p className="text-xl font-bold text-slate-800 truncate">
-               {zoneData.length > 0 ? zoneData[0][0] : '-'}
-             </p>
-           </div>
-         </div>
+      {/* --- Section 2: 5 Steps Solution --- */}
+      <div className="space-y-3">
+        <h4 className={`font-bold ${isHealthy ? 'text-teal-700' : 'text-gray-800'} flex items-center text-lg`}>
+          {isHealthy ? <Zap className="w-5 h-5 mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+          {isHealthy ? '5 ขั้นตอนอัปเกรดร่างทอง (Optimization)' : '5 ขั้นตอนรีเซ็ตระบบเผาผลาญ'}
+        </h4>
+        <p className="text-sm text-gray-500 -mt-2 mb-4">
+          {isHealthy ? 'เทคนิคเพิ่มประสิทธิภาพการใช้พลังงาน' : 'ทำตามได้ทันที ไม่ต้องอดอาหาร'}
+        </p>
+
+        {/* Step 1 */}
+        <div className={`bg-white border-l-4 ${isHealthy ? 'border-blue-500' : 'border-teal-500'} rounded-r-xl shadow-sm overflow-hidden`}>
+          <div className="p-4">
+            <h5 className="font-bold text-gray-800 flex justify-between">
+              {isHealthy ? '1. เลือกอาหารชะลอวัย' : '1. หยุด "จุบจิบ" ทันที'}
+              <span className={`text-xs font-bold ${isHealthy ? 'bg-blue-100 text-blue-700' : 'bg-teal-100 text-teal-700'} px-2 py-1 rounded h-fit`}>ทำได้เลย</span>
+            </h5>
+            <p className="text-sm text-gray-600 mt-1 mb-3">
+              {isHealthy 
+                ? 'เปลี่ยนของว่างเป็น Superfood เพื่อต้านอนุมูลอิสระ' 
+                : 'การกินบ่อยกระตุ้นอินซูลินตลอดเวลา ร่างกายไม่ดึงไขมันมาใช้'}
+            </p>
+            
+            <button 
+              onClick={handleSnackCheck}
+              className={`text-sm border px-3 py-1.5 rounded-lg w-full flex items-center justify-center transition ${isHealthy ? 'bg-green-50 text-green-600 border-green-100 hover:bg-green-100' : 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100'}`}
+            >
+              {isHealthy ? <CheckCircle className="w-4 h-4 mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
+              {showSnackCheck ? 'ซ่อนรายการ' : (isHealthy ? 'ดูไอเดียของว่างสุขภาพ' : 'ดูเมนูจุบจิบที่ต้องระวัง')}
+            </button>
+            
+            {showSnackCheck && (
+              <div className={`mt-3 p-3 rounded-xl border animate-fade-in ${isHealthy ? 'bg-green-50/50 border-green-100' : 'bg-red-50/50 border-red-100'}`}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className={`text-xs font-bold uppercase tracking-wide ${isHealthy ? 'text-green-500' : 'text-red-500'}`}>
+                    {isHealthy ? 'ของว่างแนะนำ' : 'ตัวอย่างเมนูพลังงานแฝง'}
+                  </span>
+                  <button onClick={shuffleSnacks} className="text-gray-400 hover:text-gray-600">
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {currentSnacks.map((snack, idx) => (
+                    <div key={idx} className={`bg-white p-2 rounded-lg border flex justify-between items-center shadow-sm ${isHealthy ? 'border-green-100' : 'border-red-100'}`}>
+                      <div className="flex items-center">
+                        <span className="text-xl mr-2">{snack.icon}</span>
+                        <div>
+                          <p className="text-sm font-bold text-gray-800">{snack.name}</p>
+                          <p className="text-[10px] text-gray-500">
+                            C:{snack.c} F:{snack.f} P:{snack.p}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`text-sm font-bold ${isHealthy ? 'text-green-600' : 'text-red-500'}`}>{snack.kcal} <span className="text-[10px] font-normal text-gray-400">kcal</span></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Step 2 */}
+        <div className={`bg-white border-l-4 ${isHealthy ? 'border-blue-500' : 'border-teal-500'} rounded-r-xl shadow-sm overflow-hidden`}>
+          <div className="p-4">
+            <h5 className="font-bold text-gray-800 flex justify-between">
+              {isHealthy ? '2. โปรตีนสร้างกล้ามเนื้อ' : '2. เพิ่มโปรตีนมื้อแรก'}
+              <span className={`text-xs font-bold ${isHealthy ? 'bg-blue-100 text-blue-700' : 'bg-teal-100 text-teal-700'} px-2 py-1 rounded h-fit`}>ทำได้เลย</span>
+            </h5>
+            <p className="text-sm text-gray-600 mt-1 mb-3">
+              {isHealthy 
+                ? 'เพิ่มมวลกล้ามเนื้อเพื่อเพิ่มอัตราการเผาผลาญพื้นฐาน (BMR)' 
+                : 'โปรตีนช่วยเร่งการเผาผลาญและคุมหิวได้ดีที่สุด'}
+            </p>
+
+            <button 
+              onClick={handleProteinCheck}
+              className="text-sm bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-lg w-full flex items-center justify-center hover:bg-blue-100 transition"
+            >
+              <Dumbbell className="w-4 h-4 mr-2" /> 
+              {showProteinCheck ? 'ซ่อนคำนวณ' : 'คำนวณโปรตีนที่ควรได้รับ'}
+            </button>
+
+            {showProteinCheck && (
+              <div className="mt-3 bg-blue-50/50 p-3 rounded-xl border border-blue-100 animate-fade-in">
+                <div className="flex items-center justify-between mb-3 bg-white p-2 rounded-lg border border-blue-100 shadow-sm">
+                  <span className="text-xs text-gray-500">เป้าหมายของคุณ</span>
+                  <div className="text-right">
+                    <span className="text-lg font-bold text-blue-600">{proteinGoal}g</span>
+                    <span className="text-[10px] text-gray-400 block -mt-1">{isHealthy ? 'เพื่อสร้างกล้ามเนื้อ/วัน' : 'โปรตีน/วัน'}</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold text-blue-500 uppercase tracking-wide">แหล่งโปรตีนแนะนำ</span>
+                  <button onClick={shuffleProtein} className="text-gray-400 hover:text-gray-600">
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <div className="space-y-2">
+                  {currentProteins.map((item, idx) => (
+                    <div key={idx} className={`bg-white p-2 rounded-lg border flex justify-between items-center shadow-sm ${item.highlight ? 'border-teal-300 ring-1 ring-teal-100' : 'border-blue-100'}`}>
+                      <div className="flex items-center">
+                        <span className="text-xl mr-2">{item.icon}</span>
+                        <div>
+                          <p className={`text-sm font-bold ${item.highlight ? 'text-teal-700' : 'text-gray-800'}`}>{item.name}</p>
+                          <p className="text-[10px] text-gray-500">{item.kcal} kcal</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-sm font-bold ${item.highlight ? 'text-teal-600' : 'text-blue-600'}`}>{item.protein}g</span>
+                        <span className="text-[10px] font-normal text-gray-400 block -mt-1">โปรตีน</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Locked Steps Overlay */}
+        <div className="relative">
+          <div className="opacity-50 blur-sm pointer-events-none space-y-3 select-none">
+            <div className="bg-gray-100 p-4 rounded-xl border border-gray-200">
+              <h5 className="font-bold text-gray-500">3. {isHealthy ? 'เทคนิค Autophagy ชะลอวัย' : 'เทคนิค IF แบบไม่ทรมาน'}</h5>
+              <p className="text-sm text-gray-400">xxxxxx xxxxxxxx xxxxxxx</p>
+            </div>
+            <div className="bg-gray-100 p-4 rounded-xl border border-gray-200">
+              <h5 className="font-bold text-gray-500">4. {isHealthy ? 'Zone 2 Training เพิ่มความอึด' : 'โซนการออกกำลังกายสลายพุง'}</h5>
+              <p className="text-sm text-gray-400">xxxxxx xxxxxxxx xxxxxxx</p>
+            </div>
+            <div className="bg-gray-100 p-4 rounded-xl border border-gray-200">
+              <h5 className="font-bold text-gray-500">5. {isHealthy ? 'Deep Sleep & Growth Hormone' : 'การนอนเพื่อ Metabolic Reset'}</h5>
+              <p className="text-sm text-gray-400">xxxxxx xxxxxxxx xxxxxxx</p>
+            </div>
+          </div>
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 -mt-6">
+            <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-teal-100 text-center max-w-xs mx-auto">
+              <div className="bg-orange-100 p-3 rounded-full inline-block mb-3">
+                <Lock className="w-8 h-8 text-orange-500" />
+              </div>
+              <h4 className="font-bold text-gray-800 text-lg mb-1">ปลดล็อก 3 ขั้นตอนที่เหลือ</h4>
+              <p className="text-sm text-gray-500 mb-2">
+                + <span className="text-teal-600 font-bold"><Gift className="inline w-3 h-3"/> Bonus: สูตรลับ UP Labs</span><br/>
+                เฉพาะบุคคล (Personalized)
+              </p>
+              <button 
+                onClick={() => setStep(5)}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transform transition hover:scale-105 flex items-center justify-center"
+              >
+                <Unlock className="w-4 h-4 mr-2" /> กดเพื่อรับข้อมูลฟรี
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LeadFormStep = ({ leadInfo, setLeadInfo, handleLeadSubmit, setStep }) => (
+  <div className="space-y-6">
+    <div className="text-center mb-6">
+      <div className="bg-teal-100 p-4 rounded-full inline-block mb-4">
+         <Unlock className="w-10 h-10 text-teal-600" />
+      </div>
+      <h2 className="text-2xl font-bold text-gray-800">ใกล้เสร็จแล้ว!</h2>
+      <p className="text-gray-600">
+        กรอกข้อมูลเพื่อรับ <strong>"3 ขั้นตอนสุดท้าย + โบนัสสูตรลับ"</strong> <br/>
+        ส่งตรงถึงมือคุณฟรี ทางไลน์/SMS
+      </p>
+    </div>
+
+    <form onSubmit={handleLeadSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ - นามสกุล</label>
+        <div className="relative">
+          <input 
+            required
+            type="text" 
+            className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            placeholder="สมชาย รักสุขภาพ"
+            value={leadInfo.name}
+            onChange={(e) => setLeadInfo(prev => ({...prev, name: e.target.value}))}
+          />
+          <User className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ (เพื่อรับ SMS)</label>
+        <div className="relative">
+          <input 
+            required
+            type="tel" 
+            className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            placeholder="081-234-5678"
+            value={leadInfo.phone}
+            onChange={(e) => setLeadInfo(prev => ({...prev, phone: e.target.value}))}
+          />
+          <Phone className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Line ID (เพื่อรับสูตรลับฉบับเต็ม)</label>
+        <div className="relative">
+          <input 
+            type="text" 
+            className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            placeholder="@lineid"
+            value={leadInfo.lineId}
+            onChange={(e) => setLeadInfo(prev => ({...prev, lineId: e.target.value}))}
+          />
+          <MessageSquare className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
+        </div>
+      </div>
+
+      <button 
+        type="submit"
+        className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-xl shadow-lg mt-6 transition-colors"
+      >
+        ยืนยันรับสูตรลับฟรี
+      </button>
+    </form>
+    
+    <button onClick={() => setStep(4)} className="w-full text-center text-gray-500 text-sm mt-4">
+      ย้อนกลับไปดูผล BMI
+    </button>
+  </div>
+);
+
+const ThankYouStep = ({ leadInfo }) => (
+  <div className="text-center py-10 space-y-6">
+    <div className="bg-green-100 p-6 rounded-full inline-block mb-4">
+      <CheckCircle className="w-20 h-20 text-green-600" />
+    </div>
+    <h2 className="text-3xl font-bold text-gray-800">ส่งข้อมูลสำเร็จ!</h2>
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 max-w-sm mx-auto">
+      <p className="text-gray-600 mb-2">เราได้ส่ง <strong>"5 ขั้นตอน + โบนัสสูตรลับ"</strong> ไปที่:</p>
+      <div className="space-y-1 mt-4">
+         <p className="font-bold text-lg text-teal-700">{leadInfo.name}</p>
+         <p className="text-gray-800 flex items-center justify-center gap-2"><MessageSquare className="w-4 h-4"/> {leadInfo.lineId || '-'}</p>
+         <p className="text-gray-800 flex items-center justify-center gap-2"><Phone className="w-4 h-4"/> {leadInfo.phone}</p>
+      </div>
+    </div>
+    <p className="text-sm text-gray-500 mt-8 px-4">
+      "ความรู้ที่ถูกต้อง คือจุดเริ่มต้นของการมีสุขภาพที่ดีตลอดชีวิต"
+    </p>
+    <button 
+      onClick={() => window.location.reload()}
+      className="text-teal-600 font-semibold underline mt-4"
+    >
+      กลับหน้าหลัก
+    </button>
+  </div>
+);
+
+// --- Main Component ---
+
+export default function MetabolicHealthCheck() {
+  const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    gender: 'female',
+    age: '',
+    height: '',
+    weight: '',
+    waist: '',
+    activity: 'sedentary',
+    symptoms: []
+  });
+  const [result, setResult] = useState(null);
+  const [leadInfo, setLeadInfo] = useState({
+    name: '',
+    phone: '',
+    lineId: ''
+  });
+  const [submitted, setSubmitted] = useState(false);
+
+  const getBMICategory = (bmi) => {
+    if (bmi < 18.5) return { label: 'น้ำหนักน้อยเกินไป', color: 'text-blue-500', bg: 'bg-blue-500', advice: 'ควรเพิ่มน้ำหนักเพื่อความแข็งแรงของกล้ามเนื้อ' };
+    if (bmi < 23) return { label: 'น้ำหนักปกติ (สมส่วน)', color: 'text-green-500', bg: 'bg-green-500', advice: 'รักษาระดับนี้ไว้ เพื่อระบบเผาผลาญที่ดี' };
+    if (bmi < 25) return { label: 'น้ำหนักเกิน (ท้วม)', color: 'text-yellow-500', bg: 'bg-yellow-500', advice: 'เริ่มมีความเสี่ยง ควรปรับอาหารเพื่อลดไขมันสะสม' };
+    if (bmi < 30) return { label: 'อ้วนระดับ 1', color: 'text-orange-500', bg: 'bg-orange-500', advice: 'ควรเริ่มโปรแกรมรีเซ็ตระบบเผาผลาญอย่างจริงจัง' };
+    return { label: 'อ้วนระดับ 2 (อันตราย)', color: 'text-red-500', bg: 'bg-red-500', advice: 'มีความเสี่ยงต่อโรคเรื้อรังสูง ควรปรึกษาผู้เชี่ยวชาญทันที' };
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const toggleSymptom = (symptom) => {
+    setFormData(prev => {
+      const exists = prev.symptoms.includes(symptom);
+      return {
+        ...prev,
+        symptoms: exists 
+          ? prev.symptoms.filter(s => s !== symptom)
+          : [...prev.symptoms, symptom]
+      };
+    });
+  };
+
+  const calculateResult = () => {
+    setLoading(true);
+    setTimeout(() => {
+      const heightM = parseFloat(formData.height) / 100;
+      const weightKg = parseFloat(formData.weight);
+      const waistInches = parseFloat(formData.waist);
+      const waistCm = waistInches * 2.54;
+      const heightCm = parseFloat(formData.height);
+      const bmi = weightKg / (heightM * heightM);
+      const idealWeight = 22 * (heightM * heightM);
+      const diff = weightKg - idealWeight;
+      const whtr = waistCm / heightCm;
+      const whtrStatus = whtr > 0.5 ? 'risk' : 'normal';
+
+      setResult({
+        bmi: bmi.toFixed(1),
+        idealWeight: idealWeight.toFixed(1),
+        diff: diff.toFixed(1),
+        category: getBMICategory(bmi),
+        whtr: whtr.toFixed(2),
+        whtrStatus: whtrStatus
+      });
+      setLoading(false);
+      setStep(4);
+    }, 1500);
+  };
+
+  // --- Supabase Logic ---
+  const saveToSupabase = async (data) => {
+    try {
+      // Check if Supabase client is available (from index.html via CDN)
+      if (window.supabase) {
+        const { data: result, error } = await window.supabase
+          .from('leads') // Make sure you create this table in Supabase
+          .insert([
+            {
+              name: data.name,
+              phone: data.phone,
+              line_id: data.lineId,
+              bmi: result.bmi,
+              whtr: result.whtr,
+              created_at: new Date()
+            },
+          ]);
+          
+        if (error) console.error('Supabase Error:', error);
+      } else {
+        console.log("Supabase client not found (Running in preview mode?)");
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+    }
+  };
+
+  const handleLeadSubmit = (e) => {
+    e.preventDefault();
+    // Call Supabase save
+    saveToSupabase(leadInfo);
+    setSubmitted(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden relative">
+        {step > 0 && step < 6 && !submitted && (
+          <div className="h-2 bg-gray-100">
+            <div 
+              className="h-full bg-teal-500 transition-all duration-500 ease-out"
+              style={{ width: `${(step / 5) * 100}%` }}
+            ></div>
+          </div>
+        )}
+
+        <div className="p-6 md:p-8">
+          {loading ? (
+            <div className="text-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal-500 mx-auto mb-4"></div>
+              <h3 className="text-xl font-bold text-gray-700">กำลังวิเคราะห์ข้อมูล...</h3>
+              <p className="text-gray-500">ประมวลผลค่า BMI และไขมันช่องท้อง (Visceral Fat)</p>
+            </div>
+          ) : (
+            <>
+              {step === 0 && <WelcomeStep setStep={setStep} />}
+              {step === 1 && <BasicInfoStep formData={formData} setFormData={setFormData} handleInputChange={handleInputChange} setStep={setStep} />}
+              {step === 2 && <ActivityStep formData={formData} setFormData={setFormData} setStep={setStep} />}
+              {step === 3 && <SymptomsStep formData={formData} toggleSymptom={toggleSymptom} setStep={setStep} calculateResult={calculateResult} />}
+              {step === 4 && result && <ResultStep result={result} formData={formData} setStep={setStep} />}
+              {step === 5 && !submitted && <LeadFormStep leadInfo={leadInfo} setLeadInfo={setLeadInfo} handleLeadSubmit={handleLeadSubmit} setStep={setStep} />}
+              {submitted && <ThankYouStep leadInfo={leadInfo} />}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
