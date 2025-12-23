@@ -15,9 +15,8 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Lucide React Icons (UMD Version) -->
-    <!-- เปลี่ยนจาก lucide ธรรมดา เป็น lucide-react เพื่อให้ใช้ใน React Component ได้ -->
-    <script src="https://unpkg.com/lucide-react/dist/lucide-react.umd.min.js"></script>
+    <!-- Lucide React Icons (Fixed Version for Browser) -->
+    <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.min.js"></script>
     
     <!-- Supabase SDK -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -34,10 +33,10 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // 1. ดึงตัวแปรจาก Global Object แทนการ Import
+        // 1. ดึงตัวแปรจาก Global Object
         const { useState, useEffect } = React;
         
-        // ดึง Icon ทั้งหมดจาก lucideReact
+        // ดึง Icon ทั้งหมดจาก lucideReact (ถ้าไม่เจอให้ใช้ Object ว่างป้องกันจอขาว)
         const { 
             ChevronRight, 
             ChevronLeft, 
@@ -61,7 +60,7 @@
             XCircle, 
             Dumbbell, 
             Zap 
-        } = lucideReact;
+        } = window.lucideReact || {};
 
         // --- Supabase Configuration Placeholder ---
         // ใส่ค่า Key ของคุณที่นี่เมื่อนำไปใช้จริง
