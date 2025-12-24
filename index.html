@@ -6,75 +6,152 @@
     <title>Metabolic Health Check - UP Labs</title>
     
     <!-- 1. React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     
-    <!-- 2. Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 2. Babel -->
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
     
     <!-- 3. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 4. Lucide Icons (Vanilla JS Version - Stable for CDN) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- 4. FontAwesome Icons (เสถียรที่สุดสำหรับ HTML ไฟล์เดียว) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- 5. Supabase SDK -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
         body { font-family: 'Sarabun', sans-serif; }
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Error Box Style */
+        #error-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            color: #ef4444; z-index: 9999;
+            flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 20px; font-family: monospace;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
     <div id="root"></div>
+    
+    <!-- Error Display UI -->
+    <div id="error-overlay">
+        <h2 class="text-2xl font-bold mb-4">⚠️ เกิดข้อผิดพลาด (Application Error)</h2>
+        <p id="error-message" class="text-lg mb-2"></p>
+        <button onclick="window.location.reload()" class="bg-gray-200 px-4 py-2 rounded mt-4">Refresh Page</button>
+    </div>
+
+    <!-- Error Handling Script -->
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            const overlay = document.getElementById('error-overlay');
+            const msgEl = document.getElementById('error-message');
+            if(overlay && msgEl) {
+                overlay.style.display = 'flex';
+                msgEl.textContent = `${message} (Line: ${lineno})`;
+            }
+            console.error("Global Error:", error);
+        };
+    </script>
 
     <script type="text/babel">
+        // Check Dependencies
+        if (!window.React || !window.ReactDOM) {
+            throw new Error("React failed to load. Please check your internet connection.");
+        }
+
         const { useState, useEffect, useRef } = React;
 
-        // --- 1. Robust Icon Component ---
-        // ใช้ Lucide แบบ Vanilla JS เพื่อความชัวร์ 100% ว่าไอคอนจะขึ้นบนทุก Browser
-        const Icon = ({ name, size = 24, className = "", color = "currentColor" }) => {
-            const iconRef = useRef(null);
+        // --- 1. Robust Icon Component (Using FontAwesome) ---
+        // เปลี่ยนมาใช้ FontAwesome Class แทน เพื่อความเสถียรสูงสุด
+        const Icon = ({ name, size = 24, className = "", color = "" }) => {
+            // Mapping จากชื่อ Lucide เดิม ไปเป็น FontAwesome Class
+            const iconMap = {
+                // UI Icons
+                'Activity': 'fa-heart-pulse',
+                'Scale': 'fa-weight-scale',
+                'Ruler': 'fa-ruler-vertical',
+                'User': 'fa-user',
+                'CheckCircle': 'fa-circle-check',
+                'AlertCircle': 'fa-circle-exclamation',
+                'ArrowRight': 'fa-arrow-right',
+                'ClipboardList': 'fa-clipboard-list',
+                'Utensils': 'fa-utensils',
+                'Battery': 'fa-battery-half',
+                'Phone': 'fa-phone',
+                'MessageSquare': 'fa-comment-dots',
+                'Info': 'fa-circle-info',
+                'Lock': 'fa-lock',
+                'Unlock': 'fa-lock-open',
+                'Gift': 'fa-gift',
+                'RefreshCw': 'fa-rotate',
+                'XCircle': 'fa-circle-xmark',
+                'Dumbbell': 'fa-dumbbell',
+                'Zap': 'fa-bolt',
+                
+                // Food/Snack Icons
+                'CupSoda': 'fa-glass-water',
+                'Banana': 'fa-banana', // FontAwesome ไม่มีกล้วยใน Free tier บางเวอร์ชัน ใช้ carrot หรือ apple แทนถ้าไม่ขึ้น แต่ลองดูก่อน
+                'Cookie': 'fa-cookie-bite',
+                'CircleDot': 'fa-circle-dot',
+                'Croissant': 'fa-bread-slice',
+                'IceCream': 'fa-ice-cream',
+                'Coffee': 'fa-mug-hot',
+                'Wheat': 'fa-wheat-awn',
+                'Grab': 'fa-hand-holding',
+                'Nut': 'fa-cookie',
+                'Apple': 'fa-apple-whole',
+                'Grape': 'fa-grapes',
+                'Egg': 'fa-egg',
+                'Drumstick': 'fa-drumstick-bite',
+                'Fish': 'fa-fish',
+                'Box': 'fa-cube',
+                'Milk': 'fa-bottle-droplet',
+                'FishSymbol': 'fa-fish-fins',
+                'Bean': 'fa-seedling',
+                'Shell': 'fa-shrimp',
+                'GlassWater': 'fa-glass-water',
+            };
 
-            useEffect(() => {
-                if (window.lucide && window.lucide.icons && window.lucide.icons[name] && iconRef.current) {
-                    const svg = window.lucide.icons[name].toSvg({
-                        width: size,
-                        height: size,
-                        class: className,
-                        color: color
-                    });
-                    iconRef.current.innerHTML = svg;
-                }
-            }, [name, size, className, color]);
+            // Fallback ถ้าหาไอคอนไม่เจอ ให้ใช้วงกลมแทน
+            const faClass = iconMap[name] || 'fa-circle';
 
-            return <span ref={iconRef} style={{ display: 'inline-flex', verticalAlign: 'middle' }} />;
+            return (
+                <i 
+                    className={`fa-solid ${faClass} ${className}`} 
+                    style={{ fontSize: size, color: color }}
+                ></i>
+            );
         };
 
         // --- Configuration ---
         const SUPABASE_URL = "https://qzqvwbucjxwgtmbdkrlu.supabase.co"; 
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cXZ3YnVjanh3Z3RtYmRrcmx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzgxODksImV4cCI6MjA4MDk1NDE4OX0.RYvc5kMueNhsOu---WOKcXYnOZLVnjiWklp1IiHmgS8";
 
-        // Initialize Supabase safely
-        let supabase = null;
-        // Fix: ตรวจสอบว่า window.supabase มีค่าจริง (ไม่เป็น null) และมีฟังก์ชัน createClient ก่อนใช้งาน
-        if (window.supabase && typeof window.supabase.createClient === 'function') {
-            try {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            } catch (err) {
-                console.error("Supabase initialization error:", err);
+        // Initialize Supabase (Renamed variable to avoid conflict)
+        let dbClient = null;
+        try {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } else {
+                console.warn("Supabase SDK not loaded or invalid.");
             }
+        } catch (e) {
+            console.error("Supabase Init Failed:", e);
         }
 
         // --- Database Data ---
-        // ใช้ชื่อ String ของ Icon แทน Component
         const SNACK_DATABASE = [
             { name: 'ชานมไข่มุก (1 แก้ว)', kcal: 350, c: 60, f: 10, p: 1, icon: 'CupSoda' },
-            { name: 'กล้วยแขก (3 ชิ้น)', kcal: 280, c: 45, f: 12, p: 1, icon: 'Banana' },
+            { name: 'กล้วยแขก (3 ชิ้น)', kcal: 280, c: 45, f: 12, p: 1, icon: 'Cookie' }, /* Use Cookie as fallback for Banana if needed */
             { name: 'คุกกี้เนย (2 ชิ้น)', kcal: 180, c: 20, f: 10, p: 2, icon: 'Cookie' },
             { name: 'ลูกชิ้นทอด (5 ลูก)', kcal: 250, c: 30, f: 12, p: 8, icon: 'CircleDot' },
             { name: 'ขนมปังไส้ครีม', kcal: 320, c: 45, f: 14, p: 6, icon: 'Croissant' },
@@ -117,8 +194,8 @@
                 </div>
                 <h1 className="text-3xl font-bold text-gray-800">เช็กสุขภาพระบบเผาผลาญของคุณ</h1>
                 <p className="text-gray-600 text-lg">
-                    รู้หรือไม่? BMI อาจหลอกคุณได้! <br/>
-                    ตรวจลึกถึงระดับ <strong>"ไขมันแฝงในช่องท้อง"</strong> ด้วยหลักวิทยาศาสตร์
+                    รู้หรือไม่? น้ำหนักตัวเป็นเพียงตัวเลข แต่ "ระบบเผาผลาญ" คือกุญแจสำคัญ <br/>
+                    ทำแบบประเมิน 1 นาที เพื่อรับคำแนะนำเฉพาะบุคคล
                 </p>
                 <div className="flex flex-col gap-3 mt-8">
                     <button 
@@ -220,7 +297,7 @@
                     onClick={() => setStep(2)}
                     className="w-full bg-teal-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl mt-6 flex justify-center items-center"
                 >
-                    ถัดไป <span className="ml-1"><Icon name="ChevronRight" size={20} /></span>
+                    ถัดไป <span className="ml-1"><Icon name="ArrowRight" size={20} /></span>
                 </button>
             </div>
         );
@@ -253,7 +330,7 @@
                 <div className="flex gap-3 mt-6">
                     <button onClick={() => setStep(1)} className="px-6 py-3 border border-gray-300 rounded-xl text-gray-600">ย้อนกลับ</button>
                     <button onClick={() => setStep(3)} className="flex-1 bg-teal-600 text-white font-bold py-3 rounded-xl flex justify-center items-center">
-                        ถัดไป <span className="ml-1"><Icon name="ChevronRight" size={20} /></span>
+                        ถัดไป <span className="ml-1"><Icon name="ArrowRight" size={20} /></span>
                     </button>
                 </div>
             </div>
@@ -439,7 +516,7 @@
                             )}
                         </div>
 
-                        {/* --- NEW FEATURE: Ideal Weight Range --- */}
+                        {/* --- Ideal Weight Range --- */}
                         <div className="px-6 pb-6 pt-0">
                             <div className="bg-teal-50 rounded-xl p-4 border border-teal-100 text-center">
                                 <p className="text-sm text-gray-500 mb-1">น้ำหนักที่เหมาะสมสำหรับคุณ (BMI 18.5 - 22.9)</p>
@@ -780,7 +857,6 @@
                     const bmi = weightKg / (heightM * heightM);
                     
                     // BMI Asian Standard for Normal: 18.5 - 22.9
-                    // Ideal Weight Range Calculation
                     const minIdealWeight = 18.5 * (heightM * heightM);
                     const maxIdealWeight = 22.9 * (heightM * heightM);
 
@@ -805,34 +881,30 @@
                 }, 1500);
             };
 
-            // --- Supabase Logic (Fixed Variable Shadowing) ---
+            // --- Supabase Logic ---
             const saveToSupabase = async (contactData) => {
                 try {
-                    // ตรวจสอบว่า supabase พร้อมใช้งานหรือไม่
-                    if (supabase) {
-                        // ใช้ result จาก state (ที่คำนวณ BMI ไว้แล้ว)
-                        // เปลี่ยนชื่อตัวแปรที่รับกลับมาเป็น dbData เพื่อไม่ให้ชนกับ result (state)
-                        const { data: dbData, error } = await supabase
+                    if (dbClient) {
+                        const { data: dbData, error } = await dbClient
                             .from('leads')
                             .insert([
                                 {
                                     name: contactData.name,
                                     phone: contactData.phone,
                                     line_id: contactData.lineId,
-                                    bmi: result?.bmi, // ดึงค่าจาก State
-                                    whtr: result?.whtr, // ดึงค่าจาก State
+                                    bmi: result?.bmi, 
+                                    whtr: result?.whtr,
                                     created_at: new Date()
                                 },
                             ]);
                         
                         if (error) {
                             console.error('Supabase Error:', error);
-                            // alert("บันทึกข้อมูลไม่สำเร็จ: " + error.message);
                         } else {
                             console.log("บันทึกข้อมูลสำเร็จ");
                         }
                     } else {
-                        console.error("Supabase client not initialized.");
+                        console.warn("Supabase client not available/initialized.");
                     }
                 } catch (err) {
                     console.error("Save error:", err);
