@@ -15,10 +15,7 @@
     <!-- 3. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 4. FontAwesome Icons (เสถียรที่สุดสำหรับ HTML ไฟล์เดียว) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- 5. Supabase SDK -->
+    <!-- 4. Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -26,109 +23,80 @@
         body { font-family: 'Sarabun', sans-serif; }
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Error Box Style */
-        #error-overlay {
-            display: none;
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            color: #ef4444; z-index: 9999;
-            flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; padding: 20px; font-family: monospace;
-        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
     <div id="root"></div>
-    
-    <!-- Error Display UI -->
-    <div id="error-overlay">
-        <h2 class="text-2xl font-bold mb-4">⚠️ เกิดข้อผิดพลาด (Application Error)</h2>
-        <p id="error-message" class="text-lg mb-2"></p>
-        <button onclick="window.location.reload()" class="bg-gray-200 px-4 py-2 rounded mt-4">Refresh Page</button>
-    </div>
-
-    <!-- Error Handling Script -->
-    <script>
-        window.onerror = function(message, source, lineno, colno, error) {
-            const overlay = document.getElementById('error-overlay');
-            const msgEl = document.getElementById('error-message');
-            if(overlay && msgEl) {
-                overlay.style.display = 'flex';
-                msgEl.textContent = `${message} (Line: ${lineno})`;
-            }
-            console.error("Global Error:", error);
-        };
-    </script>
 
     <script type="text/babel">
-        // Check Dependencies
-        if (!window.React || !window.ReactDOM) {
-            throw new Error("React failed to load. Please check your internet connection.");
-        }
+        const { useState, useEffect, useMemo } = React;
 
-        const { useState, useEffect, useRef } = React;
+        // --- 1. Embedded Icons (100% Reliable) ---
+        // ฝังโค้ดไอคอนไว้ในนี้เลย เพื่อความชัวร์ ไม่ต้องพึ่ง CDN
+        const ICONS_PATH = {
+            // UI Icons
+            Activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+            User: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+            Ruler: '<path d="M6 18h12"/><path d="M6 6h12"/><path d="M6 12h12"/><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"/>',
+            Scale: '<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+            ArrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+            ChevronRight: '<path d="m9 18 6-6-6-6"/>',
+            ClipboardList: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+            Utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+            AlertCircle: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+            CheckCircle: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+            Battery: '<rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/>',
+            Phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+            MessageSquare: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+            Info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+            Lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+            Unlock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+            Gift: '<polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
+            RefreshCw: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+            XCircle: '<circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/>',
+            Dumbbell: '<path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/>',
+            Zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+            
+            // Food Icons (Simulated with standard Lucide paths)
+            CupSoda: '<path d="m6 8 1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8"/><path d="M5 8h14"/><path d="M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/><path d="m12 8 1.5-3h2.5"/><path d="M8 8 9.5 5H12"/>',
+            Banana: '<path d="M4 13c1.1 0 2.1-.4 3-1.2 2.6-2.2 5.2-4.4 7.8-6.6a5 5 0 0 1 7 7c-1.7 2.2-4.3 4.7-7.8 6.4-1.2.6-2.3 1-3.4 1.2-1.9.4-3.6-.4-4.6-1.8z"/>',
+            Cookie: '<path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/><path d="M11 17v.01"/><path d="M7 14v.01"/>',
+            CircleDot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>',
+            Croissant: '<path d="m2.3 14.5 9-9a2.5 2.5 0 0 1 2.9-.4 2.5 2.5 0 0 1 .4 2.9l-9 9a2.5 2.5 0 0 1-2.9.4 2.5 2.5 0 0 1-.4-2.9z"/><path d="M12 7a2 2 0 0 1 0 4"/><path d="M8 11a2 2 0 0 1 0 4"/><path d="M4 15a2 2 0 0 1 0 4"/><path d="M12 7c2 2 3.8 3.5 5.3 4.5"/><path d="M22 22a2 2 0 0 0-2-2c-2.3 0-4.3-1.2-6-3"/>',
+            IceCream: '<path d="m7 11 4.08 10.35a1 1 0 0 0 1.84 0L17 11"/><path d="M17 7A5 5 0 0 0 7 7"/><path d="M17 7a2 2 0 0 1 0 4H7a2 2 0 0 1 0-4"/>',
+            Coffee: '<path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/>',
+            Wheat: '<path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L2 22l4.53-4.53a3.5 3.5 0 0 1 4.94 0L13 19l-1.53 1.53"/><path d="M16 8 8 16"/><path d="M12 2l4 4"/><path d="M16 6l4 4"/><path d="M19 9l3 3"/>',
+            Grab: '<path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+            Nut: '<path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M12 12v.01"/>',
+            Apple: '<path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/><path d="M10 2c1 .5 2 2 2 5"/>',
+            Grape: '<circle cx="12" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="12" r="3"/><circle cx="12" cy="19" r="3"/>',
+            Egg: '<path d="M12 22c4.97 0 9-4.03 9-9 0-4.97-9-13-9-13S3 8.03 3 13c0 4.97 4.03 9 9 9Z"/>',
+            Drumstick: '<path d="M17.3 3.6a2.6 2.6 0 1 1 3.5 3.5l-2.1 2.1a2 2 0 0 0 0 2.8l1.4 1.4a2 2 0 0 1 0 2.8l-1.4 1.4a2 2 0 0 1-2.8 0l-1.4-1.4a2 2 0 0 0-2.8 0l-7.1 7.1a2.6 2.6 0 1 1-3.5-3.5L17.3 3.6Z"/>',
+            Fish: '<path d="M6.5 12c.94-2.08 2.3-4 4.5-5 2.2-1 4.85-.75 7 .5a9 9 0 0 1 4 4 9 9 0 0 1-4 4c-2.15 1.25-4.8.5-7-.5-2.2-1-3.56-2.92-4.5-5Z"/><path d="M6.5 12A6.5 6.5 0 0 0 2 18"/><path d="M6.5 12A6.5 6.5 0 0 1 2 6"/>',
+            Box: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" x2="12" y1="22.08" y2="12"/>',
+            Milk: '<path d="M8 2h8"/><path d="M9 2v2.78c0 .84-.34 1.63-.92 2.22l-4.16 4.16c-.58.59-.92 1.38-.92 2.22V19a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-5.62c0-.84-.34-1.63-.92-2.22L15.92 7c-.58-.59-.92-1.38-.92-2.22V2"/>',
+            FishSymbol: '<path d="M2 16s9-15 20-4C11 23 2 8 2 8"/>',
+            Bean: '<path d="M10.165 6.598C9.954 7.478 9.64 8.36 9 9c-.64.64-1.521.954-2.402 1.165A6 6 0 0 0 8 22c7.732 0 14-6.268 14-14a6 6 0 0 0-11.835-1.402Z"/><path d="M5.341 10.62a4 4 0 1 0 5.279-5.28"/>',
+            Shell: '<path d="M14 11a2 2 0 1 1-4 0 4 4 0 0 1 8 0 6 6 0 0 1-12 0 8 8 0 0 1 16 0 10 10 0 1 1-20 0 11.93 11.93 0 0 1 2.42-7.22 2 2 0 1 1 3.16 2.44"/>',
+            GlassWater: '<path d="M15.2 22H8.8a2 2 0 0 1-2-1.79L5 3h14l-1.81 17.21A2 2 0 0 1 15.2 22Z"/><path d="M6 8h12"/><path d="M6 13h12"/>'
+        };
 
-        // --- 1. Robust Icon Component (Using FontAwesome) ---
-        // เปลี่ยนมาใช้ FontAwesome Class แทน เพื่อความเสถียรสูงสุด
-        const Icon = ({ name, size = 24, className = "", color = "" }) => {
-            // Mapping จากชื่อ Lucide เดิม ไปเป็น FontAwesome Class
-            const iconMap = {
-                // UI Icons
-                'Activity': 'fa-heart-pulse',
-                'Scale': 'fa-weight-scale',
-                'Ruler': 'fa-ruler-vertical',
-                'User': 'fa-user',
-                'CheckCircle': 'fa-circle-check',
-                'AlertCircle': 'fa-circle-exclamation',
-                'ArrowRight': 'fa-arrow-right',
-                'ClipboardList': 'fa-clipboard-list',
-                'Utensils': 'fa-utensils',
-                'Battery': 'fa-battery-half',
-                'Phone': 'fa-phone',
-                'MessageSquare': 'fa-comment-dots',
-                'Info': 'fa-circle-info',
-                'Lock': 'fa-lock',
-                'Unlock': 'fa-lock-open',
-                'Gift': 'fa-gift',
-                'RefreshCw': 'fa-rotate',
-                'XCircle': 'fa-circle-xmark',
-                'Dumbbell': 'fa-dumbbell',
-                'Zap': 'fa-bolt',
-                
-                // Food/Snack Icons
-                'CupSoda': 'fa-glass-water',
-                'Banana': 'fa-banana', // FontAwesome ไม่มีกล้วยใน Free tier บางเวอร์ชัน ใช้ carrot หรือ apple แทนถ้าไม่ขึ้น แต่ลองดูก่อน
-                'Cookie': 'fa-cookie-bite',
-                'CircleDot': 'fa-circle-dot',
-                'Croissant': 'fa-bread-slice',
-                'IceCream': 'fa-ice-cream',
-                'Coffee': 'fa-mug-hot',
-                'Wheat': 'fa-wheat-awn',
-                'Grab': 'fa-hand-holding',
-                'Nut': 'fa-cookie',
-                'Apple': 'fa-apple-whole',
-                'Grape': 'fa-grapes',
-                'Egg': 'fa-egg',
-                'Drumstick': 'fa-drumstick-bite',
-                'Fish': 'fa-fish',
-                'Box': 'fa-cube',
-                'Milk': 'fa-bottle-droplet',
-                'FishSymbol': 'fa-fish-fins',
-                'Bean': 'fa-seedling',
-                'Shell': 'fa-shrimp',
-                'GlassWater': 'fa-glass-water',
-            };
-
-            // Fallback ถ้าหาไอคอนไม่เจอ ให้ใช้วงกลมแทน
-            const faClass = iconMap[name] || 'fa-circle';
-
+        const Icon = ({ name, size = 24, className = "", color = "currentColor" }) => {
+            const svgContent = ICONS_PATH[name] || `<circle cx="12" cy="12" r="10" />`; // Fallback to circle
             return (
-                <i 
-                    className={`fa-solid ${faClass} ${className}`} 
-                    style={{ fontSize: size, color: color }}
-                ></i>
+                <svg 
+                    width={size} 
+                    height={size} 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke={color} 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={className}
+                    dangerouslySetInnerHTML={{ __html: svgContent }}
+                />
             );
         };
 
@@ -136,13 +104,11 @@
         const SUPABASE_URL = "https://qzqvwbucjxwgtmbdkrlu.supabase.co"; 
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cXZ3YnVjanh3Z3RtYmRrcmx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzgxODksImV4cCI6MjA4MDk1NDE4OX0.RYvc5kMueNhsOu---WOKcXYnOZLVnjiWklp1IiHmgS8";
 
-        // Initialize Supabase (Renamed variable to avoid conflict)
+        // Initialize Supabase
         let dbClient = null;
         try {
             if (window.supabase && typeof window.supabase.createClient === 'function') {
                 dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            } else {
-                console.warn("Supabase SDK not loaded or invalid.");
             }
         } catch (e) {
             console.error("Supabase Init Failed:", e);
@@ -151,11 +117,11 @@
         // --- Database Data ---
         const SNACK_DATABASE = [
             { name: 'ชานมไข่มุก (1 แก้ว)', kcal: 350, c: 60, f: 10, p: 1, icon: 'CupSoda' },
-            { name: 'กล้วยแขก (3 ชิ้น)', kcal: 280, c: 45, f: 12, p: 1, icon: 'Cookie' }, /* Use Cookie as fallback for Banana if needed */
+            { name: 'กล้วยแขก (3 ชิ้น)', kcal: 280, c: 45, f: 12, p: 1, icon: 'Banana' },
             { name: 'คุกกี้เนย (2 ชิ้น)', kcal: 180, c: 20, f: 10, p: 2, icon: 'Cookie' },
             { name: 'ลูกชิ้นทอด (5 ลูก)', kcal: 250, c: 30, f: 12, p: 8, icon: 'CircleDot' },
             { name: 'ขนมปังไส้ครีม', kcal: 320, c: 45, f: 14, p: 6, icon: 'Croissant' },
-            { name: 'ไอศกรีมกะทิ', kcal: 220, c: 25, f: 12, p: 2, icon: 'IceCream' },
+            { name: 'ไอศกรีมกะทิ', kcal: 220, c: 25, f: 12, p: 2, icon: 'IceCream' }, 
             { name: 'กาแฟเย็นหวานมัน', kcal: 280, c: 35, f: 12, p: 3, icon: 'Coffee' },
             { name: 'ข้าวเหนียวมะม่วง', kcal: 350, c: 65, f: 8, p: 4, icon: 'Utensils' },
             { name: 'ปาท่องโก๋ (1 คู่)', kcal: 150, c: 18, f: 8, p: 2, icon: 'Wheat' },
