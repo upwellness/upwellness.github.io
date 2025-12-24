@@ -61,8 +61,13 @@
 
         // Initialize Supabase safely
         let supabase = null;
-        if (typeof window.supabase !== 'undefined') {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Fix: ตรวจสอบว่า window.supabase มีค่าจริง (ไม่เป็น null) และมีฟังก์ชัน createClient ก่อนใช้งาน
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } catch (err) {
+                console.error("Supabase initialization error:", err);
+            }
         }
 
         // --- Database Data ---
