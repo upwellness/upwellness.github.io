@@ -5,20 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Metabolic Health Check - UP Labs</title>
     
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 1. React & ReactDOM (Specific Version 18.2.0) -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     
-    <!-- Babel for JSX -->
+    <!-- 2. Prop-types (Required by some UMD builds) -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+
+    <!-- 3. Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Tailwind CSS -->
+    <!-- 4. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Lucide React Icons -->
-    <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.min.js"></script>
+    <!-- 5. Lucide React Icons (Latest Stable Version) -->
+    <script src="https://unpkg.com/lucide-react@0.469.0/dist/umd/lucide-react.min.js"></script>
     
-    <!-- Supabase SDK -->
+    <!-- 6. Supabase SDK -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
     <style>
@@ -36,8 +39,7 @@
     <script>
         window.onerror = function(message, source, lineno, colno, error) {
             console.error("Global Error:", message, error);
-            // ถ้าหน้าขาวยังแก้ไม่หาย ให้ uncomment บรรทัดล่างเพื่อดู error
-            // alert("เกิดข้อผิดพลาด: " + message);
+            // alert("เกิดข้อผิดพลาด: " + message); // Uncomment to see alert on device
         };
     </script>
 
@@ -46,10 +48,10 @@
         const { useState, useEffect } = React;
         
         // 2. ระบบจัดการไอคอนแบบปลอดภัย (Fail-safe Icons)
-        // ถ้าโหลด Lucide ไม่ได้ ให้สร้าง Component ว่างๆ แทน เพื่อไม่ให้ React พัง (White Screen)
         const FallbackIcon = (props) => <span style={{display:'inline-block', width:'1em', height:'1em', background:'#ccc', borderRadius:'4px'}} {...props}></span>;
         
-        const LucideIcons = window.lucideReact || {};
+        // ตรวจสอบทั้ง window.lucideReact และ window.lucide เพื่อความชัวร์
+        const LucideIcons = window.lucideReact || window.lucide || {};
         
         // Helper function to safely get icon or fallback
         const getIcon = (name) => LucideIcons[name] || FallbackIcon;
@@ -81,8 +83,8 @@
 
         // --- Supabase Configuration Placeholder ---
         // ใส่ค่า Key ของคุณที่นี่เมื่อนำไปใช้จริง
-        const SUPABASE_URL = "YOUR_SUPABASE_URL"; 
-        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+        const SUPABASE_URL = "https://qzqvwbucjxwgtmbdkrlu.supabase.co"; 
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cXZ3YnVjanh3Z3RtYmRrcmx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzgxODksImV4cCI6MjA4MDk1NDE4OX0.RYvc5kMueNhsOu---WOKcXYnOZLVnjiWklp1IiHmgS8";
 
         // --- Database Data ---
         const SNACK_DATABASE = [
