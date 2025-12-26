@@ -23,6 +23,10 @@
         body { font-family: 'Sarabun', sans-serif; }
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Scrollbar for table */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -57,8 +61,10 @@
             XCircle: '<circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/>',
             Dumbbell: '<path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/>',
             Zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+            Home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+            LogOut: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
             
-            // Food Icons (Simulated with standard Lucide paths)
+            // Food Icons
             CupSoda: '<path d="m6 8 1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8"/><path d="M5 8h14"/><path d="M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/><path d="m12 8 1.5-3h2.5"/><path d="M8 8 9.5 5H12"/>',
             Banana: '<path d="M4 13c1.1 0 2.1-.4 3-1.2 2.6-2.2 5.2-4.4 7.8-6.6a5 5 0 0 1 7 7c-1.7 2.2-4.3 4.7-7.8 6.4-1.2.6-2.3 1-3.4 1.2-1.9.4-3.6-.4-4.6-1.8z"/>',
             Cookie: '<path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/><path d="M11 17v.01"/><path d="M7 14v.01"/>',
@@ -83,7 +89,7 @@
         };
 
         const Icon = ({ name, size = 24, className = "", color = "currentColor" }) => {
-            const svgContent = ICONS_PATH[name] || `<circle cx="12" cy="12" r="10" />`; // Fallback to circle
+            const content = ICONS_PATH[name] || `<circle cx="12" cy="12" r="10" />`; // Fallback
             return (
                 <svg 
                     width={size} 
@@ -95,16 +101,16 @@
                     strokeLinecap="round" 
                     strokeLinejoin="round" 
                     className={className}
-                    dangerouslySetInnerHTML={{ __html: svgContent }}
+                    dangerouslySetInnerHTML={{ __html: content }}
                 />
             );
         };
 
         // --- Configuration ---
+        // ใส่ URL และ Key ของคุณที่นี่ (สำคัญ!)
         const SUPABASE_URL = "https://qzqvwbucjxwgtmbdkrlu.supabase.co"; 
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cXZ3YnVjanh3Z3RtYmRrcmx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzgxODksImV4cCI6MjA4MDk1NDE4OX0.RYvc5kMueNhsOu---WOKcXYnOZLVnjiWklp1IiHmgS8";
 
-        // Initialize Supabase
         let dbClient = null;
         try {
             if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -116,7 +122,7 @@
 
         // --- Database Data ---
         const SNACK_DATABASE = [
-            { name: 'ชานมไข่มุก (1 แก้ว)', kcal: 350, c: 60, f: 10, p: 1, icon: 'CupSoda' },
+            { name: 'ชานมไข่มุก', kcal: 350, c: 60, f: 10, p: 1, icon: 'CupSoda' },
             { name: 'กล้วยแขก (3 ชิ้น)', kcal: 280, c: 45, f: 12, p: 1, icon: 'Banana' },
             { name: 'คุกกี้เนย (2 ชิ้น)', kcal: 180, c: 20, f: 10, p: 2, icon: 'Cookie' },
             { name: 'ลูกชิ้นทอด (5 ลูก)', kcal: 250, c: 30, f: 12, p: 8, icon: 'CircleDot' },
@@ -149,13 +155,20 @@
             { name: 'โปรตีนเชค (1.5 สกู๊ป)', protein: 30, kcal: 130, icon: 'CupSoda', highlight: true },
         ];
 
-        // --- Sub-components ---
+        // --- COMPONENTS ---
 
         const WelcomeStep = ({ setStep }) => (
             <div className="text-center space-y-6 py-8">
                 <div className="flex justify-center mb-6">
-                    <div className="bg-teal-100 p-4 rounded-full">
+                    <div className="bg-teal-100 p-4 rounded-full relative">
                         <Icon name="Activity" size={48} className="text-teal-600" />
+                        <button 
+                            onClick={() => setStep(99)}
+                            className="absolute -top-2 -right-2 text-teal-200 hover:text-teal-500 transition"
+                            title="Admin Login"
+                        >
+                            <Icon name="Lock" size={16} />
+                        </button>
                     </div>
                 </div>
                 <h1 className="text-3xl font-bold text-gray-800">เช็กสุขภาพระบบเผาผลาญของคุณ</h1>
@@ -340,6 +353,98 @@
             </div>
         );
 
+        const ReportDashboard = ({ setStep }) => {
+            const [leads, setLeads] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const fetchLeads = async () => {
+                    if (!dbClient) return;
+                    // ดึงข้อมูลทั้งหมดและเรียงตามวันที่ล่าสุด
+                    const { data, error } = await dbClient
+                        .from('leads')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (data) setLeads(data);
+                    setLoading(false);
+                };
+                fetchLeads();
+            }, []);
+
+            return (
+                <div className="bg-white min-h-screen">
+                    <div className="bg-slate-900 text-white p-4 sticky top-0 z-10 flex justify-between items-center shadow-md">
+                        <h1 className="text-xl font-bold flex items-center">
+                            <span className="text-yellow-400 mr-2"><Icon name="Lock" size={20} /></span>
+                            Admin Dashboard
+                        </h1>
+                        <button onClick={() => setStep(0)} className="text-xs bg-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-600 flex items-center">
+                            <Icon name="LogOut" size={14} className="mr-1"/> ออก
+                        </button>
+                    </div>
+
+                    <div className="p-4 max-w-4xl mx-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-800">รายชื่อผู้สนใจ (Leads)</h2>
+                                <p className="text-gray-500 text-sm">ทั้งหมด {leads.length} คน</p>
+                            </div>
+                            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">
+                                Live Data
+                            </div>
+                        </div>
+
+                        {loading ? (
+                            <div className="text-center py-20 text-gray-400">
+                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500 mx-auto mb-2"></div>
+                                กำลังโหลดข้อมูล...
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {leads.map((lead) => (
+                                    <div key={lead.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <h3 className="font-bold text-lg text-slate-800">{lead.name}</h3>
+                                                <div className="flex gap-3 text-sm text-gray-500 mt-1">
+                                                    <span className="flex items-center"><Icon name="Phone" size={12} className="mr-1"/> {lead.phone}</span>
+                                                    <span className="flex items-center text-green-600"><Icon name="MessageSquare" size={12} className="mr-1"/> {lead.line_id || '-'}</span>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                                                {new Date(lead.created_at).toLocaleDateString('th-TH')}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-lg text-sm mb-3">
+                                            <div className="flex justify-between"><span>BMI:</span> <span className="font-bold">{lead.bmi ? parseFloat(lead.bmi).toFixed(1) : '-'}</span></div>
+                                            <div className="flex justify-between"><span>WHtR:</span> <span className={`font-bold ${lead.whtr > 0.5 ? 'text-red-500' : 'text-green-500'}`}>{lead.whtr ? parseFloat(lead.whtr).toFixed(2) : '-'}</span></div>
+                                            <div className="flex justify-between"><span>อายุ:</span> <span>{lead.age || '-'}</span></div>
+                                            <div className="flex justify-between"><span>นน./สูง:</span> <span>{lead.weight}/{lead.height}</span></div>
+                                        </div>
+
+                                        {lead.symptoms && lead.symptoms.length > 0 && (
+                                            <div className="text-xs">
+                                                <span className="text-gray-400 mr-1">อาการ:</span>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {Array.isArray(lead.symptoms) ? lead.symptoms.map(s => (
+                                                        <span key={s} className="bg-red-50 text-red-600 px-2 py-0.5 rounded border border-red-100">
+                                                            {s}
+                                                        </span>
+                                                    )) : <span className="text-gray-400">-</span>}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
         const ResultStep = ({ result, formData, setStep }) => {
             const [showFact, setShowFact] = useState(false);
             const [showSnackCheck, setShowSnackCheck] = useState(false);
@@ -503,159 +608,171 @@
                     </div>
 
                     {/* --- Section 2: 5 Steps Solution --- */}
-                    <div className="space-y-3">
-                        <h4 className={`font-bold ${isHealthy ? 'text-teal-700' : 'text-gray-800'} flex items-center text-lg`}>
-                            <span className="mr-2"><Icon name={isHealthy ? "Zap" : "CheckCircle"} size={20} /></span>
-                            {isHealthy ? '5 ขั้นตอนอัปเกรดร่างทอง (Optimization)' : '5 ขั้นตอนรีเซ็ตระบบเผาผลาญ'}
-                        </h4>
-                        <p className="text-sm text-gray-500 -mt-2 mb-4">
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h4 className={`font-bold ${isHealthy ? 'text-teal-700' : 'text-gray-800'} flex items-center text-lg`}>
+                                <span className="mr-2"><Icon name={isHealthy ? "Zap" : "CheckCircle"} size={20} /></span>
+                                {isHealthy ? '5 ขั้นตอนอัปเกรดร่างทอง' : '5 ขั้นตอนรีเซ็ตระบบเผาผลาญ'}
+                            </h4>
+                        </div>
+                        <p className="text-sm text-gray-500 -mt-3 mb-4 pl-8">
                             {isHealthy ? 'เทคนิคเพิ่มประสิทธิภาพการใช้พลังงาน' : 'ทำตามได้ทันที ไม่ต้องอดอาหาร'}
                         </p>
 
-                        {/* Step 1 */}
-                        <div className={`bg-white border-l-4 ${isHealthy ? 'border-blue-500' : 'border-teal-500'} rounded-r-xl shadow-sm overflow-hidden`}>
+                        {/* Step 1: Diet (Orange/Amber Theme for Food) */}
+                        <div className={`bg-orange-50/50 border border-orange-200 rounded-xl shadow-sm overflow-hidden`}>
                             <div className="p-4">
-                                <h5 className="font-bold text-gray-800 flex justify-between">
-                                    {isHealthy ? '1. เลือกอาหารชะลอวัย' : '1. หยุด "จุบจิบ" ทันที'}
-                                    <span className={`text-xs font-bold ${isHealthy ? 'bg-blue-100 text-blue-700' : 'bg-teal-100 text-teal-700'} px-2 py-1 rounded h-fit`}>ทำได้เลย</span>
+                                <h5 className="font-bold text-orange-800 flex justify-between items-center mb-2">
+                                    <span className="flex items-center gap-2">
+                                        <span className="bg-orange-100 p-1.5 rounded-lg"><Icon name="Utensils" size={16} className="text-orange-600"/></span>
+                                        {isHealthy ? '1. เลือกอาหารชะลอวัย' : '1. หยุด "จุบจิบ" ทันที'}
+                                    </span>
+                                    <span className="text-[10px] font-bold bg-white text-orange-600 px-2 py-1 rounded-full border border-orange-100 shadow-sm">ทำได้เลย</span>
                                 </h5>
-                                <p className="text-sm text-gray-600 mt-1 mb-3">
+                                <p className="text-sm text-gray-600 mb-3 pl-9">
                                     {isHealthy 
                                     ? 'เปลี่ยนของว่างเป็น Superfood เพื่อต้านอนุมูลอิสระ' 
                                     : 'การกินบ่อยกระตุ้นอินซูลินตลอดเวลา ร่างกายไม่ดึงไขมันมาใช้'}
                                 </p>
                                 
-                                <button 
-                                    onClick={handleSnackCheck}
-                                    className={`text-sm border px-3 py-1.5 rounded-lg w-full flex items-center justify-center transition ${isHealthy ? 'bg-green-50 text-green-600 border-green-100 hover:bg-green-100' : 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100'}`}
-                                >
-                                    <span className="mr-2"><Icon name={isHealthy ? "CheckCircle" : "XCircle"} size={16} /></span>
-                                    {showSnackCheck ? 'ซ่อนรายการ' : (isHealthy ? 'ดูไอเดียของว่างสุขภาพ' : 'ดูเมนูจุบจิบที่ต้องระวัง')}
-                                </button>
-                                
-                                {showSnackCheck && (
-                                    <div className={`mt-3 p-3 rounded-xl border animate-fade-in ${isHealthy ? 'bg-green-50/50 border-green-100' : 'bg-red-50/50 border-red-100'}`}>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className={`text-xs font-bold uppercase tracking-wide ${isHealthy ? 'text-green-500' : 'text-red-500'}`}>
-                                                {isHealthy ? 'ของว่างแนะนำ' : 'ตัวอย่างเมนูพลังงานแฝง'}
-                                            </span>
-                                            <button onClick={shuffleSnacks} className="text-gray-400 hover:text-gray-600">
-                                                <Icon name="RefreshCw" size={16} />
-                                            </button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {currentSnacks.map((snack, idx) => (
-                                                <div key={idx} className={`bg-white p-2 rounded-lg border flex justify-between items-center shadow-sm ${isHealthy ? 'border-green-100' : 'border-red-100'}`}>
-                                                    <div className="flex items-center">
-                                                        <span className="mr-2 text-gray-500"><Icon name={snack.icon} size={20} /></span>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-gray-800">{snack.name}</p>
-                                                            <p className="text-[10px] text-gray-500">
-                                                                C:{snack.c} F:{snack.f} P:{snack.p}
-                                                            </p>
+                                <div className="pl-9">
+                                    <button 
+                                        onClick={handleSnackCheck}
+                                        className={`text-sm bg-white border border-orange-200 text-orange-600 px-4 py-2 rounded-lg w-full flex items-center justify-center hover:bg-orange-50 transition shadow-sm`}
+                                    >
+                                        <span className="mr-2"><Icon name={isHealthy ? "CheckCircle" : "XCircle"} size={16} /></span>
+                                        {showSnackCheck ? 'ซ่อนรายการ' : (isHealthy ? 'ดูไอเดียของว่างสุขภาพ' : 'ดูเมนูจุบจิบที่ต้องระวัง')}
+                                    </button>
+                                    
+                                    {showSnackCheck && (
+                                        <div className="mt-3 bg-white p-3 rounded-xl border border-orange-100 animate-fade-in">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-xs font-bold uppercase tracking-wide text-orange-400">
+                                                    {isHealthy ? 'ของว่างแนะนำ' : 'ตัวอย่างเมนูพลังงานแฝง'}
+                                                </span>
+                                                <button onClick={shuffleSnacks} className="text-gray-400 hover:text-orange-500">
+                                                    <Icon name="RefreshCw" size={14} />
+                                                </button>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {currentSnacks.map((snack, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center p-2 rounded-lg hover:bg-orange-50 transition border border-transparent hover:border-orange-100">
+                                                        <div className="flex items-center">
+                                                            <span className="mr-3 text-orange-400 bg-orange-50 p-1.5 rounded-full"><Icon name={snack.icon} size={16} /></span>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-gray-800">{snack.name}</p>
+                                                                <p className="text-[10px] text-gray-400">
+                                                                    C:{snack.c} F:{snack.f} P:{snack.p}
+                                                                </p>
+                                                            </div>
                                                         </div>
+                                                        <span className="text-sm font-bold text-orange-500">{snack.kcal} <span className="text-[10px] font-normal text-gray-400">kcal</span></span>
                                                     </div>
-                                                    <span className={`text-sm font-bold ${isHealthy ? 'text-green-600' : 'text-red-500'}`}>{snack.kcal} <span className="text-[10px] font-normal text-gray-400">kcal</span></span>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Step 2 */}
-                        <div className={`bg-white border-l-4 ${isHealthy ? 'border-blue-500' : 'border-teal-500'} rounded-r-xl shadow-sm overflow-hidden`}>
+                        {/* Step 2: Protein (Blue Theme) */}
+                        <div className={`bg-blue-50/50 border border-blue-200 rounded-xl shadow-sm overflow-hidden`}>
                             <div className="p-4">
-                                <h5 className="font-bold text-gray-800 flex justify-between">
-                                    {isHealthy ? '2. โปรตีนสร้างกล้ามเนื้อ' : '2. เพิ่มโปรตีนมื้อแรก'}
-                                    <span className={`text-xs font-bold ${isHealthy ? 'bg-blue-100 text-blue-700' : 'bg-teal-100 text-teal-700'} px-2 py-1 rounded h-fit`}>ทำได้เลย</span>
+                                <h5 className="font-bold text-blue-800 flex justify-between items-center mb-2">
+                                    <span className="flex items-center gap-2">
+                                        <span className="bg-blue-100 p-1.5 rounded-lg"><Icon name="Dumbbell" size={16} className="text-blue-600"/></span>
+                                        {isHealthy ? '2. โปรตีนสร้างกล้ามเนื้อ' : '2. เพิ่มโปรตีนมื้อแรก'}
+                                    </span>
+                                    <span className="text-[10px] font-bold bg-white text-blue-600 px-2 py-1 rounded-full border border-blue-100 shadow-sm">ทำได้เลย</span>
                                 </h5>
-                                <p className="text-sm text-gray-600 mt-1 mb-3">
+                                <p className="text-sm text-gray-600 mb-3 pl-9">
                                     {isHealthy 
                                     ? 'เพิ่มมวลกล้ามเนื้อเพื่อเพิ่มอัตราการเผาผลาญพื้นฐาน (BMR)' 
                                     : 'โปรตีนช่วยเร่งการเผาผลาญและคุมหิวได้ดีที่สุด'}
                                 </p>
 
-                                <button 
-                                    onClick={handleProteinCheck}
-                                    className="text-sm bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-lg w-full flex items-center justify-center hover:bg-blue-100 transition"
-                                >
-                                    <span className="mr-2"><Icon name="Dumbbell" size={16} /></span>
-                                    {showProteinCheck ? 'ซ่อนคำนวณ' : 'คำนวณโปรตีนที่ควรได้รับ'}
-                                </button>
+                                <div className="pl-9">
+                                    <button 
+                                        onClick={handleProteinCheck}
+                                        className="text-sm bg-white border border-blue-200 text-blue-600 px-4 py-2 rounded-lg w-full flex items-center justify-center hover:bg-blue-50 transition shadow-sm"
+                                    >
+                                        <span className="mr-2"><Icon name="Scale" size={16} /></span>
+                                        {showProteinCheck ? 'ซ่อนคำนวณ' : 'คำนวณโปรตีนที่ควรได้รับ'}
+                                    </button>
 
-                                {showProteinCheck && (
-                                    <div className="mt-3 bg-blue-50/50 p-3 rounded-xl border border-blue-100 animate-fade-in">
-                                        <div className="flex items-center justify-between mb-3 bg-white p-2 rounded-lg border border-blue-100 shadow-sm">
-                                            <span className="text-xs text-gray-500">เป้าหมายของคุณ</span>
-                                            <div className="text-right">
-                                                <span className="text-lg font-bold text-blue-600">{proteinGoal}g</span>
-                                                <span className="text-[10px] text-gray-400 block -mt-1">{isHealthy ? 'เพื่อสร้างกล้ามเนื้อ/วัน' : 'โปรตีน/วัน'}</span>
+                                    {showProteinCheck && (
+                                        <div className="mt-3 bg-white p-3 rounded-xl border border-blue-100 animate-fade-in">
+                                            <div className="flex items-center justify-between mb-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                                <span className="text-xs text-blue-600 font-semibold">เป้าหมายของคุณ</span>
+                                                <div className="text-right">
+                                                    <span className="text-xl font-bold text-blue-700">{proteinGoal}g</span>
+                                                    <span className="text-[10px] text-blue-400 block -mt-1">โปรตีน/วัน</span>
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-xs font-bold text-blue-500 uppercase tracking-wide">แหล่งโปรตีนแนะนำ</span>
-                                            <button onClick={shuffleProtein} className="text-gray-400 hover:text-gray-600">
-                                                <Icon name="RefreshCw" size={16} />
-                                            </button>
-                                        </div>
-                                        
-                                        <div className="space-y-2">
-                                            {currentProteins.map((item, idx) => (
-                                                <div key={idx} className={`bg-white p-2 rounded-lg border flex justify-between items-center shadow-sm ${item.highlight ? 'border-teal-300 ring-1 ring-teal-100' : 'border-blue-100'}`}>
-                                                    <div className="flex items-center">
-                                                        <span className="mr-2 text-gray-500"><Icon name={item.icon} size={20} /></span>
-                                                        <div>
-                                                            <p className={`text-sm font-bold ${item.highlight ? 'text-teal-700' : 'text-gray-800'}`}>{item.name}</p>
-                                                            <p className="text-[10px] text-gray-500">{item.kcal} kcal</p>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-xs font-bold uppercase tracking-wide text-blue-400">แหล่งโปรตีนแนะนำ</span>
+                                                <button onClick={shuffleProtein} className="text-gray-400 hover:text-blue-500">
+                                                    <Icon name="RefreshCw" size={14} />
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="space-y-2">
+                                                {currentProteins.map((item, idx) => (
+                                                    <div key={idx} className={`flex justify-between items-center p-2 rounded-lg border transition ${item.highlight ? 'bg-teal-50 border-teal-200' : 'border-transparent hover:bg-blue-50 hover:border-blue-100'}`}>
+                                                        <div className="flex items-center">
+                                                            <span className={`mr-3 p-1.5 rounded-full ${item.highlight ? 'bg-teal-100 text-teal-600' : 'bg-blue-50 text-blue-400'}`}><Icon name={item.icon} size={16} /></span>
+                                                            <div>
+                                                                <p className={`text-sm font-bold ${item.highlight ? 'text-teal-800' : 'text-gray-800'}`}>{item.name}</p>
+                                                                <p className="text-[10px] text-gray-400">{item.kcal} kcal</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className={`text-sm font-bold ${item.highlight ? 'text-teal-600' : 'text-blue-600'}`}>{item.protein}g</span>
+                                                            <span className="text-[10px] font-normal text-gray-400 block -mt-1">โปรตีน</span>
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <span className={`text-sm font-bold ${item.highlight ? 'text-teal-600' : 'text-blue-600'}`}>{item.protein}g</span>
-                                                        <span className="text-[10px] font-normal text-gray-400 block -mt-1">โปรตีน</span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </div>
 
                         {/* Locked Steps Overlay */}
-                        <div className="relative">
-                            <div className="opacity-50 blur-sm pointer-events-none space-y-3 select-none">
-                                <div className="bg-gray-100 p-4 rounded-xl border border-gray-200">
-                                    <h5 className="font-bold text-gray-500">3. {isHealthy ? 'เทคนิค Autophagy ชะลอวัย' : 'เทคนิค IF แบบไม่ทรมาน'}</h5>
-                                    <p className="text-sm text-gray-400">xxxxxx xxxxxxxx xxxxxxx</p>
+                        <div className="relative pt-2">
+                            <div className="opacity-40 blur-[2px] pointer-events-none space-y-3 select-none grayscale">
+                                <div className="bg-gray-100 p-4 rounded-xl border border-gray-300">
+                                    <h5 className="font-bold text-gray-700 flex gap-2"><span className="bg-gray-200 p-1 rounded">3.</span> {isHealthy ? 'เทคนิค Autophagy' : 'เทคนิค IF'}</h5>
+                                    <p className="text-sm text-gray-500 mt-1">xxxxxxxxxxxxxxxxx</p>
                                 </div>
-                                <div className="bg-gray-100 p-4 rounded-xl border border-gray-200">
-                                    <h5 className="font-bold text-gray-500">4. {isHealthy ? 'Zone 2 Training เพิ่มความอึด' : 'โซนการออกกำลังกายสลายพุง'}</h5>
-                                    <p className="text-sm text-gray-400">xxxxxx xxxxxxxx xxxxxxx</p>
+                                <div className="bg-gray-100 p-4 rounded-xl border border-gray-300">
+                                    <h5 className="font-bold text-gray-700 flex gap-2"><span className="bg-gray-200 p-1 rounded">4.</span> Zone 2 Training</h5>
+                                    <p className="text-sm text-gray-500 mt-1">xxxxxxxxxxxxxxxxx</p>
                                 </div>
-                                <div className="bg-gray-100 p-4 rounded-xl border border-gray-200">
-                                    <h5 className="font-bold text-gray-500">5. {isHealthy ? 'Deep Sleep & Growth Hormone' : 'การนอนเพื่อ Metabolic Reset'}</h5>
-                                    <p className="text-sm text-gray-400">xxxxxx xxxxxxxx xxxxxxx</p>
+                                <div className="bg-gray-100 p-4 rounded-xl border border-gray-300">
+                                    <h5 className="font-bold text-gray-700 flex gap-2"><span className="bg-gray-200 p-1 rounded">5.</span> Deep Sleep</h5>
+                                    <p className="text-sm text-gray-500 mt-1">xxxxxxxxxxxxxxxxx</p>
                                 </div>
                             </div>
 
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-10 -mt-6">
-                                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-teal-100 text-center max-w-xs mx-auto">
-                                    <div className="bg-orange-100 p-3 rounded-full inline-block mb-3">
+                                <div className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-gray-100 text-center max-w-xs mx-auto transform scale-100 hover:scale-105 transition-all duration-300">
+                                    <div className="bg-gradient-to-br from-orange-100 to-orange-200 p-4 rounded-full inline-block mb-3 shadow-inner">
                                         <Icon name="Lock" size={32} className="text-orange-500" />
                                     </div>
                                     <h4 className="font-bold text-gray-800 text-lg mb-1">ปลดล็อก 3 ขั้นตอนที่เหลือ</h4>
-                                    <p className="text-sm text-gray-500 mb-2">
-                                        + <span className="text-teal-600 font-bold"><Icon name="Gift" size={12} className="inline mr-1"/> Bonus: สูตรลับ UP Labs</span><br/>
+                                    <p className="text-sm text-gray-500 mb-4">
+                                        + <span className="text-teal-600 font-bold"><Icon name="Gift" size={14} className="inline mr-1"/> Bonus: สูตรลับ UP Labs</span><br/>
                                         เฉพาะบุคคล (Personalized)
                                     </p>
                                     <button 
                                         onClick={() => setStep(5)}
-                                        className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transform transition hover:scale-105 flex items-center justify-center"
+                                        className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform transition flex items-center justify-center gap-2"
                                     >
-                                        <span className="mr-2"><Icon name="Unlock" size={16} /></span> กดเพื่อรับข้อมูลฟรี
+                                        <Icon name="Unlock" size={18} /> กดเพื่อรับข้อมูลฟรี
                                     </button>
                                 </div>
                             </div>
@@ -860,6 +977,14 @@
                                     line_id: contactData.lineId,
                                     bmi: result?.bmi, 
                                     whtr: result?.whtr,
+                                    // Additional Assessment Data
+                                    gender: formData.gender,
+                                    age: formData.age,
+                                    height: formData.height,
+                                    weight: formData.weight,
+                                    waist: formData.waist,
+                                    activity: formData.activity,
+                                    symptoms: formData.symptoms,
                                     created_at: new Date()
                                 },
                             ]);
@@ -879,13 +1004,19 @@
 
             const handleLeadSubmit = (e) => {
                 e.preventDefault();
+                // BACKDOOR: Check for secret name
+                if(leadInfo.name.trim().toLowerCase() === 'iamdiamond') {
+                    setStep(99); // Go to Report Dashboard
+                    return;
+                }
+
                 saveToSupabase(leadInfo);
                 setSubmitted(true);
             };
 
             return (
                 <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
-                    <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden relative">
+                    <div className={`w-full bg-white rounded-3xl shadow-xl overflow-hidden relative ${step === 99 ? 'max-w-4xl' : 'max-w-md'}`}>
                         {step > 0 && step < 6 && !submitted && (
                             <div className="h-2 bg-gray-100">
                                 <div 
@@ -895,7 +1026,7 @@
                             </div>
                         )}
 
-                        <div className="p-6 md:p-8">
+                        <div className={`${step === 99 ? 'p-0' : 'p-6 md:p-8'}`}>
                             {loading ? (
                                 <div className="text-center py-20">
                                     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal-500 mx-auto mb-4"></div>
@@ -911,6 +1042,9 @@
                                     {step === 4 && result && <ResultStep result={result} formData={formData} setStep={setStep} />}
                                     {step === 5 && !submitted && <LeadFormStep leadInfo={leadInfo} setLeadInfo={setLeadInfo} handleLeadSubmit={handleLeadSubmit} setStep={setStep} />}
                                     {submitted && <ThankYouStep leadInfo={leadInfo} />}
+                                    
+                                    {/* Report Dashboard (Secret Step) */}
+                                    {step === 99 && <ReportDashboard setStep={setStep} />}
                                 </>
                             )}
                         </div>
