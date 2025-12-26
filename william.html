@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Analytics Pro (Graph & Matrix)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.400.0?external=react",
+        "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.0"
+      }
+    }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useMemo, useRef, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            Plus, Trash2, TrendingUp, Calendar, DollarSign, Car, 
+            Save, X, MapPin, Clock, BarChart3, ChevronLeft, Navigation,
+            LayoutDashboard, PieChart, Upload, Image as ImageIcon, Eye,
+            Sparkles, Loader2, MessageSquare, ScanLine, CheckCircle2,
+            LogOut, Database, Cloud, Download, FileSpreadsheet, RefreshCw,
+            User as UserIcon, AlertCircle, Settings, Copy, Edit2, KeyRound,
+            Pencil, ArrowRight, Table2
+        } from 'lucide-react';
+        import { 
+            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell 
+        } from 'recharts';
+        import { createClient } from '@supabase/supabase-js';
+
+        // --- Configuration ---
+        const SUPABASE_URL = "https://qzqvwbucjxwgtmbdkrlu.supabase.co"; 
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cXZ3YnVjanh3Z3RtYmRrcmx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzgxODksImV4cCI6MjA4MDk1NDE4OX0.RYvc5kMueNhsOu---WOKcXYnOZLVnjiWklp1IiHmgS8"; 
+        const apiKey = ""; // Gemini API Key
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- Helpers ---
+        async function callGeminiVision(base64Image) {
+            try {
+                const base64Data = base64Image.split(',')[1];
+                const promptText = `Analyze receipt. Extract JSON: earnings(num), distance(num), startTime(HH:mm), endTime(HH:mm), pickup(str), dropoff(str), zone(str).`;
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }, { inlineData: { mimeType: "image/jpeg", data: base64Data } }] }] })
+                });
+                const data = await response.json();
+                return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text.replace(/```json|```/g, '').trim());
+            } catch (error) { throw error; }
+        }
+
+        async function callGeminiAnalysis(log) {
+            try {
+                const summary = log.trips.map(t => `Time:${t.startTime}-${t.endTime},Earn:${t.earnings}`).join('\n');
+                const prompt = `Coach driver. Date:${log.date}, Bonus:${log.daily_bonus}, Trips:${summary}. 3 sentences Thai summary.`;
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text;
+            } catch (error) { return "AI Error"; }
+        }
+
+        // --- Main App ---
+        function App() {
+            const [userId, setUserId] = useState(() => localStorage.getItem('driver_app_id_text') || '');
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+            const [logs, setLogs] = useState([]);
+            const [view, setView] = useState('list');
+            const [selectedDateId, setSelectedDateId] = useState(null);
+            const [isLoading, setIsLoading] = useState(false);
+            const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            const [isAdding, setIsAdding] = useState(false);
+
+            useEffect(() => {
+                if (isLoggedIn && userId) {
+                    fetchLogs();
+                }
+            }, [isLoggedIn, userId]);
+
+            const handleLogin = (idInput) => {
+                if (!idInput.trim()) return alert("กรุณาใส่ ID");
+                const cleanId = idInput.trim();
+                localStorage.setItem('driver_app_id_text', cleanId);
+                setUserId(cleanId);
+                setIsLoggedIn(true);
+            };
+
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setLogs([]);
+                setView('list');
+            };
+
+            const fetchLogs = async () => {
+                setIsLoading(true);
+                // เรียงลำดับจากล่าสุดไปเก่าสุด (descending)
+                const { data, error } = await supabase.from('driver_logs')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('date', { ascending: false }); 
+                
+                if (error) console.error('Fetch error:', error);
+                setLogs(data || []);
+                setIsLoading(false);
+            };
+
+            const handleAddDay = async () => {
+                setIsAdding(true);
+                const today = new Date().toISOString().split('T')[0];
+                const newLog = { user_id: userId, date: today, start_odometer: 0, end_odometer: 0, daily_bonus: 0, notes: '', trips: [], ai_analysis: '' };
+                const { data, error } = await supabase.from('driver_logs').insert([newLog]).select().single();
+                setIsAdding(false);
+
+                if (error) {
+                    alert(`❌ Error: ${error.message}`);
+                } else if (data) {
+                    // แทรกข้อมูลใหม่ไว้ด้านบนสุดเพื่อให้เห็นทันที
+                    setLogs([data, ...logs]);
+                    setSelectedDateId(data.id);
+                    setView('day_detail');
+                }
+            };
+
+            const updateLog = async (updatedLog) => {
+                // Update local state preserving sort order if date changes (though date usually static)
+                setLogs(prevLogs => {
+                    const newLogs = prevLogs.map(l => l.id === updatedLog.id ? updatedLog : l);
+                    return newLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+                });
+                
+                await supabase.from('driver_logs').update({
+                    date: updatedLog.date,
+                    start_odometer: updatedLog.start_odometer,
+                    end_odometer: updatedLog.end_odometer,
+                    daily_bonus: updatedLog.daily_bonus,
+                    notes: updatedLog.notes,
+                    trips: updatedLog.trips, 
+                    ai_analysis: updatedLog.ai_analysis,
+                    updated_at: new Date().toISOString()
+                }).eq('id', updatedLog.id);
+            };
+
+            const deleteLog = async (id) => {
+                if (confirm('ยืนยันลบข้อมูลทั้งวัน?')) {
+                    const { error } = await supabase.from('driver_logs').delete().eq('id', id);
+                    if (!error) {
+                        setLogs(logs.filter(l => l.id !== id));
+                        if (selectedDateId === id) setView('list');
+                    } else {
+                        alert("ลบไม่สำเร็จ: " + error.message);
+                    }
+                }
+            };
+
+            const handleExportCSV = (s, e) => {
+                const filtered = logs.filter(l => l.date >= s && l.date <= e);
+                if (!filtered.length) return alert("ไม่พบข้อมูล");
+                let csv = "\uFEFFDate,Start,End,Pickup,Dropoff,Fare,Zone\n";
+                filtered.forEach(log => {
+                    if (!log.trips.length) csv += `${log.date},-,,,-,,-,,-,\n`;
+                    else log.trips.forEach(t => csv += `${log.date},${t.startTime},${t.endTime},"${t.pickup}","${t.dropoff}",${t.earnings},"${t.zone}"\n`);
+                });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+                link.download = `driver_logs.csv`;
+                link.click();
+            };
+
+            const currentLog = useMemo(() => logs.find(l => l.id === selectedDateId), [logs, selectedDateId]);
+
+            // --- VIEW LOGIC ---
+
+            if (!isLoggedIn) {
+                return <LoginScreen onLogin={handleLogin} initialId={userId} />;
+            }
+
+            return (
+                <div className="min-h-screen bg-slate-50 pb-20">
+                    <div className="bg-slate-900 text-white text-[10px] px-4 py-1.5 flex justify-between items-center">
+                        <div className="flex items-center gap-2"><Cloud className="w-3 h-3 text-emerald-400" /> <span>Cloud Sync</span></div>
+                        <div className="flex items-center gap-3">
+                            <span className="font-bold text-yellow-400 truncate max-w-[100px]">{userId}</span>
+                            <button onClick={handleLogout} className="text-slate-400 hover:text-white flex gap-1 items-center"><LogOut className="w-3 h-3" /> ออก</button>
+                        </div>
+                    </div>
+
+                    <header className="bg-emerald-600 text-white p-4 shadow-lg sticky top-0 z-20">
+                        <div className="max-w-md mx-auto flex justify-between items-center">
+                            {view !== 'list' ? (
+                                <button onClick={() => setView('list')} className="flex items-center gap-1 font-semibold"><ChevronLeft className="w-6 h-6"/> กลับ</button>
+                            ) : (
+                                <h1 className="text-xl font-bold flex items-center gap-2"><Car className="w-6 h-6"/> Driver Analytics</h1>
+                            )}
+                            <div className="flex items-center gap-2">
+                                {view === 'list' && (
+                                    <>
+                                        <button onClick={()=>setIsExportModalOpen(true)} className="bg-white/20 p-2 rounded-full"><Download className="w-5 h-5"/></button>
+                                        <button onClick={()=>setView('analytics')} className="bg-white/20 p-2 rounded-full"><BarChart3 className="w-5 h-5"/></button>
+                                        <button 
+                                            onClick={handleAddDay} 
+                                            disabled={isAdding}
+                                            className="bg-white text-emerald-700 px-3 py-1.5 rounded-full font-bold text-sm shadow flex items-center gap-1 disabled:opacity-50"
+                                        >
+                                            {isAdding ? <Loader2 className="w-4 h-4 animate-spin"/> : <Plus className="w-4 h-4"/>} เพิ่ม
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-md mx-auto p-4">
+                        {isLoading ? <div className="flex flex-col items-center justify-center py-20 text-slate-400"><Loader2 className="w-10 h-10 animate-spin text-emerald-600 mb-2"/><p>กำลังโหลดข้อมูล...</p></div> : (
+                            <>
+                                {view === 'list' && <DailyListView logs={logs} onSelectDay={(id)=>{setSelectedDateId(id); setView('day_detail')}} />}
+                                {view === 'day_detail' && currentLog && <DayDetailView key={currentLog.id} log={currentLog} onUpdate={updateLog} onDelete={()=>deleteLog(currentLog.id)} onClose={()=>setView('list')} />}
+                                {view === 'analytics' && <AnalyticsView logs={logs} />}
+                            </>
+                        )}
+                    </main>
+
+                    {isExportModalOpen && <ExportModal onClose={()=>setIsExportModalOpen(false)} onExport={handleExportCSV} logs={logs} />}
+                </div>
+            );
+        }
+
+        // --- Component: Login ---
+        function LoginScreen({ onLogin, initialId }) {
+            const [inputId, setInputId] = useState(initialId);
+            return (
+                <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-sm p-8 rounded-3xl shadow-xl text-center">
+                        <div className="bg-emerald-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><Car className="w-10 h-10 text-emerald-600" /></div>
+                        <h1 className="text-2xl font-bold text-slate-800 mb-2">Driver Analytics</h1>
+                        <p className="text-slate-500 mb-8 text-sm">ระบบบันทึกและวิเคราะห์รายได้</p>
+                        <form onSubmit={(e) => { e.preventDefault(); onLogin(inputId); }} className="space-y-4">
+                            <div className="text-left"><label className="text-xs font-bold text-slate-500 ml-1 uppercase">User ID (ชื่อ/เบอร์โทร)</label><div className="relative mt-1"><UserIcon className="w-5 h-5 text-slate-400 absolute left-3 top-3.5" /><input type="text" value={inputId} onChange={(e) => setInputId(e.target.value)} placeholder="เช่น 081xxxxxxx" className="w-full pl-10 p-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-lg text-slate-700 transition-all" autoFocus /></div></div>
+                            <button type="submit" className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg hover:bg-emerald-700 transition-transform active:scale-95 flex items-center justify-center gap-2">เข้าใช้งาน <ArrowRight className="w-5 h-5" /></button>
+                        </form>
+                        <p className="mt-6 text-xs text-slate-400">* ใช้ ID เดิมเพื่อดูข้อมูลเก่าของคุณ</p>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- Component: Analytics (Graph & Matrix) ---
+        function AnalyticsView({ logs }) {
+            const [activeTab, setActiveTab] = useState('hourly'); // hourly | matrix
+
+            // Data Processing
+            const { hourlyData, matrixData, allZones } = useMemo(() => {
+                const hours = Array(24).fill(0).map((_, i) => ({ hour: i, count: 0, label: `${i}:00` }));
+                const zones = {};
+                const zoneTimeMatrix = {};
+
+                logs.forEach(log => {
+                    log.trips.forEach(trip => {
+                        // Hourly Distribution
+                        if (trip.startTime) {
+                            const h = parseInt(trip.startTime.split(':')[0]);
+                            if (!isNaN(h) && h >= 0 && h < 24) hours[h].count++;
+                        }
+
+                        // Zone Counting
+                        const z = trip.zone || 'Other';
+                        zones[z] = (zones[z] || 0) + 1;
+
+                        // Matrix Data
+                        let timeSlot = 'Night'; // 22-05
+                        const h = parseInt(trip.startTime.split(':')[0]);
+                        if (h >= 6 && h < 12) timeSlot = 'Morning';
+                        else if (h >= 12 && h < 17) timeSlot = 'Afternoon';
+                        else if (h >= 17 && h < 22) timeSlot = 'Evening';
+
+                        if (!zoneTimeMatrix[z]) zoneTimeMatrix[z] = { Morning: 0, Afternoon: 0, Evening: 0, Night: 0 };
+                        zoneTimeMatrix[z][timeSlot]++;
+                    });
+                });
+
+                // Sort zones by total count desc, NO LIMIT/SLICE
+                const sortedZones = Object.entries(zones).sort((a, b) => b[1] - a[1]).map(z => z[0]);
+                
+                return { 
+                    hourlyData: hours, 
+                    matrixData: zoneTimeMatrix,
+                    allZones: sortedZones
+                };
+            }, [logs]);
+
+            return (
+                <div className="space-y-6 animate-in fade-in">
+                    {/* Tabs */}
+                    <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
+                        <button onClick={() => setActiveTab('hourly')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'hourly' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500 hover:bg-slate-50'}`}>กราฟรายชั่วโมง</button>
+                        <button onClick={() => setActiveTab('matrix')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'matrix' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500 hover:bg-slate-50'}`}>Matrix โซน/เวลา</button>
+                    </div>
+
+                    {activeTab === 'hourly' ? (
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-80">
+                            <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Clock className="w-5 h-5 text-emerald-600"/> ช่วงเวลาทอง (งานเยอะสุด)</h3>
+                            <ResponsiveContainer width="100%" height="85%">
+                                <BarChart data={hourlyData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                    <XAxis dataKey="hour" tick={{fontSize: 10}} tickLine={false} axisLine={false} interval={2} />
+                                    <YAxis hide />
+                                    <RechartsTooltip cursor={{fill: '#ecfdf5'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                                    <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]}>
+                                      {hourlyData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.count > 0 ? `rgba(16, 185, 129, ${0.4 + (entry.count / Math.max(...hourlyData.map(d=>d.count)) * 0.6)})` : '#f3f4f6'} />
+                                      ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                            <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Table2 className="w-5 h-5 text-emerald-600"/> วิเคราะห์โซน vs เวลา (ทั้งหมด)</h3>
+                            <table className="w-full text-xs text-center">
+                                <thead>
+                                    <tr className="border-b border-slate-100">
+                                        <th className="p-2 text-left text-slate-400 font-medium">Zone</th>
+                                        <th className="p-2 text-slate-600 bg-orange-50 rounded-t-lg">เช้า<br/><span className="text-[9px] opacity-50">06-12</span></th>
+                                        <th className="p-2 text-slate-600 bg-yellow-50 rounded-t-lg">บ่าย<br/><span className="text-[9px] opacity-50">12-17</span></th>
+                                        <th className="p-2 text-slate-600 bg-indigo-50 rounded-t-lg">เย็น<br/><span className="text-[9px] opacity-50">17-22</span></th>
+                                        <th className="p-2 text-slate-600 bg-slate-100 rounded-t-lg">ดึก<br/><span className="text-[9px] opacity-50">22-06</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {allZones.length === 0 && <tr><td colSpan="5" className="p-4 text-slate-300">ไม่มีข้อมูล</td></tr>}
+                                    {allZones.map(zone => {
+                                        const data = matrixData[zone];
+                                        const max = Math.max(data.Morning, data.Afternoon, data.Evening, data.Night, 1);
+                                        const getBg = (val) => val === 0 ? '' : `rgba(16, 185, 129, ${val/max})`; // dynamic opacity green
+                                        const getText = (val) => val > max/2 ? 'white' : 'slate-700';
+
+                                        return (
+                                            <tr key={zone} className="border-b border-slate-50 last:border-0">
+                                                <td className="p-3 text-left font-bold text-slate-700 whitespace-nowrap">{zone}</td>
+                                                <td className="p-2"><div style={{backgroundColor: getBg(data.Morning), color: getText(data.Morning)}} className="py-1 rounded font-medium">{data.Morning || '-'}</div></td>
+                                                <td className="p-2"><div style={{backgroundColor: getBg(data.Afternoon), color: getText(data.Afternoon)}} className="py-1 rounded font-medium">{data.Afternoon || '-'}</div></td>
+                                                <td className="p-2"><div style={{backgroundColor: getBg(data.Evening), color: getText(data.Evening)}} className="py-1 rounded font-medium">{data.Evening || '-'}</div></td>
+                                                <td className="p-2"><div style={{backgroundColor: getBg(data.Night), color: getText(data.Night)}} className="py-1 rounded font-medium">{data.Night || '-'}</div></td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- Other Components (Unchanged) ---
+
+        function DailyListView({ logs, onSelectDay }) {
+            // Sort Logs Descending by Date (Ensure logic here matches fetch)
+            const sortedLogs = [...logs].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const total = sortedLogs.reduce((sum, log) => sum + (log.daily_bonus || 0) + (log.trips || []).reduce((tSum, t) => tSum + (t.earnings || 0), 0), 0);
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            const yestStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+            if (sortedLogs.length === 0) return <div className="text-center py-20 text-slate-400">ยังไม่มีข้อมูลในระบบ<br/>กดปุ่ม "+" เพื่อเริ่ม</div>;
+            
+            return (
+                <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-2xl p-6 text-white shadow-xl">
+                        <p className="text-emerald-100 text-sm">รายได้รวม</p>
+                        <h2 className="text-4xl font-bold">฿{total.toLocaleString()}</h2>
+                        <p className="text-xs mt-2 opacity-80">{sortedLogs.length} วันทำงาน</p>
+                    </div>
+                    <div className="space-y-3">
+                        {sortedLogs.map(log => {
+                            const earnings = (log.trips || []).reduce((s, t) => s + t.earnings, 0) + (log.daily_bonus || 0);
+                            let dateLabel = new Date(log.date).toLocaleDateString('th-TH', {day:'numeric', month:'short', weekday:'short'});
+                            let badge = null;
+                            if (log.date === todayStr) badge = <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-2 animate-pulse">วันนี้</span>;
+                            else if (log.date === yestStr) badge = <span className="bg-slate-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-2">เมื่อวาน</span>;
+
+                            return (
+                                <div key={log.id} onClick={() => onSelectDay(log.id)} className="bg-white p-4 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition-transform active:scale-[0.99]">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <div className="font-bold text-lg text-slate-800 flex items-center">{dateLabel} {badge}</div>
+                                            <div className="text-sm text-slate-500">{log.trips?.length || 0} เที่ยว</div>
+                                        </div>
+                                        <div className="font-bold text-emerald-600 text-lg">฿{earnings.toLocaleString()}</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        // (DayDetailView, ExportModal are the same as previous stable version)
+        function DayDetailView({ log, onUpdate, onDelete, onClose }) {
+            const [localLog, setLocalLog] = useState(log);
+            const [status, setStatus] = useState('saved');
+            const [isAddingTrip, setIsAddingTrip] = useState(false);
+            const [tripForm, setTripForm] = useState({});
+            const [isScanning, setIsScanning] = useState(false);
+            const [editingTripId, setEditingTripId] = useState(null); 
+            const fileInputRef = useRef(null);
+
+            const save = async (updated) => {
+                setLocalLog(updated);
+                setStatus('saving');
+                await onUpdate(updated);
+                setTimeout(() => setStatus('saved'), 500);
+            };
+
+            const handleTripSubmit = async (e) => {
+                e.preventDefault();
+                let trips;
+                if (editingTripId) {
+                    trips = localLog.trips.map(t => t.id === editingTripId ? { ...tripForm, id: editingTripId } : t);
+                } else {
+                    const newTrip = { ...tripForm, id: Date.now().toString() };
+                    trips = [...(localLog.trips || []), newTrip].sort((a,b)=>(b.startTime||'').localeCompare(a.startTime||''));
+                }
+                await save({...localLog, trips});
+                setIsAddingTrip(false);
+                setEditingTripId(null);
+                setTripForm({});
+            };
+
+            const startEditTrip = (trip) => {
+                setTripForm(trip);
+                setEditingTripId(trip.id);
+                setIsAddingTrip(true);
+            };
+
+            const removeTrip = (tripId) => {
+                if(confirm('ยืนยันลบรายการวิ่งนี้?')) {
+                    const trips = localLog.trips.filter(t => t.id !== tripId);
+                    save({...localLog, trips});
+                }
+            };
+
+            const handleImageUpload = async (e) => {
+                const file = e.target.files?.[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        const base64 = reader.result;
+                        setTripForm(p => ({...p, screenshot: base64}));
+                        setIsScanning(true);
+                        try {
+                            const data = await callGeminiVision(base64);
+                            setTripForm(p => ({...p, ...data}));
+                        } catch(err) { alert("AI Error: " + err.message); }
+                        setIsScanning(false);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const handleAIAnalysis = async () => {
+                const analysis = await callGeminiAnalysis(localLog);
+                save({...localLog, ai_analysis: analysis});
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in">
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative">
+                        <div className={`absolute top-4 right-12 text-[10px] flex items-center gap-1 px-2 py-1 rounded-full ${status==='saving'?'bg-yellow-100':'bg-emerald-50 text-emerald-600'}`}>
+                            {status==='saving'? <Loader2 className="w-3 h-3 animate-spin"/> : <CheckCircle2 className="w-3 h-3"/>} {status==='saving'?'Saving...':'Saved'}
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold flex gap-2 text-slate-700"><LayoutDashboard className="text-emerald-600"/> สรุปวัน</h3>
+                            <button onClick={onDelete}><Trash2 className="text-slate-400 hover:text-red-500"/></button>
+                        </div>
+                        <input type="date" value={localLog.date} onChange={e=>save({...localLog, date: e.target.value})} className="w-full p-2 bg-slate-50 rounded mb-4 font-bold text-slate-700"/>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div><label className="text-xs font-bold text-slate-500">ไมล์เริ่ม</label><input type="number" value={localLog.start_odometer} onChange={e=>save({...localLog, start_odometer: Number(e.target.value)})} className="w-full p-2 bg-slate-50 rounded"/></div>
+                            <div><label className="text-xs font-bold text-slate-500">ไมล์จบ</label><input type="number" value={localLog.end_odometer} onChange={e=>save({...localLog, end_odometer: Number(e.target.value)})} className="w-full p-2 bg-slate-50 rounded"/></div>
+                        </div>
+                        <div><label className="text-xs font-bold text-slate-500">โบนัส</label><input type="number" value={localLog.daily_bonus} onChange={e=>save({...localLog, daily_bonus: Number(e.target.value)})} className="w-full p-2 bg-amber-50 font-bold text-amber-900 rounded"/></div>
+                        <div className="mt-4 pt-4 border-t">
+                            {!localLog.ai_analysis ? (
+                                <button onClick={handleAIAnalysis} className="w-full bg-indigo-600 text-white p-2 rounded flex justify-center gap-2 shadow-md"><Sparkles className="w-4 text-yellow-300"/> ให้ AI วิเคราะห์</button>
+                            ) : (
+                                <div className="bg-indigo-50 p-3 rounded text-sm relative border border-indigo-100"><p className="text-slate-700">{localLog.ai_analysis}</p><button onClick={()=>save({...localLog, ai_analysis: ''})} className="absolute top-1 right-1"><X className="w-4 text-indigo-400"/></button></div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-end">
+                        <h3 className="font-bold text-slate-700">รายการวิ่ง ({localLog.trips?.length||0})</h3>
+                        <button onClick={()=>{setEditingTripId(null); setTripForm({}); setIsAddingTrip(true)}} className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-sm flex gap-1 shadow-md hover:bg-emerald-700"><Plus className="w-4"/> เพิ่มเที่ยว</button>
+                    </div>
+
+                    <div className="space-y-4 pb-20">
+                        {(localLog.trips||[]).map(trip => (
+                            <div key={trip.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 relative group transition-all hover:shadow-md">
+                                <div className="flex justify-between items-start mb-3">
+                                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                                        <Clock className="w-3 h-3"/> {trip.startTime} - {trip.endTime}
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <button onClick={(e) => { e.stopPropagation(); startEditTrip(trip); }} className="p-1.5 bg-blue-50 text-blue-500 rounded-full hover:bg-blue-100 transition-colors" title="แก้ไข"><Edit2 className="w-3.5 h-3.5"/></button>
+                                        <button onClick={(e) => { e.stopPropagation(); removeTrip(trip.id); }} className="p-1.5 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors" title="ลบ"><Trash2 className="w-3.5 h-3.5"/></button>
+                                    </div>
+                                </div>
+                                <div className="pl-3 border-l-2 border-slate-100 ml-1 space-y-3 relative mb-3">
+                                    <div><span className="absolute -left-[5px] top-2 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span> <span className="text-sm font-medium text-slate-800">{trip.pickup}</span></div>
+                                    <div><span className="absolute -left-[5px] top-2 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span> <span className="text-sm font-medium text-slate-800">{trip.dropoff}</span></div>
+                                </div>
+                                <div className="pt-3 border-t border-slate-50 flex justify-between items-center">
+                                    <div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><Navigation className="w-3 h-3"/> {trip.distance} กม.</span><span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {trip.zone}</span></div>
+                                    <div className="font-bold text-emerald-600 text-lg">฿{trip.earnings}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <button onClick={onClose} className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold fixed bottom-4 left-4 right-4 max-w-md mx-auto shadow-lg flex justify-center gap-2 z-10"><CheckCircle2/> บันทึกและปิด</button>
+
+                    {isAddingTrip && (
+                        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-0 sm:p-4 backdrop-blur-sm animate-in fade-in">
+                            <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-auto slide-in-from-bottom-10 animate-in">
+                                <h3 className="font-bold text-lg mb-4 flex justify-between items-center">
+                                    {editingTripId ? <span className="flex gap-2 text-blue-600"><Edit2 className="w-5"/> แก้ไขรายการ</span> : <span className="flex gap-2 text-emerald-600"><Plus className="w-5"/> เพิ่มเที่ยวใหม่</span>}
+                                    <button onClick={()=>setIsAddingTrip(false)} className="bg-slate-100 p-1 rounded-full"><X className="w-5 h-5"/></button>
+                                </h3>
+                                {!editingTripId && (
+                                    <div onClick={()=>!isScanning && fileInputRef.current.click()} className="border-2 border-dashed p-4 text-center rounded-xl mb-6 cursor-pointer bg-slate-50 hover:bg-emerald-50 transition-colors">
+                                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload}/>
+                                        {isScanning ? <div className="text-indigo-600 animate-pulse flex flex-col items-center"><Loader2 className="animate-spin mb-2"/>กำลังสแกน...</div> : (tripForm.screenshot ? <img src={tripForm.screenshot} className="h-24 mx-auto object-contain"/> : <div className="flex flex-col items-center text-slate-500"><Upload className="mb-2 w-8 h-8"/><span className="text-sm">แตะเพื่อสแกนสลิป</span></div>)}
+                                    </div>
+                                )}
+                                <form onSubmit={handleTripSubmit} className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="text-xs font-bold text-slate-500 mb-1 block">เริ่ม</label><input type="time" required value={tripForm.startTime||''} onChange={e=>setTripForm({...tripForm, startTime:e.target.value})} className="w-full border p-3 rounded-xl bg-slate-50"/></div>
+                                        <div><label className="text-xs font-bold text-slate-500 mb-1 block">จบ</label><input type="time" required value={tripForm.endTime||''} onChange={e=>setTripForm({...tripForm, endTime:e.target.value})} className="w-full border p-3 rounded-xl bg-slate-50"/></div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <input placeholder="จุดรับ" required value={tripForm.pickup||''} onChange={e=>setTripForm({...tripForm, pickup:e.target.value})} className="w-full border p-3 rounded-xl"/>
+                                        <input placeholder="จุดส่ง" required value={tripForm.dropoff||''} onChange={e=>setTripForm({...tripForm, dropoff:e.target.value})} className="w-full border p-3 rounded-xl"/>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="text-xs font-bold text-slate-500 mb-1 block">ระยะทาง</label><input type="number" placeholder="กม." required value={tripForm.distance||''} onChange={e=>setTripForm({...tripForm, distance:Number(e.target.value)})} className="w-full border p-3 rounded-xl"/></div>
+                                        <div><label className="text-xs font-bold text-slate-500 mb-1 block">ค่าโดยสาร</label><input type="number" placeholder="฿" required value={tripForm.earnings||''} onChange={e=>setTripForm({...tripForm, earnings:Number(e.target.value)})} className="w-full border border-emerald-200 bg-emerald-50 text-emerald-700 font-bold p-3 rounded-xl"/></div>
+                                    </div>
+                                    <div><label className="text-xs font-bold text-slate-500 mb-1 block">โซน</label><input placeholder="โซน" list="zones" value={tripForm.zone||''} onChange={e=>setTripForm({...tripForm, zone:e.target.value})} className="w-full border p-3 rounded-xl"/><datalist id="zones"><option value="Sukhumvit"/><option value="Sathorn"/><option value="CBD"/></datalist></div>
+                                    <button type="submit" className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold mt-2 shadow-lg">{editingTripId ? 'บันทึกการแก้ไข' : 'บันทึก'}</button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function ExportModal({ onClose, onExport, logs }) {
+            const [s, setS] = useState(logs[0]?.date || ''); const [e, setE] = useState(new Date().toISOString().split('T')[0]);
+            return (<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"><div className="bg-white p-6 rounded-xl w-full max-w-sm"><h3 className="font-bold text-lg mb-4">Export CSV</h3><div className="space-y-3"><input type="date" value={s} onChange={e=>setS(e.target.value)} className="w-full border p-2 rounded"/><input type="date" value={e} onChange={e=>setE(e.target.value)} className="w-full border p-2 rounded"/><button onClick={()=>onExport(s,e)} className="w-full bg-emerald-600 text-white py-2 rounded font-bold">Download</button><button onClick={onClose} className="w-full text-slate-400 py-2">Cancel</button></div></div></div>);
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
