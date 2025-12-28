@@ -61,6 +61,7 @@
         const { useState, useEffect, useRef } = React;
 
         // --- CONFIGURATION ---
+        const APP_VERSION = "v1.3.0";
         // API KEY: ใส่ Key ที่ถูกต้องที่นี่
         const API_KEY = "AIzaSyBm7ymNtpwsfbGp5UD6CS5P6U5jyJMHWzg"; 
 
@@ -87,7 +88,8 @@
             Loader2: (props) => <Icon {...props} path={<path d="M21 12a9 9 0 1 1-6.219-8.56"/>} />,
             Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 21v-4"/><path d="M15 19h4"/></>} />,
             Plus: (props) => <Icon {...props} path={<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>} />,
-            Star: (props) => <Icon {...props} path={<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none" />} />
+            Star: (props) => <Icon {...props} path={<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none" />} />,
+            Hospital: (props) => <Icon {...props} path={<><path d="M12 6v12"/><path d="M6 12h12"/><path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/></>} />
         };
 
         // --- HELPER: ROBUST JSON PARSER ---
@@ -249,7 +251,6 @@
             const renderValue = (val) => typeof val === 'object' ? JSON.stringify(val) : (val || "-");
             const score = parseInt(drug.score) || 0;
             
-            // Score Color logic
             let scoreColor = "text-slate-500";
             let scoreBg = "bg-slate-100";
             if(score >= 85) { scoreColor = "text-green-600"; scoreBg = "bg-green-100"; }
@@ -258,7 +259,6 @@
 
             return (
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow relative">
-                    {/* Ranking Badge */}
                     <div className={`absolute top-0 left-0 px-3 py-1 text-xs font-bold rounded-br-xl z-10 ${index === 0 ? 'bg-yellow-400 text-yellow-900' : 'bg-slate-200 text-slate-600'}`}>
                         #{index + 1} {index === 0 ? 'แนะนำสูงสุด' : ''}
                     </div>
@@ -269,7 +269,6 @@
                                 <div className="w-20 h-20 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-100">
                                     <Icons.Pill size={32} className="text-teal-300" />
                                 </div>
-                                {/* Score Display */}
                                 <div className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${scoreBg} ${scoreColor}`}>
                                     <Icons.Star size={12} className={score >= 85 ? "text-yellow-500" : "opacity-0"} />
                                     {score}/100
@@ -285,7 +284,6 @@
                                     <Badge type={drug.legal} text={renderValue(drug.legal)} />
                                 </div>
 
-                                {/* Reasoning (Why this drug?) */}
                                 {drug.reasoning && (
                                     <div className="bg-blue-50/50 p-2 rounded-lg text-sm text-blue-800 border border-blue-100">
                                         <span className="font-semibold">💡 ทำไมถึงแนะนำ:</span> {renderValue(drug.reasoning)}
@@ -303,7 +301,6 @@
                                     </div>
                                 </div>
 
-                                {/* Combination Therapy */}
                                 {drug.combination && drug.combination !== "-" && (
                                     <div className="mt-2 flex items-start gap-2 text-sm text-purple-700 bg-purple-50 p-2 rounded-lg border border-purple-100">
                                         <Icons.Plus size={16} className="mt-0.5 flex-shrink-0" />
@@ -355,6 +352,8 @@
             const [suggestedDrugs, setSuggestedDrugs] = useState([]);
             const [diagnosis, setDiagnosis] = useState(null); 
             const [followUpQuestions, setFollowUpQuestions] = useState([]); 
+            const [severity, setSeverity] = useState(null); // ความรุนแรง
+            const [referralAdvice, setReferralAdvice] = useState(null); // คำแนะนำส่งต่อ
             const [rawResult, setRawResult] = useState(null);
             const [isAnalyzingSymptoms, setIsAnalyzingSymptoms] = useState(false);
 
@@ -363,6 +362,9 @@
             const [analyzingImage, setAnalyzingImage] = useState(false);
             const [identifiedDrug, setIdentifiedDrug] = useState(null);
             const [rawIdentifyResult, setRawIdentifyResult] = useState(null);
+
+            // Refs
+            const recognitionRef = useRef(null);
 
             // Check API Status on load
             useEffect(() => {
@@ -382,6 +384,8 @@
                 setSuggestedDrugs([]);
                 setDiagnosis(null);
                 setFollowUpQuestions([]);
+                setSeverity(null);
+                setReferralAdvice(null);
                 clearErrors();
 
                 const prompt = `
@@ -389,15 +393,19 @@
                     
                     Tasks:
                     1. Diagnosis: Provide a brief preliminary diagnosis in Thai.
-                    2. Questions: Provide 2-3 specific follow-up questions in Thai.
-                    3. Recommendations: Recommend UP TO 5 best specific OTC or pharmacy-dispensed drugs available in Thailand.
-                    4. Scoring: Assign a suitability score (0-100) to each drug based on the symptoms.
-                    5. Reasoning: Explain WHY this drug is chosen for this specific symptom (Thai).
-                    6. Combination: Suggest any complementary drugs to take with it (Thai) if applicable (e.g., take with antacid).
+                    2. Severity Assessment: Evaluate if the symptoms are mild, moderate, or severe/emergency (Red Flag).
+                    3. Referral: If symptoms are severe (e.g., chest pain, difficulty breathing, high fever > 39C, severe abdominal pain), strongly recommend seeing a doctor immediately and explain why (Thai).
+                    4. Questions: Provide 2-3 specific follow-up questions in Thai.
+                    5. Recommendations: Recommend UP TO 5 best specific OTC or pharmacy-dispensed drugs available in Thailand.
+                    6. Scoring: Assign a suitability score (0-100) to each drug based on the symptoms.
+                    7. Reasoning: Explain WHY this drug is chosen for this specific symptom (Thai).
+                    8. Combination: Suggest any complementary drugs to take with it (Thai) if applicable (e.g., take with antacid).
 
                     Strictly return ONLY a JSON Object with this structure (no markdown code blocks):
                     {
                         "diagnosis": "การวินิจฉัยเบื้องต้น (Thai)",
+                        "severity": "mild" | "moderate" | "severe",
+                        "referral_advice": "คำแนะนำให้ไปพบแพทย์ทันทีพร้อมเหตุผล (เฉพาะกรณี severe หรือมีความเสี่ยงสูง)",
                         "questions": ["คำถามเพิ่มเติม 1", "คำถามเพิ่มเติม 2"],
                         "drugs": [
                             {
@@ -443,6 +451,8 @@
                     setSuggestedDrugs(drugs);
                     setDiagnosis(result.diagnosis || result.analysis || null);
                     setFollowUpQuestions(result.questions || result.followUp || []);
+                    setSeverity(result.severity || "mild");
+                    setReferralAdvice(result.referral_advice || null);
 
                     if (drugs.length > 0 || result.diagnosis) {
                         setRawResult(null);
@@ -460,22 +470,53 @@
             };
 
             const toggleVoiceInput = () => {
-                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                    alert("เบราว์เซอร์นี้ไม่รองรับการพิมพ์ด้วยเสียง");
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                if (!SpeechRecognition) {
+                    alert("เบราว์เซอร์นี้ไม่รองรับการรับเสียง (Web Speech API)");
                     return;
                 }
-                if (!isListening) {
-                    setIsListening(true);
-                    // Simulation
-                    setTimeout(() => {
-                        const mockPhrases = [
-                            "คนไข้ปวดหัวตุ๊บๆ ข้างเดียว เหมือนไมเกรน แสงจ้าก็ปวด", 
-                            "ไอแห้งๆ ระคายคอ ไม่มีเสมหะ มา 3 วันแล้ว", 
-                            "ปวดท้อง แน่นท้อง เหมือนอาหารไม่ย่อย"
-                        ];
-                        setSymptomInput(mockPhrases[Math.floor(Math.random() * mockPhrases.length)]);
-                        setIsListening(false);
-                    }, 1500);
+
+                if (isListening) {
+                    recognitionRef.current?.stop();
+                    setIsListening(false);
+                    return;
+                }
+
+                setIsListening(true);
+                
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'th-TH';
+                recognition.interimResults = false;
+                
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    setSymptomInput(prev => (prev ? prev + " " : "") + transcript);
+                };
+
+                recognition.onerror = (event) => {
+                    console.error("Voice Error:", event.error);
+                    if (event.error === 'not-allowed') {
+                        alert("กรุณาอนุญาตการเข้าถึงไมโครโฟน");
+                    } else if (event.error === 'no-speech') {
+                        // ignore no speech, just stop
+                    } else {
+                        alert("เกิดข้อผิดพลาด: " + event.error);
+                    }
+                    setIsListening(false);
+                };
+
+                recognition.onend = () => {
+                    setIsListening(false);
+                };
+
+                try {
+                    recognition.start();
+                    recognitionRef.current = recognition;
+                } catch (e) {
+                    console.error(e);
+                    alert("ไม่สามารถเริ่มระบบรับเสียงได้");
+                    setIsListening(false);
                 }
             };
 
@@ -535,6 +576,7 @@
                         <div className="flex items-center gap-2">
                             <Icons.Stethoscope size={24} />
                             <span className="font-bold text-lg">PharmaMate</span>
+                            <span className="text-xs font-normal opacity-80">{APP_VERSION}</span>
                         </div>
                         <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-1">
                             {isSidebarOpen ? <Icons.X size={24} /> : <div className="space-y-1"><div className="w-6 h-0.5 bg-white"></div><div className="w-6 h-0.5 bg-white"></div><div className="w-6 h-0.5 bg-white"></div></div>}
@@ -545,7 +587,10 @@
                     <nav className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition duration-200 ease-in-out z-10 w-64 bg-white border-r border-slate-200 flex flex-col shadow-lg md:shadow-none`}>
                         <div className="p-6 hidden md:flex items-center gap-2 text-teal-600">
                             <Icons.Stethoscope size={32} />
-                            <span className="font-bold text-2xl tracking-tight">PharmaMate <span className="text-xs align-top bg-teal-100 px-1 rounded text-teal-700">AI</span></span>
+                            <div className="flex flex-col">
+                                <span className="font-bold text-2xl tracking-tight">PharmaMate <span className="text-xs align-top bg-teal-100 px-1 rounded text-teal-700">AI</span></span>
+                                <span className="text-xs text-slate-400 font-medium">{APP_VERSION}</span>
+                            </div>
                         </div>
 
                         <div className="flex-1 px-4 py-4 space-y-2">
@@ -640,6 +685,21 @@
                                 {!isAnalyzingSymptoms && (diagnosis || suggestedDrugs.length > 0) && (
                                     <div className="space-y-6 animate-slide-up">
                                         
+                                        {/* RED FLAG / SEVERITY ALERT */}
+                                        {(severity === 'severe' || referralAdvice) && (
+                                            <div className="bg-red-50 border-l-4 border-red-500 p-5 rounded-r-xl shadow-sm animate-pulse-slow">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="p-2 bg-red-100 rounded-full text-red-600">
+                                                        <Icons.Hospital size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-red-800 text-lg">⚠️ คำแนะนำ: ควรไปพบแพทย์ทันที</h3>
+                                                        <p className="text-red-700 mt-1">{referralAdvice || "อาการมีความเสี่ยงสูงหรืออาจเป็นอันตราย แนะนำให้ไปโรงพยาบาลเพื่อตรวจวินิจฉัยอย่างละเอียด"}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Diagnosis & Questions Section */}
                                         {(diagnosis || followUpQuestions.length > 0) && (
                                             <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 space-y-4">
