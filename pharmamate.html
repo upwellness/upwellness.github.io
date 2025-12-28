@@ -88,6 +88,35 @@
             Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 21v-4"/><path d="M15 19h4"/></>} />
         };
 
+        // --- HELPER: ROBUST JSON PARSER ---
+        function extractJSON(text) {
+            try {
+                // 1. Remove markdown code blocks
+                let cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                
+                // 2. Find the first '{' and the last '}' for Object
+                const firstOpen = cleanText.indexOf('{');
+                const lastClose = cleanText.lastIndexOf('}');
+                
+                // 3. Find the first '[' and the last ']' for Array
+                const firstOpenArr = cleanText.indexOf('[');
+                const lastCloseArr = cleanText.lastIndexOf(']');
+
+                // Determine if it is likely an Object or Array
+                if (firstOpen !== -1 && lastClose !== -1 && (firstOpen < firstOpenArr || firstOpenArr === -1)) {
+                    return JSON.parse(cleanText.substring(firstOpen, lastClose + 1));
+                } else if (firstOpenArr !== -1 && lastCloseArr !== -1) {
+                    return JSON.parse(cleanText.substring(firstOpenArr, lastCloseArr + 1));
+                }
+                
+                // Fallback
+                return JSON.parse(cleanText);
+            } catch (e) {
+                console.error("JSON extraction failed, text was:", text);
+                return null;
+            }
+        }
+
         // --- API HANDLER (ROBUST & AUTO-RETRY) ---
         
         async function fetchWithModel(modelName, apiKey, prompt, imageBase64) {
@@ -119,8 +148,6 @@
                 throw new Error("ไม่พบ API Key กรุณาใส่ Key ในโค้ด");
             }
 
-            // Updated Model List (2025)
-            // ลอง Flash > Pro > Flash 8b ตามลำดับความน่าจะเป็น
             const modelsToTry = [
                 "gemini-2.5-flash",
                 "gemini-1.5-flash", 
@@ -145,29 +172,22 @@
                         let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
                         if (!text) throw new Error("Empty response text");
 
-                        // CLEANUP: Remove Markdown Code Blocks
-                        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-                        // Try Parsing JSON
-                        try {
-                            const jsonMatch = text.match(/\[.*\]/s) || text.match(/\{.*\}/s);
-                            if (jsonMatch) {
-                                return JSON.parse(jsonMatch[0]);
-                            } else {
-                                return JSON.parse(text);
-                            }
-                        } catch (e) {
-                            console.warn("JSON Parse failed, returning raw text:", e);
+                        // Use Robust Extraction
+                        const jsonResult = extractJSON(text);
+                        if (jsonResult) {
+                            return jsonResult;
+                        } else {
+                            // If extraction fails but we have text, return as raw
+                            console.warn("Parsing failed, returning raw text.");
                             return { textResult: text, isRaw: true };
                         }
+
                     } else {
-                        // ถ้าเจอ 404 (หา model ไม่เจอ) ให้ข้ามไปลองตัวถัดไปทันที
                         if (response.status === 404) {
                             console.warn(`Model ${model} not found (404), trying next...`);
                             lastError = new Error(`Model ${model} not found (API not enabled?)`);
                             continue; 
                         } else {
-                            // Error อื่นๆ (เช่น 400 Bad Request, 403 Permission)
                             const errorText = await response.text();
                             let errorMessage = `API Error: ${response.status}`;
                             try {
@@ -187,7 +207,6 @@
                 }
             }
             
-            // ถ้าวนลูปครบแล้วยังไม่ได้ ให้แจ้งเตือนผู้ใช้ให้ไปเปิด Service
             throw new Error(
                 `ไม่สามารถเชื่อมต่อ AI ได้ (ลองครบ 3 โมเดลแล้ว)\n` +
                 `สาเหตุที่เป็นไปได้: API Key ของคุณยังไม่ได้เปิดใช้งาน 'Generative Language API'\n` +
@@ -309,6 +328,8 @@
             const [symptomInput, setSymptomInput] = useState('');
             const [isListening, setIsListening] = useState(false);
             const [suggestedDrugs, setSuggestedDrugs] = useState([]);
+            const [diagnosis, setDiagnosis] = useState(null); 
+            const [followUpQuestions, setFollowUpQuestions] = useState([]); 
             const [rawResult, setRawResult] = useState(null);
             const [isAnalyzingSymptoms, setIsAnalyzingSymptoms] = useState(false);
 
@@ -334,36 +355,76 @@
                 if (!symptomInput) return;
                 setIsAnalyzingSymptoms(true);
                 setSuggestedDrugs([]);
+                setDiagnosis(null);
+                setFollowUpQuestions([]);
                 clearErrors();
 
                 const prompt = `
                     Act as an expert pharmacist in Thailand. Analyze the following symptoms: "${symptomInput}".
-                    Recommend 2-3 specific OTC or pharmacy-dispensed drugs available in Thailand effectively treating these symptoms.
-                    Strictly return ONLY a JSON array with this structure (no markdown code blocks):
-                    [
-                        {
-                            "id": 1,
-                            "tradeName": "Name (Thai/Eng)",
-                            "genericName": "Generic Name & Strength",
-                            "group": "Pharmacological Group",
-                            "properties": "สรรพคุณ (Thai)",
-                            "warnings": "ข้อควรระวัง/แพ้ยา (Thai)",
-                            "di": "Drug Interactions สำคัญ (Thai)",
-                            "legal": "ประเภทตามกฎหมาย (e.g. ยาสามัญ, ยาอันตราย)"
-                        }
-                    ]
+                    
+                    Please provide:
+                    1. A brief preliminary diagnosis (Thai).
+                    2. 2-3 specific follow-up questions to ask the patient for better clarity (Thai).
+                    3. Recommend 2-3 specific OTC or pharmacy-dispensed drugs available in Thailand effectively treating these symptoms.
+
+                    Strictly return ONLY a JSON Object with this structure (no markdown code blocks):
+                    {
+                        "diagnosis": "การวินิจฉัยเบื้องต้น (Thai)",
+                        "questions": ["คำถามเพิ่มเติม 1", "คำถามเพิ่มเติม 2"],
+                        "drugs": [
+                            {
+                                "id": 1,
+                                "tradeName": "Name (Thai/Eng)",
+                                "genericName": "Generic Name & Strength",
+                                "group": "Pharmacological Group",
+                                "properties": "สรรพคุณ (Thai)",
+                                "warnings": "ข้อควรระวัง/แพ้ยา (Thai)",
+                                "di": "Drug Interactions สำคัญ (Thai)",
+                                "legal": "ประเภทตามกฎหมาย (e.g. ยาสามัญ, ยาอันตราย)"
+                            }
+                        ]
+                    }
                 `;
 
                 try {
                     const result = await callGeminiAPI(prompt);
-                    if (result && Array.isArray(result)) {
-                        setSuggestedDrugs(result);
-                    } else if (result && result.isRaw) {
+                    
+                    // --- ROBUST PARSING LOGIC (NEW) ---
+                    // พยายามหา Array ยาให้เจอ ไม่ว่าจะชื่อ key ว่าอะไร
+                    let drugs = result.drugs || result.medicines || result.medications || [];
+                    
+                    if (Array.isArray(result)) {
+                        drugs = result; // กรณี AI ส่งกลับมาเป็น Array ล้วนๆ
+                    } else if (typeof result === 'object' && !result.isRaw && drugs.length === 0) {
+                        // ถ้าเป็น Object แต่หา key 'drugs' ไม่เจอ ลองวนหาดูว่า key ไหนเป็น Array ของยา
+                        const keys = Object.keys(result);
+                        for (const key of keys) {
+                            if (Array.isArray(result[key]) && result[key].length > 0) {
+                                // เช็คคร่าวๆ ว่าสมาชิกตัวแรกมีหน้าตาเหมือนยาไหม (มี tradeName หรือ genericName)
+                                if (result[key][0].tradeName || result[key][0].genericName) {
+                                    drugs = result[key];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Set Data
+                    setSuggestedDrugs(drugs);
+                    setDiagnosis(result.diagnosis || result.analysis || null);
+                    setFollowUpQuestions(result.questions || result.followUp || []);
+
+                    // ตัดสินใจว่าจะแสดง Raw Result หรือไม่
+                    // ถ้าแกะยาได้ หรือมีคำวินิจฉัย ถือว่าผ่าน ไม่ต้องโชว์ Raw
+                    if (drugs.length > 0 || result.diagnosis) {
+                        setRawResult(null);
+                    } else if (result.isRaw) {
                          setRawResult(result.textResult);
                     } else {
-                        // Fallback logic
+                        // ถ้าโครงสร้างมาแปลกมากจริงๆ จนหาไม่เจอ ค่อยโชว์ Raw
                         setRawResult(JSON.stringify(result, null, 2));
                     }
+
                 } catch (err) {
                     setAppError(err.message);
                 }
@@ -423,7 +484,7 @@
 
                         try {
                             const result = await callGeminiAPI(prompt, base64);
-                            if (result && result.tradeName) {
+                            if (result && (result.tradeName || result.genericName)) {
                                 setIdentifiedDrug(result);
                             } else if (result && result.isRaw) {
                                 setRawIdentifyResult(result.textResult);
@@ -549,15 +610,46 @@
                                 </button>
 
                                 {/* RESULTS */}
-                                {suggestedDrugs.length > 0 && (
-                                    <div className="space-y-4 animate-slide-up">
-                                        <div className="flex items-center gap-2 text-slate-700">
-                                            <Icons.Check className="text-green-500" size={20} />
-                                            <span className="font-semibold">AI แนะนำยา {suggestedDrugs.length} รายการ:</span>
-                                        </div>
-                                        {suggestedDrugs.map((drug, idx) => (
-                                            <DrugCard key={idx} drug={drug} />
-                                        ))}
+                                {!isAnalyzingSymptoms && (diagnosis || suggestedDrugs.length > 0) && (
+                                    <div className="space-y-6 animate-slide-up">
+                                        
+                                        {/* Diagnosis & Questions Section */}
+                                        {(diagnosis || followUpQuestions.length > 0) && (
+                                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 space-y-4">
+                                                {diagnosis && (
+                                                    <div>
+                                                        <h3 className="font-bold text-blue-800 flex items-center gap-2 mb-2">
+                                                            <Icons.Activity size={20} /> การวินิจฉัยเบื้องต้น
+                                                        </h3>
+                                                        <p className="text-blue-900">{diagnosis}</p>
+                                                    </div>
+                                                )}
+                                                
+                                                {followUpQuestions.length > 0 && (
+                                                    <div className="bg-white/60 rounded-lg p-3">
+                                                        <h4 className="font-semibold text-blue-700 text-sm mb-2">คำถามเพิ่มเติมเพื่อความแม่นยำ:</h4>
+                                                        <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                                                            {followUpQuestions.map((q, i) => (
+                                                                <li key={i}>{q}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Drug Recommendations */}
+                                        {suggestedDrugs.length > 0 && (
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2 text-slate-700">
+                                                    <Icons.Check className="text-green-500" size={20} />
+                                                    <span className="font-semibold">AI แนะนำยา {suggestedDrugs.length} รายการ:</span>
+                                                </div>
+                                                {suggestedDrugs.map((drug, idx) => (
+                                                    <DrugCard key={idx} drug={drug} />
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
