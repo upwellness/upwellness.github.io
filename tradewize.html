@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeWise - Real-time Full Analysis</title>
+    
+    <!-- React & Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart Library -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #020617; color: #e2e8f0; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .chart-box { height: 500px; width: 100%; position: relative; }
+        .step-item { transition: all 0.3s ease; }
+        .step-item:hover { transform: translateX(4px); background: rgba(255,255,255,0.03); }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        
+        .active-tf-glow {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+            border-color: rgba(59, 130, 246, 0.5);
+            background-color: rgba(30, 41, 59, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- 1. CORE MATH & INDICATORS ---
+        const calculateSMA = (data, count) => {
+            return data.map((d, i, arr) => {
+                if (i < count - 1) return { time: d.time, value: NaN };
+                const sum = arr.slice(i - count + 1, i + 1).reduce((acc, val) => acc + val.close, 0);
+                return { time: d.time, value: sum / count };
+            }).filter(d => !isNaN(d.value));
+        };
+
+        const calculateATR = (data, period = 14) => {
+            let trs = [];
+            for(let i=1; i<data.length; i++) {
+                const high = data[i].high;
+                const low = data[i].low;
+                const prevClose = data[i-1].close;
+                const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+                trs.push(tr);
+            }
+            const recentTRs = trs.slice(-period);
+            return recentTRs.reduce((a, b) => a + b, 0) / period;
+        };
+
+        const findZones = (data, window = 20) => {
+            let resistance = [];
+            let support = [];
+            for(let i = window; i < data.length - window; i++) {
+                const current = data[i];
+                let isHigh = true; let isLow = true;
+                for(let j = 1; j <= window; j++) {
+                    if(data[i-j].high > current.high || data[i+j].high > current.high) isHigh = false;
+                    if(data[i-j].low < current.low || data[i+j].low < current.low) isLow = false;
+                }
+                if(isHigh) resistance.push(current.high);
+                if(isLow) support.push(current.low);
+            }
+            return { res: resistance.slice(-2), sup: support.slice(-2) };
+        };
+
+        // --- 2. DEEP ANALYSIS ENGINE (Centralized) ---
+        // This function processes RAW data and returns a full analysis object
+        const analyzeMarketData = (candles, volumes) => {
+            if (!candles || candles.length < 50) return null;
+
+            const len = candles.length;
+            const c = candles[len - 1]; 
+            const p1 = candles[len - 2];
+            const body = Math.abs(c.close - c.open);
+            
+            // 2.1 Indicators
+            const smaData = calculateSMA(candles, 50);
+            const lastSMA = smaData.length > 0 ? smaData[smaData.length-1].value : c.close;
+            const atr = calculateATR(candles, 14);
+            const zones = findZones(candles);
+
+            // 2.2 Volume Logic
+            const vCurrent = volumes[len - 1].value;
+            const volAvg = volumes.slice(len - 20).reduce((a, b) => a + b.value, 0) / 20;
+            const isHighVol = vCurrent > volAvg * 1.5;
+            const volStatus = isHighVol ? "High Vol" : "Normal Vol";
+            const volDesc = isHighVol 
+                ? `Volume สูงกว่าค่าเฉลี่ย ${(vCurrent/volAvg).toFixed(1)} เท่า ยืนยันการเคลื่อนที่` 
+                : "Volume อยู่ในระดับปกติ ยังไม่มีแรงซื้อขายผิดปกติ";
+
+            // 2.3 Price Action Pattern
+            let pattern = "No Clear Pattern";
+            const isGreen = c.close > c.open;
+            const isRed = c.close < c.open;
+            const p1Red = p1.close < p1.open;
+            const p1Green = p1.close > p1.open;
+
+            if (isGreen && p1Red && c.open <= p1.close && c.close >= p1.open) pattern = "Bullish Engulfing";
+            else if (isRed && p1Green && c.open >= p1.close && c.close <= p1.open) pattern = "Bearish Engulfing";
+            else if (((Math.min(c.open, c.close) - c.low) > body * 2) && ((c.high - Math.max(c.open, c.close)) < body * 0.5)) pattern = "Hammer / Pinbar";
+            else if (((c.high - Math.max(c.open, c.close)) > body * 2) && ((Math.min(c.open, c.close) - c.low) < body * 0.5)) pattern = "Shooting Star";
+            else if (body < (c.high - c.low) * 0.1) pattern = "Doji (Indecision)";
+
+            // 2.4 Setup Decision
+            const isUptrend = c.close > lastSMA;
+            let action = 'WAIT';
+            const nearSupport = zones.sup.some(z => Math.abs(c.close - z) / c.close < 0.005);
+            const nearResistance = zones.res.some(z => Math.abs(c.close - z) / c.close < 0.005);
+            
+            let zoneStatus = 'Middle';
+            let zoneDesc = `ราคา (${c.close.toFixed(2)}) อยู่กลางกรอบ ระหว่างแนวรับและแนวต้าน`;
+
+            if (isUptrend) {
+                action = 'BUY'; 
+                zoneStatus = nearSupport ? 'Support Bounce' : 'Uptrend';
+                zoneDesc = nearSupport 
+                    ? "ราคาย่อตัวลงมาทดสอบ Demand Zone และเริ่มมีการดีดตัวกลับ (Bounce)" 
+                    : "ราคาอยู่เหนือเส้นค่าเฉลี่ย SMA 50 ยืนยันแนวโน้มขาขึ้น";
+                
+                if(nearResistance) { 
+                    action = 'WAIT'; 
+                    zoneStatus = 'Resistance Test'; 
+                    zoneDesc = "ราคาชน Supply Zone (แนวต้าน) แนะนำให้รอการทะลุผ่าน (Breakout) หรือย่อตัวก่อน";
+                }
+            } else {
+                action = 'SELL'; 
+                zoneStatus = nearResistance ? 'Resistance Reject' : 'Downtrend';
+                zoneDesc = nearResistance 
+                    ? "ราคาขึ้นมาทดสอบ Supply Zone และเกิดแรงเทขาย (Rejection)" 
+                    : "ราคาอยู่ใต้เส้นค่าเฉลี่ย SMA 50 ยืนยันแนวโน้มขาลง";
+                
+                if(nearSupport) { 
+                    action = 'WAIT'; 
+                    zoneStatus = 'Support Test'; 
+                    zoneDesc = "ราคาลงมาชน Demand Zone (แนวรับ) แนะนำให้รอสัญญาณกลับตัวหรือหลุดแนวรับ";
+                }
+            }
+            if(action === 'WAIT' && !nearResistance && !nearSupport && isHighVol) {
+                 action = isUptrend ? 'BUY' : 'SELL';
+                 zoneDesc += " แต่มี Volume เข้ามาสนับสนุนทิศทางเดิม";
+            }
+
+            // 2.5 Confidence Scoring
+            let score = 50;
+            if (action !== 'WAIT') {
+                if ((isUptrend && action === 'BUY') || (!isUptrend && action === 'SELL')) score += 15;
+                if (isHighVol) score += 10;
+                if ((nearSupport && action === 'BUY') || (nearResistance && action === 'SELL')) score += 15;
+                if (!pattern.includes("No Clear") && !pattern.includes("Doji")) score += 10;
+            }
+
+            // 2.6 Calculate Levels
+            const slDist = atr * 2;
+            const sl = action === 'BUY' ? c.close - slDist : c.close + slDist;
+            const tp1 = action === 'BUY' ? c.close + slDist : c.close - slDist;
+            const tp2 = action === 'BUY' ? c.close + (slDist * 2) : c.close - (slDist * 2);
+
+            return {
+                candles, volumes, // Store raw data for chart
+                smaData, zones,
+                action, entry: c.close, sl, tp1, tp2,
+                volStatus, volDesc, pattern, zoneStatus, zoneDesc,
+                confidenceScore: score
+            };
+        };
+
+        // --- COMPONENTS ---
+
+        const Dashboard = ({ analyses, activeTf, onSelectTf }) => {
+            const tfs = ['15m', '1h', '4h', '1d'];
+            
+            return (
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                    {tfs.map(tf => {
+                        const data = analyses[tf];
+                        const isLoading = !data;
+                        const action = data ? data.action : '...';
+                        const score = data ? data.confidenceScore : 0;
+                        const isActive = tf === activeTf;
+                        
+                        // Determine Color
+                        let colorClass = 'text-slate-500';
+                        let borderClass = 'border-t-slate-600';
+                        let bgClass = '';
+                        
+                        if (!isLoading) {
+                            if (action === 'BUY') {
+                                colorClass = 'text-emerald-400';
+                                borderClass = 'border-t-emerald-500';
+                                bgClass = 'bg-emerald-500/5';
+                            } else if (action === 'SELL') {
+                                colorClass = 'text-rose-400';
+                                borderClass = 'border-t-rose-500';
+                                bgClass = 'bg-rose-500/5';
+                            } else {
+                                colorClass = 'text-yellow-400';
+                                borderClass = 'border-t-yellow-500';
+                                bgClass = 'bg-yellow-500/5';
+                            }
+                        }
+
+                        return (
+                            <div 
+                                key={tf} 
+                                onClick={() => onSelectTf(tf)}
+                                className={`glass-panel p-2 rounded-lg flex flex-col items-center justify-center border-t-2 cursor-pointer transition-all hover:bg-slate-800 ${isActive ? 'active-tf-glow' : ''} ${borderClass} ${bgClass}`}
+                            >
+                                <div className="flex justify-between w-full px-2 items-center mb-1">
+                                    <span className={`text-[10px] font-bold uppercase ${isActive ? 'text-white' : 'text-slate-500'}`}>{tf}</span>
+                                    {!isLoading && <span className={`text-[10px] font-bold ${colorClass}`}>{score}%</span>}
+                                </div>
+                                <span className={`text-sm font-bold ${colorClass}`}>
+                                    {isLoading ? 'Loading...' : action}
+                                </span>
+                                {!isLoading && (
+                                    <div className="w-full h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                                        <div className={`h-full ${action === 'BUY' ? 'bg-emerald-500' : (action === 'SELL' ? 'bg-rose-500' : 'bg-yellow-500')}`} style={{width: `${score}%`}}></div>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            );
+        };
+
+        const PatternSnapshot = ({ data, patternName }) => {
+            const ref = useRef();
+            useEffect(() => {
+                if(!ref.current || !data || data.length === 0) return;
+                const chart = LightweightCharts.createChart(ref.current, {
+                    layout: { background: { type: 'solid', color: '#0f172a' }, textColor: '#94a3b8' },
+                    grid: { visible: false }, width: ref.current.clientWidth, height: 160,
+                    timeScale: { visible: false }, rightPriceScale: { visible: false, scaleMargins: { top: 0.15, bottom: 0.15 } },
+                    handleScroll: false, handleScale: false, crosshair: { visible: false } 
+                });
+                const series = chart.addCandlestickSeries({ upColor: '#10b981', downColor: '#f43f5e', borderVisible: false });
+                const zoomedData = data.slice(-8);
+                series.setData(zoomedData);
+                
+                const last = zoomedData[zoomedData.length-1];
+                if(last) {
+                    series.createPriceLine({ price: last.high, color: '#facc15', lineWidth: 1, lineStyle: 0, title: 'H', axisLabelVisible: false });
+                    series.createPriceLine({ price: last.low, color: '#facc15', lineWidth: 1, lineStyle: 0, title: 'L', axisLabelVisible: false });
+                }
+                chart.timeScale().fitContent();
+                return () => chart.remove();
+            }, [data]);
+
+            return (
+                <div className="relative mt-2 p-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                    <div ref={ref} className="w-full rounded overflow-hidden"></div>
+                    <div className="absolute top-2 left-2 px-3 py-1 bg-slate-900/90 border border-yellow-500/50 rounded text-[10px] text-white backdrop-blur shadow">
+                        DETECTED: <span className="text-yellow-400 font-bold">{patternName}</span>
+                    </div>
+                </div>
+            );
+        };
+
+        const AnalysisStep = ({ number, title, status, description, isPositive }) => (
+            <div className="step-item flex gap-3 p-3 bg-slate-800/20 rounded-lg border border-slate-700/30">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${isPositive ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
+                    {number}
+                </div>
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-xs font-bold text-slate-200">{title}</h4>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                            {status}
+                        </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-light">{description}</p>
+                </div>
+            </div>
+        );
+
+        const SetupCard = ({ setup }) => {
+            if (!setup) return <div className="h-full flex items-center justify-center text-slate-500">Loading Analysis...</div>;
+            const isBuy = setup.action === 'BUY';
+            const accent = isBuy ? 'text-emerald-400' : (setup.action === 'SELL' ? 'text-rose-400' : 'text-yellow-400');
+            const borderTop = isBuy ? 'border-t-emerald-500' : (setup.action === 'SELL' ? 'border-t-rose-500' : 'border-t-yellow-500');
+
+            return (
+                <div className="h-full flex flex-col gap-4">
+                    <div className={`glass-panel p-4 rounded-xl border-t-4 ${borderTop}`}>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <div className="text-xs text-slate-500 font-bold tracking-wider">AI RECOMMENDATION</div>
+                                <div className={`text-2xl font-bold ${accent} flex items-center gap-2`}>{setup.action} NOW</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-[10px] text-slate-500">CONFIDENCE</div>
+                                <div className="text-2xl font-bold text-white">{setup.confidenceScore}%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="glass-panel p-4 rounded-xl grid grid-cols-2 gap-3 relative overflow-hidden">
+                         <div className={`absolute top-0 right-0 w-20 h-20 blur-3xl rounded-full ${isBuy ? 'bg-emerald-500/20' : 'bg-rose-500/20'} -translate-y-1/2 translate-x-1/2 pointer-events-none`}></div>
+                        <div className="col-span-2 flex justify-between items-center pb-2 border-b border-slate-700/50">
+                            <span className="text-xs text-slate-400">Entry</span>
+                            <span className="font-mono text-xl font-bold text-white">{setup.entry.toLocaleString()}</span>
+                        </div>
+                        <div className="bg-rose-500/10 p-2 rounded border border-rose-500/20">
+                            <div className="text-[10px] text-rose-400 font-bold mb-1">STOP LOSS</div>
+                            <div className="font-mono font-bold text-rose-300 text-lg">{setup.sl.toLocaleString()}</div>
+                        </div>
+                        <div className="bg-emerald-500/10 p-2 rounded border border-emerald-500/20">
+                            <div className="text-[10px] text-emerald-400 font-bold mb-1">TARGET 1</div>
+                            <div className="font-mono font-bold text-emerald-300 text-lg">{setup.tp1.toLocaleString()}</div>
+                        </div>
+                         <div className="col-span-2 flex justify-between items-center pt-1 px-1">
+                            <span className="text-[10px] text-slate-500">TP2 (Extended)</span>
+                            <span className="font-mono text-sm text-emerald-400/80">{setup.tp2.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <div className="glass-panel p-4 rounded-xl flex-grow flex flex-col gap-3 overflow-y-auto custom-scrollbar">
+                         <div className="text-xs text-slate-400 font-semibold mb-1 flex items-center gap-2">
+                            <span className="w-1 h-3 bg-blue-500 rounded-full"></span> LOGIC BREAKDOWN
+                         </div>
+                         <AnalysisStep number="1" title="Structure & Zones" status={setup.zoneStatus} description={setup.zoneDesc} isPositive={true} />
+                         <AnalysisStep number="2" title="Volume Analysis" status={setup.volStatus} description={setup.volDesc} isPositive={setup.volStatus.includes('High')} />
+                         <AnalysisStep number="3" title="Price Action" status={setup.pattern} description={`ตรวจพบรูปแบบ ${setup.pattern}`} isPositive={!setup.pattern.includes('No Clear')} />
+                        
+                        <div className="mt-2 pt-2 border-t border-slate-700/50">
+                            <PatternSnapshot data={setup.candles} patternName={setup.pattern} />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const MainChart = ({ activeAnalysis }) => {
+            const chartContainerRef = useRef(null);
+            
+            useEffect(() => {
+                if(!chartContainerRef.current || !activeAnalysis) return;
+                
+                const chart = LightweightCharts.createChart(chartContainerRef.current, {
+                    layout: { background: { type: 'solid', color: '#0f172a' }, textColor: '#64748b' },
+                    grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
+                    width: chartContainerRef.current.clientWidth, height: 500,
+                    rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.2 } },
+                    timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+                });
+
+                const candleSeries = chart.addCandlestickSeries({ upColor: '#10b981', downColor: '#f43f5e', borderVisible: false });
+                const volumeSeries = chart.addHistogramSeries({ color: '#26a69a', priceFormat: { type: 'volume' }, priceScaleId: '', scaleMargins: { top: 0.8, bottom: 0 } });
+
+                candleSeries.setData(activeAnalysis.candles);
+                volumeSeries.setData(activeAnalysis.volumes);
+
+                // Lines
+                activeAnalysis.zones.sup.forEach(z => candleSeries.createPriceLine({ price: z, color: '#3b82f6', lineWidth: 1, lineStyle: 2, title: 'DEMAND (Blue)' })); 
+                activeAnalysis.zones.res.forEach(z => candleSeries.createPriceLine({ price: z, color: '#f97316', lineWidth: 1, lineStyle: 2, title: 'SUPPLY (Orange)' }));
+
+                if (activeAnalysis.action !== 'WAIT') {
+                    candleSeries.createPriceLine({ price: activeAnalysis.tp1, color: '#22c55e', lineWidth: 2, lineStyle: 0, title: 'TP 1', axisLabelVisible: true });
+                    candleSeries.createPriceLine({ price: activeAnalysis.tp2, color: '#22c55e', lineWidth: 1, lineStyle: 2, title: 'TP 2', axisLabelVisible: true });
+                    candleSeries.createPriceLine({ price: activeAnalysis.sl, color: '#ef4444', lineWidth: 2, lineStyle: 0, title: 'STOP LOSS', axisLabelVisible: true });
+                    candleSeries.createPriceLine({ price: activeAnalysis.entry, color: '#ffffff', lineWidth: 1, lineStyle: 2, title: 'ENTRY', axisLabelVisible: true });
+                }
+
+                chart.timeScale().fitContent();
+                return () => chart.remove();
+            }, [activeAnalysis]);
+
+            return (
+                <div className="glass-panel p-1 rounded-2xl relative">
+                    <div ref={chartContainerRef} className="chart-box rounded-xl bg-[#0f172a]"></div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [symbol, setSymbol] = useState("BTCUSDT");
+            const [activeTf, setActiveTf] = useState("1h");
+            const [analyses, setAnalyses] = useState({}); // Stores analysis for ALL timeframes
+            const [isAnalysing, setIsAnalysing] = useState(true);
+
+            // CORE ENGINE: Fetches ALL timeframes in parallel on symbol change
+            useEffect(() => {
+                const fetchAllData = async () => {
+                    setIsAnalysing(true);
+                    const timeframes = ['15m', '1h', '4h', '1d'];
+                    const results = {};
+
+                    await Promise.all(timeframes.map(async (tf) => {
+                        try {
+                            const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${tf}&limit=200`);
+                            const dataRaw = await res.json();
+                            
+                            const candles = [];
+                            const volumes = [];
+                            dataRaw.forEach(d => {
+                                const time = d[0] / 1000; const open = parseFloat(d[1]); const close = parseFloat(d[4]);
+                                candles.push({ time, open, high: parseFloat(d[2]), low: parseFloat(d[3]), close });
+                                volumes.push({ time, value: parseFloat(d[5]), color: close >= open ? 'rgba(16, 185, 129, 0.4)' : 'rgba(244, 63, 94, 0.4)' });
+                            });
+
+                            // RUN DEEP ANALYSIS IMMEDIATELY
+                            results[tf] = analyzeMarketData(candles, volumes);
+                        } catch (e) {
+                            console.error(`Error fetching ${tf}`, e);
+                            results[tf] = null;
+                        }
+                    }));
+
+                    setAnalyses(results);
+                    setIsAnalysing(false);
+                };
+
+                fetchAllData();
+                // Optional: Interval to auto-refresh every minute
+                const interval = setInterval(fetchAllData, 60000);
+                return () => clearInterval(interval);
+
+            }, [symbol]);
+
+            return (
+                <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen flex flex-col">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">TradeWise Pro</h1>
+                            <p className="text-xs text-slate-500">Real-time Multi-Timeframe Analysis Engine</p>
+                        </div>
+                        <div className="flex gap-2">
+                             {["BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT"].map(s => (
+                                <button key={s} onClick={() => setSymbol(s)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${symbol === s ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                                    {s.replace('USDT','')}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Dashboard uses the CENTRALIZED analysis state */}
+                    <Dashboard analyses={analyses} activeTf={activeTf} onSelectTf={setActiveTf} />
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+                        <div className="lg:col-span-2 flex flex-col gap-4">
+                            {isAnalysing ? (
+                                <div className="h-[500px] glass-panel rounded-2xl flex items-center justify-center text-slate-400 animate-pulse">Initializing Real-time Engine...</div>
+                            ) : (
+                                <>
+                                    <MainChart activeAnalysis={analyses[activeTf]} />
+                                    <div className="flex justify-between px-4 text-xs text-slate-500">
+                                        <span className="text-sky-400 font-bold">* ฟ้าประ = Demand</span> 
+                                        <span className="text-orange-400 font-bold">* ส้มประ = Supply</span> 
+                                        <span className="text-green-500 font-bold ml-2">* TP = Green</span>
+                                        <span className="text-red-500 font-bold ml-2">* SL = Red</span>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className="lg:col-span-1 h-full">
+                            <SetupCard setup={analyses[activeTf]} />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
