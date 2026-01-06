@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradeWise Pro 2.6 - Ultimate Analysis</title>
+    <title>TradeWise Pro 2.7 - Messaging API</title>
     
     <!-- React & Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js" crossorigin></script>
@@ -44,12 +44,13 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 1. STORAGE HOOK (Supabase Support) ---
+        // --- 1. STORAGE HOOK (Updated for Messaging API Config) ---
         const useStorage = () => {
             const [supabase, setSupabase] = useState(null);
             const [symbols, setSymbols] = useState([]);
             const [config, setConfig] = useState({
-                lineToken: localStorage.getItem('tw_line_token') || '',
+                lineChannelToken: localStorage.getItem('tw_line_channel_token') || '',
+                lineUserId: localStorage.getItem('tw_line_user_id') || '',
                 sbUrl: localStorage.getItem('tw_sb_url') || '',
                 sbKey: localStorage.getItem('tw_sb_key') || ''
             });
@@ -97,13 +98,17 @@
 
             const updateConfig = (key, value) => {
                 localStorage.setItem(key, value);
-                setConfig(prev => ({ ...prev, [key === 'tw_line_token' ? 'lineToken' : (key === 'tw_sb_url' ? 'sbUrl' : 'sbKey')]: value }));
+                // Map storage keys to state keys
+                const stateKey = key === 'tw_line_channel_token' ? 'lineChannelToken' :
+                                 key === 'tw_line_user_id' ? 'lineUserId' :
+                                 key === 'tw_sb_url' ? 'sbUrl' : 'sbKey';
+                setConfig(prev => ({ ...prev, [stateKey]: value }));
             };
 
             return { symbols, addSymbol, removeSymbol, config, updateConfig, isCloud: !!supabase };
         };
 
-        // --- 2. CORE MATH & INDICATORS ---
+        // --- 2. MATH & ANALYSIS ---
         const calculateSMA = (data, count) => data.map((d, i, arr) => i < count - 1 ? { time: d.time, value: NaN } : { time: d.time, value: arr.slice(i - count + 1, i + 1).reduce((acc, val) => acc + val.close, 0) / count }).filter(d => !isNaN(d.value));
         const calculateATR = (data, period = 14) => {
             let trs = []; for(let i=1; i<data.length; i++) trs.push(Math.max(data[i].high - data[i].low, Math.abs(data[i].high - data[i-1].close), Math.abs(data[i].low - data[i-1].close)));
@@ -200,7 +205,7 @@
             let score = 50; 
             const isUptrend = c.close > lastSMA;
             
-            // Generate Descriptions
+            // Descriptions
             let trendDesc = `ราคา (${c.close.toLocaleString()}) ${isUptrend ? 'ยืนเหนือ' : 'อยู่ใต้'} เส้น SMA50`;
             if(divergence) trendDesc += ` และเกิดสัญญาณ ${divergence} (กลับตัว)`;
 
@@ -238,14 +243,27 @@
             };
         };
 
-        const sendLineNotify = async (token, message) => {
-            if (!token) return { success: false, error: "No Token" };
+        // --- LINE MESSAGING API HELPER ---
+        const sendLineMessage = async (channelToken, userId, message) => {
+            if (!channelToken || !userId) return { success: false, error: "Missing Credentials" };
             const PROXY_URL = "https://corsproxy.io/?"; 
-            const LINE_API = "https://notify-api.line.me/api/notify";
+            const LINE_API = "https://api.line.me/v2/bot/message/push";
+            
             try {
-                const formData = new URLSearchParams(); formData.append('message', message);
-                const response = await fetch(PROXY_URL + LINE_API, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData });
-                return response.ok ? { success: true } : { success: false, error: "API Error" };
+                const response = await fetch(PROXY_URL + LINE_API, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${channelToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        to: userId,
+                        messages: [{ type: 'text', text: message }]
+                    })
+                });
+                if(response.ok) return { success: true };
+                const errJson = await response.json();
+                return { success: false, error: errJson.message || "API Error" };
             } catch (error) { return { success: false, error: error.message }; }
         };
 
@@ -284,17 +302,27 @@
         const SettingsModal = ({ isOpen, onClose, config, updateConfig }) => {
             if(!isOpen) return null;
             const [testStatus, setTestStatus] = useState(null);
+            
             const testLine = async () => {
-                setTestStatus('Sending...'); const res = await sendLineNotify(config.lineToken, "\n✅ TradeWise Test: Connected!"); setTestStatus(res.success ? 'Success!' : 'Failed');
+                setTestStatus('Sending...'); 
+                const res = await sendLineMessage(config.lineChannelToken, config.lineUserId, "✅ TradeWise Test: Messaging API Connected!"); 
+                setTestStatus(res.success ? 'Success!' : 'Failed: ' + res.error);
             };
+
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm modal-enter">
                     <div className="glass-panel p-6 rounded-xl w-full max-w-lg border border-slate-700 m-4">
                         <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-white">⚙️ Configuration</h2><button onClick={onClose} className="text-slate-400 hover:text-white">✕</button></div>
                         <div className="mb-6">
-                            <h3 className="text-sm font-bold text-green-400 mb-2">LINE Notify</h3>
-                            <div className="flex gap-2"><input type="text" className="flex-grow bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs" placeholder="Paste Token..." value={config.lineToken} onChange={(e) => updateConfig('tw_line_token', e.target.value)} /><button onClick={testLine} className="px-3 py-1 bg-slate-700 rounded text-xs text-white">Test</button></div>
-                            {testStatus && <span className="text-[10px] text-slate-400 mt-1 block">{testStatus}</span>}
+                            <h3 className="text-sm font-bold text-green-400 mb-2">LINE Messaging API</h3>
+                            <div className="space-y-2 mb-2">
+                                <input type="text" className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs" placeholder="Channel Access Token (Long-lived)" value={config.lineChannelToken} onChange={(e) => updateConfig('tw_line_channel_token', e.target.value)} />
+                                <input type="text" className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs" placeholder="Your User ID (Uxxxxxxxx...)" value={config.lineUserId} onChange={(e) => updateConfig('tw_line_user_id', e.target.value)} />
+                            </div>
+                            <div className="flex justify-end items-center gap-2">
+                                {testStatus && <span className={`text-[10px] ${testStatus.includes('Success')?'text-green-400':'text-red-400'}`}>{testStatus}</span>}
+                                <button onClick={testLine} className="px-3 py-1 bg-slate-700 rounded text-xs text-white hover:bg-slate-600">Test Send</button>
+                            </div>
                         </div>
                         <div className="mb-6 pt-6 border-t border-slate-700/50">
                             <h3 className="text-sm font-bold text-emerald-400 mb-2">Supabase (Optional)</h3>
@@ -529,10 +557,10 @@
                     setIsAnalysing(false);
 
                     const active = results[activeTf];
-                    if (active && (active.action === 'BUY' || active.action === 'SELL') && active.confidenceScore >= 70 && config.lineToken) {
+                    if (active && (active.action === 'BUY' || active.action === 'SELL') && active.confidenceScore >= 70 && config.lineChannelToken && config.lineUserId) {
                         const now = Date.now();
                         if (now - lastNotifyRef.current > 3600000) {
-                            sendLineNotify(config.lineToken, `\n🔥 TradeWise: ${symbol} (${activeTf})\nSignal: ${active.action}\nScore: ${active.confidenceScore}%`);
+                            sendLineMessage(config.lineChannelToken, config.lineUserId, `🔥 TradeWise: ${symbol} (${activeTf})\nSignal: ${active.action}\nScore: ${active.confidenceScore}%`);
                             lastNotifyRef.current = now;
                         }
                     }
@@ -540,15 +568,15 @@
                 fetchAllData();
                 const interval = setInterval(fetchAllData, 60000);
                 return () => clearInterval(interval);
-            }, [symbol, activeTf, config.lineToken]);
+            }, [symbol, activeTf, config.lineChannelToken, config.lineUserId]);
 
             return (
                 <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen flex flex-col">
                     <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">TradeWise 2.6</h1>
+                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">TradeWise 2.7</h1>
                             <div className="flex items-center gap-2">
-                                <p className="text-xs text-slate-500">Supabase Edition</p>
+                                <p className="text-xs text-slate-500">Supabase & Messaging API</p>
                                 {isCloud && <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] border border-emerald-500/30">Cloud On</span>}
                             </div>
                         </div>
