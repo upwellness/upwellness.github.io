@@ -243,4 +243,367 @@
             const PROXY_URL = "https://corsproxy.io/?"; 
             const LINE_API = "https://notify-api.line.me/api/notify";
             try {
-                const formData = new URLSearchParams(); formData
+                const formData = new URLSearchParams(); formData.append('message', message);
+                const response = await fetch(PROXY_URL + LINE_API, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData });
+                return response.ok ? { success: true } : { success: false, error: "API Error" };
+            } catch (error) { return { success: false, error: error.message }; }
+        };
+
+        // --- 3. UI COMPONENTS ---
+
+        const CopyablePrice = ({ label, value, colorClass }) => {
+            const [copied, setCopied] = useState(false);
+            const handleCopy = () => {
+                const valStr = value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 5});
+                const textArea = document.createElement("textarea"); textArea.value = valStr.replace(/,/g, '');
+                document.body.appendChild(textArea); textArea.select(); try { document.execCommand('copy'); setCopied(true); } catch (err) {} document.body.removeChild(textArea);
+                setTimeout(() => setCopied(false), 1500);
+            };
+            return (
+                <div onClick={handleCopy} className={`relative cursor-pointer group bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 hover:border-${colorClass.split('-')[1]}-500/50 transition-all hover:bg-slate-800`}>
+                    <div className={`text-[10px] uppercase font-bold tracking-wider mb-1 ${colorClass.replace('text-', 'text-opacity-70 text-')}`}>{label}</div>
+                    <div className={`font-mono text-xl font-bold ${colorClass} flex items-center gap-2`}>{value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 5})}</div>
+                    {copied && <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded shadow-lg copy-feedback font-bold z-50">COPIED!</div>}
+                </div>
+            );
+        };
+
+        const AnalysisStep = ({ number, title, status, description, isPositive }) => (
+            <div className="step-item flex gap-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50 hover:bg-slate-800/50 transition-colors">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${isPositive ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>{number}</div>
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-xs font-bold text-slate-200">{title}</h4>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>{status}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-light">{description}</p>
+                </div>
+            </div>
+        );
+
+        const SettingsModal = ({ isOpen, onClose, config, updateConfig }) => {
+            if(!isOpen) return null;
+            const [testStatus, setTestStatus] = useState(null);
+            const testLine = async () => {
+                setTestStatus('Sending...'); const res = await sendLineNotify(config.lineToken, "\n✅ TradeWise Test: Connected!"); setTestStatus(res.success ? 'Success!' : 'Failed');
+            };
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm modal-enter">
+                    <div className="glass-panel p-6 rounded-xl w-full max-w-lg border border-slate-700 m-4">
+                        <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-white">⚙️ Configuration</h2><button onClick={onClose} className="text-slate-400 hover:text-white">✕</button></div>
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-green-400 mb-2">LINE Notify</h3>
+                            <div className="flex gap-2"><input type="text" className="flex-grow bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs" placeholder="Paste Token..." value={config.lineToken} onChange={(e) => updateConfig('tw_line_token', e.target.value)} /><button onClick={testLine} className="px-3 py-1 bg-slate-700 rounded text-xs text-white">Test</button></div>
+                            {testStatus && <span className="text-[10px] text-slate-400 mt-1 block">{testStatus}</span>}
+                        </div>
+                        <div className="mb-6 pt-6 border-t border-slate-700/50">
+                            <h3 className="text-sm font-bold text-emerald-400 mb-2">Supabase (Optional)</h3>
+                            <input type="text" className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs mb-2" placeholder="URL" value={config.sbUrl} onChange={(e) => updateConfig('tw_sb_url', e.target.value)} />
+                            <input type="password" className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs" placeholder="Anon Key" value={config.sbKey} onChange={(e) => updateConfig('tw_sb_key', e.target.value)} />
+                        </div>
+                        <div className="flex justify-end"><button onClick={onClose} className="px-6 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold">Done</button></div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Dashboard = ({ analyses, activeTf, onSelectTf }) => {
+            const tfs = ['15m', '1h', '4h', '1d'];
+            return (
+                <div className="grid grid-cols-4 gap-3 mb-6">
+                    {tfs.map(tf => {
+                        const data = analyses[tf];
+                        const score = data ? data.confidenceScore : 0;
+                        const isActive = tf === activeTf;
+                        let color = 'text-slate-500', barGradient = 'from-slate-700 to-slate-600';
+                        if(score >= 55) { color = 'text-emerald-400'; barGradient = 'from-emerald-500 to-emerald-400'; }
+                        else if(score <= 45) { color = 'text-rose-400'; barGradient = 'from-rose-500 to-rose-400'; }
+                        else { color = 'text-yellow-400'; barGradient = 'from-yellow-500 to-yellow-400'; }
+
+                        return (
+                            <button key={tf} onClick={() => onSelectTf(tf)} className={`glass-panel p-3 rounded-xl flex flex-col items-center border transition-all duration-300 group ${isActive ? 'active-tf border-blue-500/50' : 'border-slate-800 hover:bg-slate-800/50'}`}>
+                                <div className="flex justify-between w-full text-[10px] font-bold text-slate-400 mb-2">
+                                    <span>{tf}</span> {data && <span className={color}>{score}%</span>}
+                                </div>
+                                <span className={`text-xs font-bold mb-2 ${color}`}>{data ? data.bias : '...'}</span>
+                                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden shadow-inner">
+                                    {data && <div className={`h-full rounded-full bg-gradient-to-r ${barGradient} power-bar-fill ${score > 70 ? 'shadow-[0_0_10px_rgba(16,185,129,0.5)]' : ''}`} style={{width: `${score}%`}}></div>}
+                                </div>
+                            </button>
+                        )
+                    })}
+                </div>
+            );
+        };
+
+        const SetupCard = ({ setup }) => {
+            if (!setup) return <div className="h-full flex items-center justify-center text-slate-500">Processing...</div>;
+            const score = setup.confidenceScore;
+            const isBuy = score > 50;
+            const accent = isBuy ? 'text-emerald-400' : (score < 50 ? 'text-rose-400' : 'text-yellow-400');
+            const borderTop = isBuy ? 'border-t-emerald-500' : (score < 50 ? 'border-t-rose-500' : 'border-t-yellow-500');
+
+            return (
+                <div className="h-full flex flex-col gap-4">
+                    <div className={`glass-panel p-5 rounded-xl border-t-4 ${borderTop} relative overflow-hidden`}>
+                        <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full ${isBuy ? 'bg-emerald-500/10' : 'bg-rose-500/10'} -translate-y-1/2 translate-x-1/2 pointer-events-none`}></div>
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <div className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mb-1">AI SIGNAL</div>
+                                    <div className={`text-3xl font-bold ${accent} flex items-center gap-2`}>
+                                        {setup.action} <span className="text-sm font-normal text-slate-400 mt-1">({setup.bias})</span>
+                                    </div>
+                                </div>
+                                <div className="relative w-12 h-12 flex items-center justify-center rounded-full border-2 border-slate-700 bg-slate-900">
+                                    <span className="text-xs font-bold text-white">{setup.confidenceScore}</span>
+                                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                        <path className={`${isBuy ? 'text-emerald-500' : 'text-rose-500'} transition-all duration-1000`} strokeDasharray={`${setup.confidenceScore}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2"><CopyablePrice label="Entry Price" value={setup.entry} colorClass="text-white" /></div>
+                        <CopyablePrice label="Stop Loss" value={setup.sl} colorClass="text-rose-400" />
+                        <CopyablePrice label="TP 1" value={setup.tp1} colorClass="text-emerald-400" />
+                        <div className="col-span-2 pt-1 px-1 flex justify-between text-slate-500 text-[10px]">
+                            <span>Extended TP2</span>
+                            <span className="font-mono text-emerald-400 cursor-pointer hover:underline" onClick={() => {
+                                const ta = document.createElement("textarea"); ta.value = setup.tp2; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); alert('Copied TP2');
+                            }}>{setup.tp2.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                    </div>
+
+                    <div className="glass-panel p-4 rounded-xl flex-grow overflow-y-auto custom-scrollbar">
+                        <div className="text-xs text-slate-400 font-bold mb-3 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span> LOGIC BREAKDOWN
+                        </div>
+                        <div className="space-y-3">
+                            <AnalysisStep number="1" title="Structure & Trend" status={score > 50 ? 'BULL' : 'BEAR'} description={setup.trendDesc} isPositive={score > 50} />
+                            <AnalysisStep number="2" title="Institutional View" status="INST" description={setup.instDesc} isPositive={true} />
+                            <AnalysisStep number="3" title="Price Action" status={setup.pattern} description={`รูปแบบแท่งเทียน: ${setup.pattern}`} isPositive={!setup.pattern.includes("Normal")} />
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-slate-700/50">
+                            <PatternSnapshot data={setup.candles} patternName={setup.pattern} />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const PatternSnapshot = ({ data, patternName }) => {
+            const ref = useRef();
+            useEffect(() => {
+                if(!ref.current || !data || data.length === 0) return;
+                const chart = LightweightCharts.createChart(ref.current, {
+                    layout: { background: { type: 'solid', color: '#0f172a' }, textColor: '#94a3b8' },
+                    grid: { visible: false }, width: ref.current.clientWidth, height: 160,
+                    timeScale: { visible: false }, rightPriceScale: { visible: false, scaleMargins: { top: 0.15, bottom: 0.15 } },
+                    handleScroll: false, handleScale: false, crosshair: { visible: false } 
+                });
+                const series = chart.addCandlestickSeries({ upColor: '#10b981', downColor: '#f43f5e', borderVisible: false });
+                const zoomedData = data.slice(-8);
+                series.setData(zoomedData);
+                const last = zoomedData[zoomedData.length-1];
+                if(last) {
+                    series.createPriceLine({ price: last.high, color: '#facc15', lineWidth: 1, lineStyle: 0, axisLabelVisible: false });
+                    series.createPriceLine({ price: last.low, color: '#facc15', lineWidth: 1, lineStyle: 0, axisLabelVisible: false });
+                }
+                chart.timeScale().fitContent();
+                return () => chart.remove();
+            }, [data]);
+            return <div className="relative mt-2 p-1 bg-slate-800/50 rounded-lg border border-slate-700/50"><div ref={ref} className="mini-chart-box"></div><div className="absolute top-2 left-2 px-3 py-1 bg-slate-900/90 border border-yellow-500/50 rounded text-[10px] text-white backdrop-blur shadow">DETECTED: <span className="text-yellow-400 font-bold">{patternName}</span></div></div>;
+        };
+
+        const MainChart = ({ activeAnalysis }) => {
+            const chartContainerRef = useRef(null);
+            useEffect(() => {
+                if(!chartContainerRef.current || !activeAnalysis) return;
+                const chart = LightweightCharts.createChart(chartContainerRef.current, {
+                    layout: { background: { type: 'solid', color: '#020617' }, textColor: '#94a3b8' },
+                    grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
+                    width: chartContainerRef.current.clientWidth, height: 500,
+                    rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.2 } },
+                    timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+                });
+                const candleSeries = chart.addCandlestickSeries({ upColor: '#10b981', downColor: '#f43f5e', borderVisible: false });
+                const volumeSeries = chart.addHistogramSeries({ color: '#26a69a', priceFormat: { type: 'volume' }, priceScaleId: '', scaleMargins: { top: 0.8, bottom: 0 } });
+                const vwapSeries = chart.addLineSeries({ color: '#a855f7', lineWidth: 1, lineStyle: 2, title: 'VWAP' });
+
+                candleSeries.setData(activeAnalysis.candles);
+                volumeSeries.setData(activeAnalysis.volumes);
+                let cumVol = 0, cumVolPrice = 0;
+                const vwapLine = activeAnalysis.candles.map((c, i) => {
+                    const vol = activeAnalysis.volumes[i].value; cumVol += vol; cumVolPrice += ((c.high + c.low + c.close)/3 * vol);
+                    return { time: c.time, value: cumVolPrice / cumVol };
+                });
+                vwapSeries.setData(vwapLine);
+
+                activeAnalysis.fvgs.forEach(fvg => {
+                    const color = fvg.type === 'BULL' ? '#3b82f6' : '#f97316';
+                    candleSeries.createPriceLine({ price: fvg.top, color: color, lineWidth: 1, lineStyle: 1, axisLabelVisible: false });
+                    candleSeries.createPriceLine({ price: fvg.bottom, color: color, lineWidth: 1, lineStyle: 1, axisLabelVisible: false, title: `FVG` });
+                });
+
+                if (activeAnalysis.confidenceScore > 50 || activeAnalysis.confidenceScore < 50) {
+                    candleSeries.createPriceLine({ price: activeAnalysis.tp1, color: '#22c55e', lineWidth: 2, title: 'TP1', axisLabelVisible: true });
+                    candleSeries.createPriceLine({ price: activeAnalysis.tp2, color: '#22c55e', lineWidth: 1, lineStyle: 2, title: 'TP2', axisLabelVisible: true });
+                    candleSeries.createPriceLine({ price: activeAnalysis.sl, color: '#ef4444', lineWidth: 2, title: 'SL', axisLabelVisible: true });
+                    candleSeries.createPriceLine({ price: activeAnalysis.entry, color: '#ffffff', lineWidth: 1, lineStyle: 2, title: 'ENTRY', axisLabelVisible: true });
+                }
+                chart.timeScale().fitContent();
+                return () => chart.remove();
+            }, [activeAnalysis]);
+            return <div className="glass-panel p-1 rounded-2xl relative"><div ref={chartContainerRef} className="chart-box rounded-xl bg-[#020617]"></div></div>;
+        };
+
+        const App = () => {
+            const { symbols: storedSymbols, addSymbol: addStorageSymbol, removeSymbol, config, updateConfig, isCloud } = useStorage();
+            const [symbol, setSymbol] = useState("BTCUSDT");
+            const [defaultSymbols] = useState(["BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT"]);
+            const [activeTf, setActiveTf] = useState("1h");
+            const [analyses, setAnalyses] = useState({});
+            const [isAnalysing, setIsAnalysing] = useState(true);
+            const [isAdding, setIsAdding] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
+            const [newSymbolInput, setNewSymbolInput] = useState("");
+            const [alertMsg, setAlertMsg] = useState(null);
+            const lastNotifyRef = useRef(0);
+
+            const displaySymbols = [...defaultSymbols];
+            storedSymbols.forEach(s => { if(!displaySymbols.includes(s.name)) displaySymbols.push(s.name); });
+
+            const resolveSymbol = (input) => {
+                const upper = input.toUpperCase().trim();
+                const map = { 'EURUSD': 'EURUSDT', 'GBPUSD': 'GBPUSDT', 'XAUUSD': 'PAXGUSDT', 'GOLD': 'PAXGUSDT' };
+                return map[upper] || upper;
+            };
+
+            const handleAddSymbol = async () => {
+                if(!newSymbolInput.trim()) { setIsAdding(false); return; }
+                const finalSymbol = resolveSymbol(newSymbolInput);
+                setAlertMsg("Checking...");
+                try {
+                    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${finalSymbol}&interval=1h&limit=1`);
+                    const data = await res.json();
+                    if (data.code || !Array.isArray(data)) {
+                        setAlertMsg(`Error: Symbol ${finalSymbol} not found.`); setTimeout(() => setAlertMsg(null), 3000); return;
+                    }
+                    if(!displaySymbols.includes(finalSymbol)) {
+                        await addStorageSymbol(finalSymbol);
+                        setSymbol(finalSymbol);
+                    } else {
+                        setSymbol(finalSymbol);
+                    }
+                    setNewSymbolInput(""); setIsAdding(false); setAlertMsg(null);
+                } catch (e) { setAlertMsg("Network Error"); setTimeout(() => setAlertMsg(null), 3000); }
+            };
+
+            const handleRemoveSymbol = (symName) => {
+                const target = storedSymbols.find(s => s.name === symName);
+                if(target) removeSymbol(target.id);
+            };
+
+            useEffect(() => {
+                const fetchAllData = async () => {
+                    setIsAnalysing(true);
+                    const timeframes = ['15m', '1h', '4h', '1d'];
+                    const results = {};
+                    await Promise.all(timeframes.map(async (tf) => {
+                        try {
+                            const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${tf}&limit=100`);
+                            const dataRaw = await res.json();
+                            const candles = []; const volumes = [];
+                            dataRaw.forEach(d => {
+                                const time = d[0] / 1000; const open = parseFloat(d[1]); const close = parseFloat(d[4]);
+                                candles.push({ time, open, high: parseFloat(d[2]), low: parseFloat(d[3]), close });
+                                volumes.push({ time, value: parseFloat(d[5]), color: close >= open ? 'rgba(16, 185, 129, 0.4)' : 'rgba(244, 63, 94, 0.4)' });
+                            });
+                            results[tf] = analyzeMarketData(candles, volumes);
+                        } catch (e) { results[tf] = null; }
+                    }));
+                    setAnalyses(results);
+                    setIsAnalysing(false);
+
+                    const active = results[activeTf];
+                    if (active && (active.action === 'BUY' || active.action === 'SELL') && active.confidenceScore >= 70 && config.lineToken) {
+                        const now = Date.now();
+                        if (now - lastNotifyRef.current > 3600000) {
+                            sendLineNotify(config.lineToken, `\n🔥 TradeWise: ${symbol} (${activeTf})\nSignal: ${active.action}\nScore: ${active.confidenceScore}%`);
+                            lastNotifyRef.current = now;
+                        }
+                    }
+                };
+                fetchAllData();
+                const interval = setInterval(fetchAllData, 60000);
+                return () => clearInterval(interval);
+            }, [symbol, activeTf, config.lineToken]);
+
+            return (
+                <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen flex flex-col">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">TradeWise 2.6</h1>
+                            <div className="flex items-center gap-2">
+                                <p className="text-xs text-slate-500">Supabase Edition</p>
+                                {isCloud && <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] border border-emerald-500/30">Cloud On</span>}
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <div className="flex flex-wrap items-center gap-2">
+                                {displaySymbols.map(s => {
+                                    const isDefault = defaultSymbols.includes(s);
+                                    return (
+                                        <div key={s} className="relative group symbol-item">
+                                            <button onClick={() => setSymbol(s)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${symbol === s ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+                                                {s.replace('USDT','')}
+                                            </button>
+                                            {!isDefault && <button onClick={(e) => { e.stopPropagation(); handleRemoveSymbol(s); }} className="delete-btn absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] shadow-sm hover:bg-red-600">✕</button>}
+                                        </div>
+                                    );
+                                })}
+                                {isAdding ? (
+                                    <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg">
+                                        <input autoFocus type="text" className="bg-transparent text-white text-sm w-24 px-2 outline-none uppercase" value={newSymbolInput} onChange={(e) => setNewSymbolInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddSymbol()} />
+                                        <button onClick={handleAddSymbol} className="text-emerald-400 px-1">✓</button>
+                                        <button onClick={() => setIsAdding(false)} className="text-rose-400 px-1">✕</button>
+                                    </div>
+                                ) : <button onClick={() => setIsAdding(true)} className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 border border-dashed border-slate-600">+ ADD</button>}
+                                <button onClick={() => setShowSettings(true)} className="p-2 text-slate-400 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                            </div>
+                            {alertMsg && <span className="text-xs text-rose-400 mt-1">{alertMsg}</span>}
+                        </div>
+                    </div>
+                    
+                    <Dashboard analyses={analyses} activeTf={activeTf} onSelectTf={setActiveTf} />
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+                        <div className="lg:col-span-2 flex flex-col gap-4">
+                            {isAnalysing ? <div className="h-[500px] glass-panel rounded-2xl flex items-center justify-center text-slate-400 animate-pulse">Initializing...</div> : (
+                                <>
+                                    <MainChart activeAnalysis={analyses[activeTf]} />
+                                    <div className="flex justify-between px-4 text-xs text-slate-500">
+                                        <span><span className="text-purple-400 font-bold">---</span> VWAP</span>
+                                        <span><span className="text-blue-500 font-bold">---</span> Bull FVG</span> 
+                                        <span><span className="text-orange-500 font-bold">---</span> Bear FVG</span>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className="lg:col-span-1 h-full">
+                            <SetupCard setup={analyses[activeTf]} />
+                        </div>
+                    </div>
+                    <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} config={config} updateConfig={updateConfig} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
