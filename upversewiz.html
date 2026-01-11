@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTA Gold Commander V.15.3 (Auto Zoom)</title>
+    <title>MTA Gold Commander V.15.5 (Focus Button)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -53,7 +53,8 @@
             ChevronDown: (p) => <Icon {...p}><polyline points="6 9 12 15 18 9" /></Icon>,
             Table: (p) => <Icon {...p}><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18" /></Icon>,
             TrendingUp: (p) => <Icon {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></Icon>,
-            TrendingDown: (p) => <Icon {...p}><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" /></Icon>
+            TrendingDown: (p) => <Icon {...p}><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" /></Icon>,
+            Focus: (p) => <Icon {...p}><circle cx="12" cy="12" r="3" /><path d="M6 12h-4" /><path d="M22 12h-4" /><path d="M12 6v-4" /><path d="M12 22v-4" /></Icon>
         };
 
         // --- 2. SCHEMATIC COMPONENT ---
@@ -75,12 +76,10 @@
                             </marker>
                         </defs>
 
-                        {/* Background Grid */}
                         <line x1="0" y1="30" x2="300" y2="30" stroke="#333" strokeWidth="0.5" strokeDasharray="4 4"/>
                         <line x1="0" y1="60" x2="300" y2="60" stroke="#333" strokeWidth="0.5" strokeDasharray="4 4"/>
                         <line x1="0" y1="90" x2="300" y2="90" stroke="#333" strokeWidth="0.5" strokeDasharray="4 4"/>
 
-                        {/* Zone */}
                         <rect x="0" y={isBullish ? 80 : 10} width="300" height="30" fill={`url(#grad${isBullish?'G':'R'})`} />
                         <line x1="0" y1={zoneY} x2="300" y2={zoneY} stroke={color} strokeWidth="2" strokeDasharray="4 2"/>
                         
@@ -88,7 +87,6 @@
                             {isBullish ? 'DEMAND ZONE' : 'SUPPLY ZONE'}
                         </text>
 
-                        {/* The MTA Arrow Path */}
                         {isBullish ? (
                             <>
                                 <path d="M 20 20 L 100 90" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="4 2" opacity="0.5" />
@@ -109,7 +107,7 @@
             );
         };
 
-        // --- 3. CHART COMPONENT (Updated with Auto-Zoom Logic) ---
+        // --- 3. CHART COMPONENT ---
         const TradingChart = forwardRef(({ data, analysis, currentPrice, timeframe }, ref) => {
             const containerRef = useRef(null);
             const chartRef = useRef(null);
@@ -120,7 +118,7 @@
                 takeScreenshot: () => {
                     return chartRef.current ? chartRef.current.takeScreenshot().toDataURL('image/png') : null;
                 },
-                zoomToLatest: (bars = 20) => {
+                zoomToLatest: (bars = 30) => {
                     if (chartRef.current && data.length > 0) {
                         const from = Math.max(0, data.length - bars); 
                         chartRef.current.timeScale().setVisibleLogicalRange({ from, to: data.length + 2 });
@@ -128,7 +126,7 @@
                 }
             }));
 
-            // Init Chart
+            // Init
             useEffect(() => {
                 if (!containerRef.current || !window.LightweightCharts) return;
 
@@ -164,10 +162,10 @@
                 if (seriesRef.current && data && data.length > 0) {
                     seriesRef.current.setData(data);
                     
-                    // Force Zoom to last 20 candles whenever data changes (Initial load or TF change)
-                    const barsToShow = 20;
+                    // Force Zoom on data load/change
+                    const barsToShow = 30;
                     const from = Math.max(0, data.length - barsToShow);
-                    const to = data.length + 2; // +2 for right padding
+                    const to = data.length + 2; 
                     chartRef.current.timeScale().setVisibleLogicalRange({ from, to });
                 }
             }, [data]);
@@ -185,7 +183,6 @@
 
                 const isBullish = analysis.bias === 'BULLISH';
 
-                // Yellow Current Price
                 refs.current = series.createPriceLine({
                     price: currentPrice,
                     color: '#fbbf24', 
@@ -195,7 +192,6 @@
                     title: 'CURRENT',
                 });
 
-                // Zone
                 refs.zone = series.createPriceLine({
                     price: analysis.zone,
                     color: isBullish ? '#22c55e' : '#ef4444',
@@ -205,7 +201,6 @@
                     title: isBullish ? 'WAIT BUY' : 'WAIT SELL',
                 });
 
-                // SL
                 refs.sl = series.createPriceLine({
                     price: analysis.sl,
                     color: '#ef4444',
@@ -279,7 +274,7 @@
                     const price = parseFloat(lastCandle[4]);
                     setCurrentPrice(price);
 
-                    // Analysis based on D1
+                    // Analysis
                     const d1Url = `https://api.binance.com/api/v3/klines?symbol=${currentAsset.apiSymbol}&interval=1d&limit=2${endTime}`;
                     const d1Res = await fetch(d1Url);
                     const d1Raw = await d1Res.json();
@@ -303,37 +298,65 @@
             };
 
             const runAnalysis = (d1, price) => {
-                const bias = d1.close > d1.open ? 'BULLISH' : 'BEARISH';
+                const isBullish = d1.close > d1.open;
+                const bias = isBullish ? 'BULLISH' : 'BEARISH';
                 const pp = (d1.high + d1.low + d1.close) / 3;
                 const r1 = (2 * pp) - d1.low;
                 const s1 = (2 * pp) - d1.high;
-                const zone = bias === 'BULLISH' ? s1 : r1;
+                const zone = isBullish ? s1 : r1;
                 const slBuffer = currentAsset.id === 'GOLD' ? 5 : (price * 0.015);
-                const sl = bias === 'BULLISH' ? zone - slBuffer : zone + slBuffer;
+                const sl = isBullish ? zone - slBuffer : zone + slBuffer;
+
+                const dateStr = new Date(mode === 'BACKTEST' ? backtestDate : new Date()).toLocaleDateString('th-TH', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                });
+
+                let detailedText = "";
+                if (isBullish) {
+                    detailedText = `🏆 แผนเทรด ${currentAsset.name} วันที่ ${dateStr}\n\n` +
+                        `1. ทิศทาง D1: แท่งเมื่อวานปิดเขียว ส่งผลให้วันนี้มองหน้า "BUY (ย่อซื้อ)" เป็นหลัก\n\n` +
+                        `2. โซนรอเข้า: รอราคาย่อตัวลงมาทดสอบแนวรับสำคัญ (S1) บริเวณ ${zone.toFixed(2)}\n\n` +
+                        `3. สัญญาณยืนยัน: ห้ามเข้าทันที! ให้รอแท่ง H1 จบแท่ง ถ้ามีการทิ้งไส้ล่างยาว (Rejection) และเนื้อเทียนปิดยืนเหนือ ${zone.toFixed(2)} ได้ ให้หาจังหวะเข้า Buy\n\n` +
+                        `4. จุดยอมแพ้ (SL): ตั้งที่ ${sl.toFixed(2)} (ห้ามเลื่อนหนีเด็ดขาด)`;
+                } else {
+                    detailedText = `🏆 แผนเทรด ${currentAsset.name} วันที่ ${dateStr}\n\n` +
+                        `1. ทิศทาง D1: แท่งเมื่อวานปิดแดง ส่งผลให้วันนี้มองหน้า "SELL (เด้งขาย)" เป็นหลัก\n\n` +
+                        `2. โซนรอเข้า: รอราคาดีดตัวขึ้นไปทดสอบแนวต้านสำคัญ (R1) บริเวณ ${zone.toFixed(2)}\n\n` +
+                        `3. สัญญาณยืนยัน: ห้ามเข้าทันที! ให้รอแท่ง H1 จบแท่ง ถ้ามีการทิ้งไส้บนยาว (Rejection) และเนื้อเทียนปิดต่ำกว่า ${zone.toFixed(2)} ได้ ให้หาจังหวะเข้า Sell\n\n` +
+                        `4. จุดยอมแพ้ (SL): ตั้งที่ ${sl.toFixed(2)} (ห้ามเลื่อนหนีเด็ดขาด)`;
+                }
 
                 setAnalysis({
                     bias, zone, sl, pp,
-                    mode: bias === 'BULLISH' ? 'BUY BIAS' : 'SELL BIAS',
-                    accent: bias === 'BULLISH' ? 'text-green-400' : 'text-red-400',
-                    bg: bias === 'BULLISH' ? 'bg-green-900/20' : 'bg-red-900/20',
-                    cardBg: bias === 'BULLISH' ? 'from-green-950 to-black' : 'from-red-950 to-black',
+                    mode: isBullish ? 'BUY BIAS' : 'SELL BIAS',
+                    accent: isBullish ? 'text-green-400' : 'text-red-400',
+                    bg: isBullish ? 'bg-green-900/20' : 'bg-red-900/20',
+                    cardBg: isBullish ? 'from-green-950 to-black' : 'from-red-950 to-black',
+                    fullText: detailedText,
                     steps: [
-                        `1. D1 Trend: ${bias} (${d1.close > d1.open ? 'เขียว' : 'แดง'})`,
-                        `2. Wait Zone: ${zone.toFixed(2)} (${bias === 'BULLISH' ? 'S1' : 'R1'})`,
-                        `3. Confirm: H1 Rejection (ทิ้งไส้)`,
-                        `4. Stop Loss: ${sl.toFixed(2)}`
-                    ]
+                        `1. D1 Trend: ${bias}`,
+                        `2. Zone: ${zone.toFixed(2)} (${isBullish ? 'S1' : 'R1'})`,
+                        `3. Trigger: H1 Rejection`,
+                        `4. SL: ${sl.toFixed(2)}`
+                    ],
+                    dateStr: dateStr
                 });
             };
 
             const handleShare = () => {
                 if(chartRef.current && analysis) {
-                    chartRef.current.zoomToLatest(20); // Explicitly zoom to 20 bars before capture
+                    chartRef.current.zoomToLatest(20);
                     setTimeout(() => {
                         const img = chartRef.current.takeScreenshot();
                         setCapturedImg(img);
                         setShowShare(true);
                     }, 300);
+                }
+            };
+            
+            const handleResetZoom = () => {
+                if(chartRef.current) {
+                    chartRef.current.zoomToLatest(30);
                 }
             };
 
@@ -383,6 +406,16 @@
                                 <div className="text-[10px] text-gray-400">CURRENT</div>
                                 <div className="text-xl font-mono font-bold text-yellow-400">{currentPrice.toFixed(2)}</div>
                             </div>
+                            
+                            {/* RESET ZOOM BUTTON */}
+                            <button 
+                                onClick={handleResetZoom}
+                                className="absolute bottom-16 right-16 z-20 bg-gray-800/80 hover:bg-gray-700 text-white p-2 rounded-full border border-gray-600 transition-all shadow-lg flex items-center justify-center group"
+                                title="Focus View"
+                            >
+                                <Icons.Focus size={20} />
+                            </button>
+
                             <TradingChart ref={chartRef} data={chartData} analysis={analysis} currentPrice={currentPrice} timeframe={currentTimeframe} />
                         </div>
 
@@ -417,13 +450,13 @@
                                             <span className="text-sm font-mono font-bold text-red-400">{analysis.sl.toFixed(2)}</span>
                                         </div>
                                         <div className="bg-black p-3 rounded border border-gray-800">
-                                            <div className="text-[10px] text-gray-500 mb-2 uppercase font-bold flex items-center gap-2"><Icons.FileText size={12}/> Trading Plan</div>
-                                            <ul className="text-xs text-gray-300 space-y-2">
-                                                {analysis.steps.map((s,i) => <li key={i} className="flex gap-2"><span className="min-w-[16px] h-[16px] flex items-center justify-center text-[9px] bg-gray-700 rounded-full mt-0.5">{i+1}</span><span className="leading-tight">{s}</span></li>)}
-                                            </ul>
+                                            <div className="text-[10px] text-gray-500 mb-2 uppercase font-bold flex items-center gap-2"><Icons.FileText size={12}/> Analysis</div>
+                                            <div className="text-xs text-gray-300 space-y-1 whitespace-pre-line leading-relaxed">
+                                                {analysis.fullText}
+                                            </div>
                                         </div>
                                     </div>
-                                    <button onClick={() => {navigator.clipboard.writeText(analysis.steps.join('\n')); alert('Copied!')}} className="w-full py-2 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300 flex items-center justify-center gap-2 transition-all">
+                                    <button onClick={() => {navigator.clipboard.writeText(analysis.fullText); alert('Copied Analysis!')}} className="w-full py-2 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300 flex items-center justify-center gap-2 transition-all">
                                         <Icons.Copy size={14}/> Copy Plan Text
                                     </button>
                                 </>
@@ -431,34 +464,29 @@
                         </div>
                     </div>
 
-                    {/* SHARE MODAL V14 STYLE */}
+                    {/* SHARE MODAL */}
                     {showShare && analysis && (
                         <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4">
                             <div className="w-full max-w-lg relative bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-                                
-                                {/* 1. Close Button (Top Right Big X) */}
                                 <button onClick={() => setShowShare(false)} className="absolute -top-12 right-0 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-all"><Icons.X size={24}/></button>
-
-                                {/* 2. Content */}
                                 <div className="p-0 overflow-y-auto">
                                     <div className={`h-2 w-full ${analysis.bias === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}></div>
                                     <div className={`p-4 bg-gradient-to-b ${analysis.cardBg}`}>
                                         <div className="flex justify-between items-center mb-4">
                                             <div>
                                                 <h2 className="text-3xl font-black text-white tracking-tighter">{currentAsset.name}</h2>
-                                                <p className="text-xs text-gray-400">{new Date().toLocaleDateString('th-TH')}</p>
+                                                <p className="text-xs text-gray-400">{analysis.dateStr}</p>
                                             </div>
                                             <div className={`px-3 py-1 rounded text-xs font-bold text-black ${analysis.bias === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}>{analysis.mode}</div>
                                         </div>
                                         
-                                        {/* Real Chart Capture (Zoomed 20x) */}
+                                        {/* Capture */}
                                         <div className="rounded-lg overflow-hidden border border-gray-700 bg-black mb-4 relative">
                                             <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-1 rounded text-[9px] text-gray-300 pointer-events-none">Live Zoom (20 Candles)</div>
                                             {capturedImg ? <img src={capturedImg} className="w-full h-auto object-cover" alt="Chart" /> : <div className="h-48 flex items-center justify-center text-gray-600">Generating...</div>}
                                         </div>
 
-                                        {/* MTA Schematic Overlay (Top Right/Custom Position requested) */}
-                                        {/* As requested: Graph below the capture */}
+                                        {/* Schematic */}
                                         <div className="grid grid-cols-12 gap-3 bg-black/40 rounded-lg p-3 border border-gray-700">
                                             <div className="col-span-7 flex flex-col justify-center">
                                                 <div className="text-[10px] text-gray-500 mb-1 uppercase">MTA Setup</div>
@@ -467,14 +495,8 @@
                                                 </div>
                                             </div>
                                             <div className="col-span-5 flex flex-col justify-center gap-2 border-l border-gray-700 pl-3">
-                                                <div>
-                                                    <div className="text-[9px] text-gray-500 uppercase">ZONE</div>
-                                                    <div className="text-lg font-mono font-bold text-white">{analysis.zone.toFixed(2)}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-[9px] text-gray-500 uppercase">SL</div>
-                                                    <div className="text-lg font-mono font-bold text-red-500">{analysis.sl.toFixed(2)}</div>
-                                                </div>
+                                                <div><div className="text-[9px] text-gray-500 uppercase">ZONE</div><div className="text-lg font-mono font-bold text-white">{analysis.zone.toFixed(2)}</div></div>
+                                                <div><div className="text-[9px] text-gray-500 uppercase">SL</div><div className="text-lg font-mono font-bold text-red-500">{analysis.sl.toFixed(2)}</div></div>
                                             </div>
                                         </div>
                                     </div>
