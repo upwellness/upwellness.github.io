@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>แบบบันทึกค่าองค์ประกอบร่างกาย (Body Composition Record)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap');
+
+        :root {
+            --primary-color: #005b96;
+            --secondary-color: #b3cde0;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --bg-grey: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #e9ecef;
+            color: #333;
+        }
+
+        .container-a4 {
+            background-color: #fff;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+        h2 {
+            text-align: center;
+            color: #666;
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+
+        /* Personal Info Section */
+        .personal-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            background-color: var(--secondary-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            flex: 1 1 200px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+
+        .input-group input, .input-group select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        /* Grid Layout for Measurements */
+        .measurements-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-icon {
+            margin-right: 8px;
+            font-size: 20px;
+        }
+
+        .measurement-value-box {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+
+        .measurement-input {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            width: 100px;
+            border: none;
+            border-bottom: 2px solid var(--primary-color);
+            text-align: right;
+            margin-right: 10px;
+            padding: 5px;
+        }
+        
+        .unit {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Visual Scale Bar */
+        .scale-bar-container {
+            margin-top: 10px;
+        }
+
+        .scale-bar {
+            height: 12px;
+            border-radius: 6px;
+            width: 100%;
+            position: relative;
+            display: flex;
+        }
+
+        .scale-segment {
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #777;
+            margin-top: 5px;
+        }
+
+        /* Specific Color Gradients for Scales */
+        /* BMI & Fat: Low(Blue) -> Normal(Green) -> High(Yellow) -> Very High(Red) */
+        .grad-bmi { background: linear-gradient(to right, var(--info-color) 15%, var(--success-color) 15% 50%, var(--warning-color) 50% 75%, var(--danger-color) 75%); }
+        
+        /* Muscle: Low(Yellow) -> Normal(Green) -> High(Dark Green) - Higher is better */
+        .grad-muscle { background: linear-gradient(to right, var(--warning-color) 30%, var(--success-color) 30% 70%, #155724 70%); }
+
+        /* Visceral Fat: Normal(Green) -> Caution(Yellow) -> High Risk(Red) */
+        .grad-visceral { background: linear-gradient(to right, var(--success-color) 60%, var(--warning-color) 60% 85%, var(--danger-color) 85%); }
+
+        /* Body Age: Younger(Green) -> Same(Light Green) -> Older(Red) */
+        .grad-age { background: linear-gradient(to right, var(--success-color) 45%, #8fd19e 45% 55%, var(--danger-color) 55%); }
+
+        /* Footer / Reference */
+        .footer-ref {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 11px;
+        }
+        .ref-table th, .ref-table td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: center;
+        }
+        .ref-table th { background-color: #f2f2f2; }
+
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+            }
+            .container-a4 {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+            }
+             /* Ensure background graphics are printed */
+            * {
+                -webkit-print-color-adjust: exact !important;   /* Chrome, Safari */
+                print-color-adjust: exact !important;           /* Firefox */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-a4">
+    <h1>แบบบันทึกค่าองค์ประกอบร่างกาย</h1>
+    <h2>Body Composition Record Form</h2>
+
+    <div class="personal-info">
+        <div class="input-group">
+            <label>วันที่บันทึก (Date):</label>
+            <input type="date">
+        </div>
+        <div class="input-group" style="flex: 2 1 300px;">
+            <label>ชื่อ-นามสกุล (Name):</label>
+            <input type="text" placeholder="ชื่อของคุณ">
+        </div>
+        <div class="input-group">
+            <label>เพศ (Gender):</label>
+            <select>
+                <option value="male">ชาย (Male)</option>
+                <option value="female">หญิง (Female)</option>
+            </select>
+        </div>
+         <div class="input-group">
+            <label>ปีเกิด (Year of Birth):</label>
+            <input type="number" placeholder="เช่น 2535">
+        </div>
+        <div class="input-group">
+            <label>อายุ (Age):</label>
+            <input type="number" placeholder="ปี">
+        </div>
+        <div class="input-group">
+            <label>ส่วนสูง (Height):</label>
+            <input type="number" placeholder="cm">
+        </div>
+    </div>
+
+    <div class="measurements-grid">
+
+        <div class="card" style="border-left: 5px solid var(--primary-color);">
+            <div class="card-header">
+                <div class="card-title"><span class="card-icon">⚖️</span> น้ำหนัก (Weight)</div>
+            </div>
+            <div class="measurement-value-box">
+                <input type="text" class="measurement-input" placeholder="00.0">
+                <span class="unit">kg</span>
+            </div>
+            <div style="font-size: 12px; color: #666;">บันทึกเพื่อดูการเปลี่ยนแปลงรวม</div>
+        </div>
+
+         <div class="card" style="border-left: 5px solid var(--info-color);">
+            <div class="card-header">
+                <div class="card-title"><span class="card-icon">📊</span> BMI (ดัชนีมวลกาย)</div>
+            </div>
+            <div class="measurement-value-box">
+                <input type="text" class="measurement-input" placeholder="00.0">
+                <span class="unit">kg/m²</span>
+            </div>
+            <div class="scale-bar-container">
+                <div class="scale-bar grad-bmi"></div>
+                <div class="scale-labels">
+                    <span>ผอม (<18.5)</span>
+                    <span>ปกติ (18.5-22.9)</span>
+                    <span>ท้วม (23-24.9)</span>
+                    <span>อ้วน (>25)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 5px solid var(--warning-color);">
+            <div class="card-header">
+                <div class="card-title"><span class="card-icon">💧</span> %Fat (เปอร์เซ็นต์ไขมัน)</div>
+            </div>
+            <div class="measurement-value-box">
+                <input type="text" class="measurement-input" placeholder="00.0">
+                <span class="unit">%</span>
+            </div>
+            <div class="scale-bar-container">
+                <div class="scale-bar" style="background: linear-gradient(to right, var(--success-color), var(--warning-color), var(--danger-color));">
+                    <span class="scale-segment" style="flex:1">น้อย</span>
+                    <span class="scale-segment" style="flex:2">ปกติ (สุขภาพดี)</span>
+                    <span class="scale-segment" style="flex:1">สูง</span>
+                    <span class="scale-segment" style="flex:1; background-color: var(--danger-color);">สูงมาก</span>
+                </div>
+                <div class="scale-labels">
+                    <span>*เกณฑ์ต่างกันตามเพศ (ดูตารางด้านล่าง)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 5px solid var(--danger-color);">
+            <div class="card-header">
+                <div class="card-title"><span class="card-icon">🫀</span> Visceral Fat (ไขมันช่องท้อง)</div>
+            </div>
+            <div class="measurement-value-box">
+                <input type="text" class="measurement-input" placeholder="0">
+                <span class="unit">Level (ระดับ)</span>
+            </div>
+            <div class="scale-bar-container">
+                <div class="scale-bar grad-visceral">
+                     <span class="scale-segment" style="width:60%">ปกติ (1-9)</span>
+                     <span class="scale-segment" style="width:25%">เฝ้าระวัง (10-14)</span>
+                     <span class="scale-segment" style="width:15%">อันตราย (15+)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 5px solid var(--success-color);">
+            <div class="card-header">
+                <div class="card-title"><span class="card-icon">💪</span> %Muscle (เปอร์เซ็นต์กล้ามเนื้อ)</div>
+            </div>
+            <div class="measurement-value-box">
+                <input type="text" class="measurement-input" placeholder="00.0">
+                <span class="unit">%</span>
+            </div>
+            <div class="scale-bar-container">
+                <div class="scale-bar grad-muscle">
+                    <span class="scale-segment" style="width:30%">น้อย</span>
+                    <span class="scale-segment" style="width:40%">ปานกลาง</span>
+                    <span class="scale-segment" style="width:30%">มาก (ดี)</span>
+                </div>
+                <div class="scale-labels">
+                    <span>(ยิ่งมากยิ่งดีต่อการเผาผลาญ)</span>
+                </div>
+            </div>
+        </div>
+
+         <div class="card" style="border-left: 5px solid #6f42c1;">
+            <div class="card-header">
+                <div class="card-title"><span class="card-icon">🎂</span> Body Age (อายุร่างกาย/ระบบเผาผลาญ)</div>
+            </div>
+            <div class="measurement-value-box">
+                <input type="text" class="measurement-input" placeholder="00">
+                <span class="unit">ปี (Years)</span>
+            </div>
+            <div class="scale-bar-container">
+                <div class="scale-bar grad-age">
+                    <span class="scale-segment" style="width:45%">อ่อนกว่าวัย (ดีเยี่ยม)</span>
+                    <span class="scale-segment" style="width:10%; font-size: 8px; color: #333;">เท่าอายุจริง</span>
+                    <span class="scale-segment" style="width:45%">แก่กว่าวัย (ควรปรับปรุง)</span>
+                </div>
+                 <div class="scale-labels">
+                    <span>เทียบกับอายุจริงของคุณ</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 5px solid #fd7e14;">
+            <div class="card-header">
+                <div class="card-title"><span class="card-icon">🔥</span> BMR (อัตราการเผาผลาญพื้นฐาน)</div>
+            </div>
+            <div class="measurement-value-box">
+                <input type="text" class="measurement-input" placeholder="0000">
+                <span class="unit">kcal/วัน</span>
+            </div>
+            <div style="font-size: 12px; color: #666; margin-top: 10px;">
+                คือพลังงานขั้นต่ำที่ร่างกายต้องการขณะพัก (ไม่รวมกิจกรรม) *ค่านี้ขึ้นอยู่กับกล้ามเนื้อ อายุ และเพศ ไม่มีเกณฑ์สูง/ต่ำที่แน่นอน
+            </div>
+        </div>
+
+        <div class="card" style="border: 2px dashed #ccc; background-color: #f9f9f9; display: flex; align-items: center; justify-content: center; color: #999;">
+            <div>บันทึกเพิ่มเติม (Notes):</div>
+            <textarea style="width: 90%; height: 60px; margin-top: 10px; border: 1px solid #ddd; resize: none;"></textarea>
+        </div>
+
+    </div> <div class="footer-ref">
+        <strong>*ตารางอ้างอิงเกณฑ์ %Fat (โดยประมาณ สำหรับผู้ใหญ่)</strong>
+        <table class="ref-table">
+            <tr>
+                <th>เพศ</th>
+                <th style="color: var(--info-color);">ผอม (Low)</th>
+                <th style="color: var(--success-color);">ปกติ/สุขภาพดี (Normal)</th>
+                <th style="color: var(--warning-color);">สูง (High)</th>
+                <th style="color: var(--danger-color);">สูงมาก/โรคอ้วน (Very High)</th>
+            </tr>
+            <tr>
+                <td><strong>ชาย (Male)</strong></td>
+                <td>< 10%</td>
+                <td>10 - 20%</td>
+                <td>21 - 25%</td>
+                <td>> 25%</td>
+            </tr>
+            <tr>
+                <td><strong>หญิง (Female)</strong></td>
+                <td>< 20%</td>
+                <td>20 - 30%</td>
+                <td>31 - 35%</td>
+                <td>> 35%</td>
+            </tr>
+        </table>
+        <p style="margin-top: 10px;">หมายเหตุ: ค่ามาตรฐานในแบบฟอร์มนี้เป็นเกณฑ์สากลทั่วไป อาจแตกต่างกันไปขึ้นอยู่กับยี่ห้อ/รุ่นของเครื่องวัด และช่วงอายุของผู้ใช้ โปรดปรึกษาผู้เชี่ยวชาญเพื่อการวิเคราะห์ที่แม่นยำ</p>
+    </div>
+
+</div>
+
+</body>
+</html>
