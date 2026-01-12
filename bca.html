@@ -2,419 +2,561 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>แบบบันทึกค่าองค์ประกอบร่างกาย (Body Composition Record)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V Wellness Body Composition Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap');
-
-        :root {
-            --primary-color: #005b96;
-            --secondary-color: #b3cde0;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --info-color: #17a2b8;
-            --bg-grey: #f8f9fa;
-        }
-
         body {
             font-family: 'Sarabun', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #e9ecef;
-            color: #333;
+            background-color: #f0fdfa; /* Teal-50 */
         }
-
-        .container-a4 {
-            background-color: #fff;
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            padding: 25px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            box-sizing: border-box;
-        }
-
-        h1 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 5px;
-            font-size: 24px;
-        }
-        h2 {
-            text-align: center;
-            color: #666;
-            font-size: 16px;
-            margin-top: 0;
-            margin-bottom: 25px;
-        }
-
-        /* Personal Info Section */
-        .personal-info {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            background-color: var(--secondary-color);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-        }
-
-        .input-group {
-            flex: 1 1 200px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .input-group label {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: var(--primary-color);
-            font-size: 14px;
-        }
-
-        .input-group input, .input-group select {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-family: 'Sarabun', sans-serif;
-        }
-
-        /* Grid Layout for Measurements */
-        .measurements-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .card {
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 15px;
-            background-color: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .card-title {
-            font-weight: 600;
-            color: var(--primary-color);
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .card-icon {
-            margin-right: 8px;
-            font-size: 20px;
-        }
-
-        .measurement-value-box {
-            display: flex;
-            align-items: baseline;
-            margin-bottom: 10px;
-        }
-
-        .measurement-input {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-            width: 100px;
-            border: none;
-            border-bottom: 2px solid var(--primary-color);
-            text-align: right;
-            margin-right: 10px;
-            padding: 5px;
-        }
-        
-        .unit {
-            font-size: 14px;
-            color: #666;
-        }
-
-        /* Visual Scale Bar */
-        .scale-bar-container {
-            margin-top: 10px;
-        }
-
-        .scale-bar {
-            height: 12px;
-            border-radius: 6px;
-            width: 100%;
-            position: relative;
-            display: flex;
-        }
-
-        .scale-segment {
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 10px;
-            color: white;
-            font-weight: bold;
-        }
-
-        .scale-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: #777;
-            margin-top: 5px;
-        }
-
-        /* Specific Color Gradients for Scales */
-        /* BMI & Fat: Low(Blue) -> Normal(Green) -> High(Yellow) -> Very High(Red) */
-        .grad-bmi { background: linear-gradient(to right, var(--info-color) 15%, var(--success-color) 15% 50%, var(--warning-color) 50% 75%, var(--danger-color) 75%); }
-        
-        /* Muscle: Low(Yellow) -> Normal(Green) -> High(Dark Green) - Higher is better */
-        .grad-muscle { background: linear-gradient(to right, var(--warning-color) 30%, var(--success-color) 30% 70%, #155724 70%); }
-
-        /* Visceral Fat: Normal(Green) -> Caution(Yellow) -> High Risk(Red) */
-        .grad-visceral { background: linear-gradient(to right, var(--success-color) 60%, var(--warning-color) 60% 85%, var(--danger-color) 85%); }
-
-        /* Body Age: Younger(Green) -> Same(Light Green) -> Older(Red) */
-        .grad-age { background: linear-gradient(to right, var(--success-color) 45%, #8fd19e 45% 55%, var(--danger-color) 55%); }
-
-        /* Footer / Reference */
-        .footer-ref {
-            margin-top: 30px;
-            font-size: 12px;
-            color: #666;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-        }
-        .ref-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 11px;
-        }
-        .ref-table th, .ref-table td {
-            border: 1px solid #ddd;
-            padding: 5px;
-            text-align: center;
-        }
-        .ref-table th { background-color: #f2f2f2; }
-
         @media print {
-            body {
-                background-color: #fff;
-                padding: 0;
-            }
-            .container-a4 {
-                box-shadow: none;
-                margin: 0;
-                width: 100%;
-            }
-             /* Ensure background graphics are printed */
-            * {
-                -webkit-print-color-adjust: exact !important;   /* Chrome, Safari */
-                print-color-adjust: exact !important;           /* Firefox */
-            }
+            .no-print { display: none !important; }
+            .print-break { page-break-inside: avoid; }
+            body { background-color: white; }
+            .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; border: 1px solid #e5e7eb; }
+            input, select { border: none; background: transparent; padding: 0; margin: 0; font-weight: bold; color: black; -webkit-appearance: none; }
+            .gauge-container { background: #e5e7eb !important; -webkit-print-color-adjust: exact; }
+            .gauge-bar { -webkit-print-color-adjust: exact; }
+            .marker { background-color: white !important; -webkit-print-color-adjust: exact; }
+        }
+        .gauge-container {
+            position: relative;
+            background: #e5e7eb;
+            border-radius: 9999px;
+            height: 1rem; /* Compact height */
+            margin-bottom: 1.25rem; /* Space for labels */
+            margin-top: 0.5rem;
+        }
+        .gauge-bar {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
+        }
+        .marker {
+            position: absolute;
+            top: -2px;
+            bottom: -2px;
+            width: 2px;
+            background-color: rgba(255,255,255,1);
+            z-index: 10;
+            box-shadow: 0 0 2px rgba(0,0,0,0.2);
+        }
+        .marker-label {
+            position: absolute;
+            top: 120%;
+            font-size: 0.6rem;
+            font-weight: bold;
+            color: #6b7280;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+        /* Custom Input Style for compact look */
+        .input-compact {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            width: 100%;
+            text-align: center;
+        }
+        .input-compact:focus {
+            outline: none;
+            border-color: #14b8a6;
+            ring: 2px solid #14b8a6;
         }
     </style>
 </head>
-<body>
+<body class="text-gray-700 pb-20">
 
-<div class="container-a4">
-    <h1>แบบบันทึกค่าองค์ประกอบร่างกาย</h1>
-    <h2>Body Composition Record Form</h2>
+    <!-- Header / Nav -->
+    <nav class="bg-teal-600 text-white p-3 shadow-lg no-print sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-bold flex items-center gap-2">
+                <i class="fa-solid fa-heart-pulse"></i> 
+                <span class="hidden sm:inline">Body Composition</span>
+            </h1>
+            <div class="flex gap-2">
+                <button onclick="toggleInputs()" id="toggleBtn" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-full text-xs font-bold transition border border-teal-500">
+                    <i class="fa-solid fa-eye-slash mr-1"></i> ซ่อนช่องกรอก
+                </button>
+                <button onclick="saveAsImage()" class="bg-white text-teal-700 px-3 py-1.5 rounded-full text-xs font-bold transition shadow hover:bg-gray-100">
+                    <i class="fa-solid fa-image mr-1"></i> บันทึกรูป
+                </button>
+            </div>
+        </div>
+    </nav>
 
-    <div class="personal-info">
-        <div class="input-group">
-            <label>วันที่บันทึก (Date):</label>
-            <input type="date">
-        </div>
-        <div class="input-group" style="flex: 2 1 300px;">
-            <label>ชื่อ-นามสกุล (Name):</label>
-            <input type="text" placeholder="ชื่อของคุณ">
-        </div>
-        <div class="input-group">
-            <label>เพศ (Gender):</label>
-            <select>
-                <option value="male">ชาย (Male)</option>
-                <option value="female">หญิง (Female)</option>
-            </select>
-        </div>
-         <div class="input-group">
-            <label>ปีเกิด (Year of Birth):</label>
-            <input type="number" placeholder="เช่น 2535">
-        </div>
-        <div class="input-group">
-            <label>อายุ (Age):</label>
-            <input type="number" placeholder="ปี">
-        </div>
-        <div class="input-group">
-            <label>ส่วนสูง (Height):</label>
-            <input type="number" placeholder="cm">
+    <!-- Main Content Area (Capture Target) -->
+    <div id="capture-area" class="bg-[#f0fdfa] min-h-screen">
+        <div class="container mx-auto max-w-2xl p-3 sm:p-4" id="app">
+            
+            <!-- Header Report -->
+            <div class="text-center mb-4 pt-2">
+                <h1 class="text-xl sm:text-2xl font-bold text-teal-800">ผลวิเคราะห์องค์ประกอบร่างกาย</h1>
+                <p class="text-gray-500 text-xs mt-1"><i class="fa-regular fa-calendar mr-1"></i> <span id="printDate"></span></p>
+            </div>
+
+            <!-- Section 1: Customer & Inputs (Collapsible) -->
+            <div id="inputSection" class="bg-white rounded-xl shadow-sm border border-teal-100 p-4 mb-4 transition-all duration-300">
+                <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+                    <h2 class="text-sm font-bold text-teal-800"><i class="fa-regular fa-user mr-1"></i> ข้อมูลลูกค้า & ค่าวัด</h2>
+                </div>
+                
+                <!-- Personal Info -->
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <input type="text" id="name" placeholder="ชื่อลูกค้า" class="input-compact text-left col-span-2 font-bold text-gray-700 bg-teal-50 border-teal-200">
+                    
+                    <div class="flex gap-1">
+                        <input type="number" id="birthYear" placeholder="ปีเกิด(พ.ศ.)" class="input-compact" oninput="updateAge()">
+                        <input type="number" id="age" placeholder="อายุ" class="input-compact bg-gray-50 font-bold text-teal-700" oninput="calculateAll()">
+                    </div>
+                    
+                    <div class="flex gap-1">
+                         <select id="gender" class="input-compact" onchange="calculateAll()">
+                            <option value="male">ชาย</option>
+                            <option value="female">หญิง</option>
+                        </select>
+                        <input type="number" id="height" placeholder="สูง(cm)" class="input-compact" oninput="calculateAll()">
+                    </div>
+                </div>
+
+                <!-- Measurement Inputs Grid -->
+                <div class="grid grid-cols-3 gap-2 bg-gray-50 p-2 rounded-lg">
+                    <div>
+                        <label class="text-[10px] text-gray-500 block text-center">น้ำหนัก (kg)</label>
+                        <input type="number" id="weight" placeholder="0.0" class="input-compact text-lg font-bold text-blue-600" oninput="calculateAll()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 block text-center">% ไขมัน</label>
+                        <input type="number" id="fatPct" placeholder="%" class="input-compact text-lg font-bold text-yellow-600" oninput="calculateAll()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 block text-center">ไขมันช่องท้อง</label>
+                        <input type="number" id="visceral" placeholder="Lv" class="input-compact text-lg font-bold text-red-600" oninput="calculateAll()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 block text-center">% กล้ามเนื้อ</label>
+                        <input type="number" id="musclePct" placeholder="%" class="input-compact text-lg font-bold text-green-600" oninput="calculateAll()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 block text-center">อายุร่างกาย</label>
+                        <input type="number" id="bodyAge" placeholder="ปี" class="input-compact text-lg font-bold text-purple-600" oninput="calculateAll()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 block text-center">BMR</label>
+                        <input type="number" id="bmr" placeholder="kcal" class="input-compact text-lg font-bold text-gray-600" oninput="calculateAll()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Analysis Cards (Result Focused) -->
+            <div class="space-y-3">
+                
+                <!-- 1. Muscle Mass -->
+                <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-dumbbell mr-1 text-green-500"></i> กล้ามเนื้อ (Muscle)</h3>
+                        <div class="text-right">
+                            <span id="musclePctDisplay" class="text-xl font-bold text-gray-800">- %</span>
+                            <span class="text-xs text-gray-400 ml-1">(<span id="muscleMassVal">-</span> kg)</span>
+                        </div>
+                    </div>
+                    <div class="gauge-container h-3 mt-2">
+                        <div id="muscleMarkers"></div>
+                        <div id="muscleBar" class="gauge-bar bg-green-500 w-0"></div>
+                    </div>
+                     <p id="muscleText" class="text-xs font-bold text-right text-gray-400 mt-4">-</p>
+                </div>
+
+                <!-- 2. Fat Mass -->
+                <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-layer-group mr-1 text-yellow-500"></i> ไขมัน (Fat)</h3>
+                        <div class="text-right">
+                            <span id="fatPctDisplay" class="text-xl font-bold text-gray-800">- %</span>
+                            <span class="text-xs text-gray-400 ml-1">(<span id="fatMassVal">-</span> kg)</span>
+                        </div>
+                    </div>
+                    <div class="gauge-container h-3 mt-2">
+                        <div id="fatMarkers"></div>
+                        <div id="fatBar" class="gauge-bar bg-yellow-400 w-0"></div>
+                    </div>
+                    <p id="fatText" class="text-xs font-bold text-right text-gray-400 mt-4">-</p>
+                </div>
+
+                <!-- 3. Visceral Fat -->
+                <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-heart-crack mr-1 text-red-500"></i> ไขมันช่องท้อง (Visceral)</h3>
+                        <span id="visceralValDisplay" class="text-xl font-bold text-gray-800">-</span>
+                    </div>
+                    <div class="gauge-container h-3 mt-2">
+                        <!-- Scale 0-20 -->
+                        <div class="marker left-[10%]"></div> <div class="marker-label left-[10%]">2</div>
+                        <div class="marker left-[25%]"></div> <div class="marker-label left-[25%]">5</div>
+                        <div class="marker left-[45%]"></div> <div class="marker-label left-[45%]">9</div>
+                        <div class="marker left-[75%]"></div> <div class="marker-label left-[75%]">15</div>
+                        <div id="visceralBar" class="gauge-bar bg-gray-200 w-0"></div>
+                    </div>
+                     <div class="grid grid-cols-4 gap-1 text-[8px] sm:text-[9px] text-gray-400 font-semibold mt-4 text-center">
+                        <span class="text-teal-600">ดีมาก(1-2)</span>
+                        <span class="text-green-500">ปกติ(3-5)</span>
+                        <span class="text-orange-400">เริ่มสูง(>5)</span>
+                        <span class="text-red-500">อันตราย(>15)</span>
+                    </div>
+                </div>
+
+                <!-- 4. Body Age Card -->
+                <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100 flex flex-col justify-center">
+                    <h3 class="font-bold text-gray-700 text-sm mb-2 text-center"><i class="fa-solid fa-hourglass-half mr-1 text-purple-500"></i> อายุร่างกาย (Body Age)</h3>
+                    <div class="flex justify-between items-center text-sm px-4">
+                         <div class="text-center">
+                            <span class="block text-gray-400 text-xs">อายุจริง</span>
+                            <span id="realAgeDisplay" class="font-bold text-lg text-gray-800">-</span>
+                         </div>
+                         <div class="text-gray-300"><i class="fa-solid fa-arrow-right"></i></div>
+                         <div class="text-center">
+                            <span class="block text-gray-400 text-xs">อายุร่างกาย</span>
+                            <span id="bodyAgeDisplay" class="font-bold text-lg text-purple-600">-</span>
+                         </div>
+                    </div>
+                    <div id="ageDiffTag" class="mt-2 text-center text-xs font-bold text-gray-400 py-1 rounded bg-gray-50">
+                        -
+                    </div>
+                </div>
+
+                <!-- 5. BMI Card -->
+                <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+                    <div class="flex justify-between items-end">
+                        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-weight-scale mr-1 text-blue-500"></i> BMI</h3>
+                        <span id="bmiVal" class="text-2xl font-extrabold text-gray-800">-</span>
+                    </div>
+                    <div class="gauge-container">
+                        <!-- Markers Scale 10-40 -->
+                        <div class="marker left-[28.3%]"></div> <div class="marker-label left-[28.3%]">18.5</div>
+                        <div class="marker left-[43.3%]"></div> <div class="marker-label left-[43.3%]">23.0</div>
+                        <div class="marker left-[50%]"></div>   <div class="marker-label left-[50%]">25.0</div>
+                        <div class="marker left-[66.6%]"></div> <div class="marker-label left-[66.6%]">30.0</div>
+                        <div id="bmiBar" class="gauge-bar bg-gray-200 w-0"></div>
+                    </div>
+                    <p id="bmiText" class="text-xs font-bold text-right text-gray-400 mt-4">-</p>
+                </div>
+
+                <!-- 6. BMR Card (New) -->
+                <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+                    <div class="flex justify-between items-end mb-2">
+                        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-fire mr-1 text-orange-500"></i> อัตราการเผาผลาญ (BMR)</h3>
+                        <div class="text-right">
+                            <span id="bmrValDisplay" class="text-2xl font-extrabold text-gray-800">-</span>
+                            <span class="text-xs text-gray-400">kcal</span>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 p-2 rounded-lg border border-orange-100">
+                        <p class="text-xs text-orange-800 text-center">
+                            การเผาผลาญถ้าอยู่เฉยๆ ทานวันละเท่านี้ น้ำหนักไม่ขึ้นไม่ลด
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Summary Box -->
+                <div class="bg-gradient-to-r from-teal-50 to-white border border-teal-200 rounded-xl p-4 shadow-sm">
+                    <div class="flex justify-between items-start">
+                         <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">น้ำหนักที่เหมาะสม</span>
+                            <div id="idealWeightRange" class="text-lg font-bold text-teal-700">- kg</div>
+                         </div>
+                         <div class="text-right">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">เป้าหมาย</span>
+                            <div id="weightTarget" class="text-lg font-bold text-gray-700">-</div>
+                         </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-teal-100">
+                         <p id="analysisText" class="text-xs text-gray-600 leading-relaxed">
+                            กรอกข้อมูลเพื่อดูผลวิเคราะห์...
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 text-center pb-4 text-[10px] text-gray-300 no-print">
+                UP Labs Body Composition
+            </div>
         </div>
     </div>
 
-    <div class="measurements-grid">
+    <script>
+        /* CONFIGURATION */
+        const CRITERIA = {
+            bmi: { under: 18.5, normal: 22.9, over: 24.9, obese1: 29.9 },
+            visceral: { excellent: 2, safe: 5, startHigh: 9, high: 15 },
+            fat: {
+                male: { low: 10, normal: 20, high: 25 }, 
+                female: { low: 20, normal: 30, high: 35 } 
+            },
+            muscle: {
+                male: { low: 33, normal: 39 }, 
+                female: { low: 24, normal: 30 } 
+            }
+        };
 
-        <div class="card" style="border-left: 5px solid var(--primary-color);">
-            <div class="card-header">
-                <div class="card-title"><span class="card-icon">⚖️</span> น้ำหนัก (Weight)</div>
-            </div>
-            <div class="measurement-value-box">
-                <input type="text" class="measurement-input" placeholder="00.0">
-                <span class="unit">kg</span>
-            </div>
-            <div style="font-size: 12px; color: #666;">บันทึกเพื่อดูการเปลี่ยนแปลงรวม</div>
-        </div>
+        const today = new Date();
+        const dateStr = today.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('printDate').innerText = dateStr;
 
-         <div class="card" style="border-left: 5px solid var(--info-color);">
-            <div class="card-header">
-                <div class="card-title"><span class="card-icon">📊</span> BMI (ดัชนีมวลกาย)</div>
-            </div>
-            <div class="measurement-value-box">
-                <input type="text" class="measurement-input" placeholder="00.0">
-                <span class="unit">kg/m²</span>
-            </div>
-            <div class="scale-bar-container">
-                <div class="scale-bar grad-bmi"></div>
-                <div class="scale-labels">
-                    <span>ผอม (<18.5)</span>
-                    <span>ปกติ (18.5-22.9)</span>
-                    <span>ท้วม (23-24.9)</span>
-                    <span>อ้วน (>25)</span>
-                </div>
-            </div>
-        </div>
+        function toggleInputs() {
+            const section = document.getElementById('inputSection');
+            const btn = document.getElementById('toggleBtn');
+            
+            if(section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+                btn.innerHTML = '<i class="fa-solid fa-eye-slash mr-1"></i> ซ่อนช่องกรอก';
+            } else {
+                section.classList.add('hidden');
+                btn.innerHTML = '<i class="fa-solid fa-eye mr-1"></i> แสดงช่องกรอก';
+            }
+        }
 
-        <div class="card" style="border-left: 5px solid var(--warning-color);">
-            <div class="card-header">
-                <div class="card-title"><span class="card-icon">💧</span> %Fat (เปอร์เซ็นต์ไขมัน)</div>
-            </div>
-            <div class="measurement-value-box">
-                <input type="text" class="measurement-input" placeholder="00.0">
-                <span class="unit">%</span>
-            </div>
-            <div class="scale-bar-container">
-                <div class="scale-bar" style="background: linear-gradient(to right, var(--success-color), var(--warning-color), var(--danger-color));">
-                    <span class="scale-segment" style="flex:1">น้อย</span>
-                    <span class="scale-segment" style="flex:2">ปกติ (สุขภาพดี)</span>
-                    <span class="scale-segment" style="flex:1">สูง</span>
-                    <span class="scale-segment" style="flex:1; background-color: var(--danger-color);">สูงมาก</span>
-                </div>
-                <div class="scale-labels">
-                    <span>*เกณฑ์ต่างกันตามเพศ (ดูตารางด้านล่าง)</span>
-                </div>
-            </div>
-        </div>
+        function updateAge() {
+            const birthYear = document.getElementById('birthYear').value;
+            const currentYear = new Date().getFullYear() + 543;
+            if(birthYear && birthYear > 2400 && birthYear < currentYear) {
+                document.getElementById('age').value = currentYear - birthYear;
+                calculateAll();
+            }
+        }
 
-        <div class="card" style="border-left: 5px solid var(--danger-color);">
-            <div class="card-header">
-                <div class="card-title"><span class="card-icon">🫀</span> Visceral Fat (ไขมันช่องท้อง)</div>
-            </div>
-            <div class="measurement-value-box">
-                <input type="text" class="measurement-input" placeholder="0">
-                <span class="unit">Level (ระดับ)</span>
-            </div>
-            <div class="scale-bar-container">
-                <div class="scale-bar grad-visceral">
-                     <span class="scale-segment" style="width:60%">ปกติ (1-9)</span>
-                     <span class="scale-segment" style="width:25%">เฝ้าระวัง (10-14)</span>
-                     <span class="scale-segment" style="width:15%">อันตราย (15+)</span>
-                </div>
-            </div>
-        </div>
+        function calculateAll() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const gender = document.getElementById('gender').value;
+            const fatPct = parseFloat(document.getElementById('fatPct').value);
+            const visceral = parseFloat(document.getElementById('visceral').value);
+            const musclePct = parseFloat(document.getElementById('musclePct').value);
+            const bodyAge = parseFloat(document.getElementById('bodyAge').value);
+            const realAge = parseFloat(document.getElementById('age').value);
+            const bmr = parseFloat(document.getElementById('bmr').value);
 
-        <div class="card" style="border-left: 5px solid var(--success-color);">
-            <div class="card-header">
-                <div class="card-title"><span class="card-icon">💪</span> %Muscle (เปอร์เซ็นต์กล้ามเนื้อ)</div>
-            </div>
-            <div class="measurement-value-box">
-                <input type="text" class="measurement-input" placeholder="00.0">
-                <span class="unit">%</span>
-            </div>
-            <div class="scale-bar-container">
-                <div class="scale-bar grad-muscle">
-                    <span class="scale-segment" style="width:30%">น้อย</span>
-                    <span class="scale-segment" style="width:40%">ปานกลาง</span>
-                    <span class="scale-segment" style="width:30%">มาก (ดี)</span>
-                </div>
-                <div class="scale-labels">
-                    <span>(ยิ่งมากยิ่งดีต่อการเผาผลาญ)</span>
-                </div>
-            </div>
-        </div>
+            // Display Info
+            if(realAge) document.getElementById('realAgeDisplay').innerText = realAge;
+            if(bodyAge) document.getElementById('bodyAgeDisplay').innerText = bodyAge;
+            if(bmr) document.getElementById('bmrValDisplay').innerText = bmr.toLocaleString(); // Add commas
 
-         <div class="card" style="border-left: 5px solid #6f42c1;">
-            <div class="card-header">
-                <div class="card-title"><span class="card-icon">🎂</span> Body Age (อายุร่างกาย/ระบบเผาผลาญ)</div>
-            </div>
-            <div class="measurement-value-box">
-                <input type="text" class="measurement-input" placeholder="00">
-                <span class="unit">ปี (Years)</span>
-            </div>
-            <div class="scale-bar-container">
-                <div class="scale-bar grad-age">
-                    <span class="scale-segment" style="width:45%">อ่อนกว่าวัย (ดีเยี่ยม)</span>
-                    <span class="scale-segment" style="width:10%; font-size: 8px; color: #333;">เท่าอายุจริง</span>
-                    <span class="scale-segment" style="width:45%">แก่กว่าวัย (ควรปรับปรุง)</span>
-                </div>
-                 <div class="scale-labels">
-                    <span>เทียบกับอายุจริงของคุณ</span>
-                </div>
-            </div>
-        </div>
+            if (!weight || !height) return;
 
-        <div class="card" style="border-left: 5px solid #fd7e14;">
-            <div class="card-header">
-                <div class="card-title"><span class="card-icon">🔥</span> BMR (อัตราการเผาผลาญพื้นฐาน)</div>
-            </div>
-            <div class="measurement-value-box">
-                <input type="text" class="measurement-input" placeholder="0000">
-                <span class="unit">kcal/วัน</span>
-            </div>
-            <div style="font-size: 12px; color: #666; margin-top: 10px;">
-                คือพลังงานขั้นต่ำที่ร่างกายต้องการขณะพัก (ไม่รวมกิจกรรม) *ค่านี้ขึ้นอยู่กับกล้ามเนื้อ อายุ และเพศ ไม่มีเกณฑ์สูง/ต่ำที่แน่นอน
-            </div>
-        </div>
+            // 1. BMI
+            const heightM = height / 100;
+            const bmi = weight / (heightM * heightM);
+            document.getElementById('bmiVal').innerText = bmi.toFixed(1);
+            updateBMIUI(bmi);
 
-        <div class="card" style="border: 2px dashed #ccc; background-color: #f9f9f9; display: flex; align-items: center; justify-content: center; color: #999;">
-            <div>บันทึกเพิ่มเติม (Notes):</div>
-            <textarea style="width: 90%; height: 60px; margin-top: 10px; border: 1px solid #ddd; resize: none;"></textarea>
-        </div>
+            // 2. Fat
+            if (fatPct || fatPct === 0) {
+                const fatMass = (weight * fatPct) / 100;
+                document.getElementById('fatMassVal').innerText = fatMass.toFixed(1);
+                document.getElementById('fatPctDisplay').innerText = fatPct.toFixed(1) + "%";
+                updateFatUI(fatPct, gender);
+            }
 
-    </div> <div class="footer-ref">
-        <strong>*ตารางอ้างอิงเกณฑ์ %Fat (โดยประมาณ สำหรับผู้ใหญ่)</strong>
-        <table class="ref-table">
-            <tr>
-                <th>เพศ</th>
-                <th style="color: var(--info-color);">ผอม (Low)</th>
-                <th style="color: var(--success-color);">ปกติ/สุขภาพดี (Normal)</th>
-                <th style="color: var(--warning-color);">สูง (High)</th>
-                <th style="color: var(--danger-color);">สูงมาก/โรคอ้วน (Very High)</th>
-            </tr>
-            <tr>
-                <td><strong>ชาย (Male)</strong></td>
-                <td>< 10%</td>
-                <td>10 - 20%</td>
-                <td>21 - 25%</td>
-                <td>> 25%</td>
-            </tr>
-            <tr>
-                <td><strong>หญิง (Female)</strong></td>
-                <td>< 20%</td>
-                <td>20 - 30%</td>
-                <td>31 - 35%</td>
-                <td>> 35%</td>
-            </tr>
-        </table>
-        <p style="margin-top: 10px;">หมายเหตุ: ค่ามาตรฐานในแบบฟอร์มนี้เป็นเกณฑ์สากลทั่วไป อาจแตกต่างกันไปขึ้นอยู่กับยี่ห้อ/รุ่นของเครื่องวัด และช่วงอายุของผู้ใช้ โปรดปรึกษาผู้เชี่ยวชาญเพื่อการวิเคราะห์ที่แม่นยำ</p>
-    </div>
+            // 3. Muscle
+            if (musclePct || musclePct === 0) {
+                const muscleMass = (weight * musclePct) / 100;
+                document.getElementById('muscleMassVal').innerText = muscleMass.toFixed(1);
+                document.getElementById('musclePctDisplay').innerText = musclePct.toFixed(1) + "%";
+                updateMuscleUI(musclePct, gender);
+            }
 
-</div>
+            // 4. Visceral
+            if (visceral || visceral === 0) {
+                document.getElementById('visceralValDisplay').innerText = visceral;
+                updateVisceralUI(visceral);
+            }
 
+            // 5. Body Age
+            checkBodyAge();
+
+            // 6. Ideal Weight
+            calculateIdealWeight(heightM, weight, bmi);
+        }
+
+        function updateBMIUI(bmi) {
+            let status = "", colorClass = "";
+            let widthPct = ((bmi - 10) / 30) * 100;
+            if(widthPct < 0) widthPct = 0; if(widthPct > 100) widthPct = 100;
+
+            if (bmi < CRITERIA.bmi.under) { status = "ผอมเกินไป"; colorClass = "bg-yellow-400"; }
+            else if (bmi <= CRITERIA.bmi.normal) { status = "สมส่วน (ปกติ)"; colorClass = "bg-green-500"; }
+            else if (bmi <= CRITERIA.bmi.over) { status = "ท้วม (Overweight)"; colorClass = "bg-orange-400"; }
+            else if (bmi <= CRITERIA.bmi.obese1) { status = "อ้วนระดับ 1"; colorClass = "bg-red-500"; }
+            else { status = "อ้วนระดับ 2 (อันตราย)"; colorClass = "bg-red-700"; }
+
+            const bar = document.getElementById('bmiBar');
+            bar.style.width = `${widthPct}%`;
+            bar.className = `gauge-bar ${colorClass}`;
+            
+            const text = document.getElementById('bmiText');
+            text.innerText = status;
+            text.className = `text-xs font-bold text-right mt-4 ${colorClass.replace('bg-', 'text-')}`;
+        }
+
+        function updateFatUI(fatPct, gender) {
+            const limit = CRITERIA.fat[gender];
+            let status = "", color = "";
+            let width = (fatPct / 50) * 100;
+            if(width > 100) width = 100;
+
+            if (fatPct < limit.low) { status = "น้อยกว่าเกณฑ์"; color = "bg-yellow-400"; }
+            else if (fatPct <= limit.normal) { status = "ปกติ (Good)"; color = "bg-green-500"; }
+            else if (fatPct <= limit.high) { status = "เริ่มสูง"; color = "bg-orange-400"; }
+            else { status = "สูงมาก"; color = "bg-red-500"; }
+
+            const bar = document.getElementById('fatBar');
+            bar.style.width = `${width}%`;
+            bar.className = `gauge-bar ${color}`;
+            
+            const text = document.getElementById('fatText');
+            text.innerText = status;
+            text.className = `text-xs font-bold mt-4 ${color.replace('bg-', 'text-')}`;
+
+            document.getElementById('fatMarkers').innerHTML = `
+                <div class="marker" style="left: ${(limit.low/50)*100}%"></div>
+                <div class="marker-label" style="left: ${(limit.low/50)*100}%">${limit.low}</div>
+                <div class="marker" style="left: ${(limit.normal/50)*100}%"></div>
+                <div class="marker-label" style="left: ${(limit.normal/50)*100}%">${limit.normal}</div>
+                <div class="marker" style="left: ${(limit.high/50)*100}%"></div>
+                <div class="marker-label" style="left: ${(limit.high/50)*100}%">${limit.high}</div>
+            `;
+        }
+
+        function updateMuscleUI(musclePct, gender) {
+            const limit = CRITERIA.muscle[gender];
+            let status = "", color = "";
+            // Scale 10-60 (Range 50)
+            let width = ((musclePct - 10) / 50) * 100;
+            if(width < 0) width = 0; if(width > 100) width = 100;
+
+            if (musclePct < limit.low) { status = "น้อย"; color = "bg-yellow-400"; }
+            else if (musclePct <= limit.normal) { status = "มาตรฐาน"; color = "bg-green-500"; }
+            else { status = "สูง (Excellent)"; color = "bg-green-600"; }
+
+            const bar = document.getElementById('muscleBar');
+            bar.style.width = `${width}%`;
+            bar.className = `gauge-bar ${color}`;
+
+            const text = document.getElementById('muscleText');
+            text.innerText = status;
+            text.className = `text-xs font-bold mt-4 ${color.replace('bg-', 'text-')}`;
+
+            const lowPos = ((limit.low - 10) / 50) * 100;
+            const normPos = ((limit.normal - 10) / 50) * 100;
+            document.getElementById('muscleMarkers').innerHTML = `
+                <div class="marker" style="left: ${lowPos}%"></div>
+                <div class="marker-label" style="left: ${lowPos}%">${limit.low}</div>
+                <div class="marker" style="left: ${normPos}%"></div>
+                <div class="marker-label" style="left: ${normPos}%">${limit.normal}</div>
+            `;
+        }
+
+        function updateVisceralUI(visceral) {
+            let status = "", color = "";
+            let width = (visceral / 20) * 100;
+            if(width > 100) width = 100;
+
+            if (visceral <= CRITERIA.visceral.excellent) { status = "ดีมาก"; color = "bg-teal-600"; }
+            else if (visceral <= CRITERIA.visceral.safe) { status = "ปกติ"; color = "bg-green-500"; }
+            else if (visceral <= CRITERIA.visceral.startHigh) { status = "เริ่มสูง"; color = "bg-orange-400"; }
+            else if (visceral <= CRITERIA.visceral.high) { status = "สูงมาก"; color = "bg-red-500"; }
+            else { status = "อันตราย"; color = "bg-red-700"; }
+
+            const bar = document.getElementById('visceralBar');
+            bar.style.width = `${width}%`;
+            bar.className = `gauge-bar ${color}`;
+        }
+
+        function checkBodyAge() {
+            const realAge = parseFloat(document.getElementById('age').value);
+            const bodyAge = parseFloat(document.getElementById('bodyAge').value);
+            
+            const tag = document.getElementById('ageDiffTag');
+            
+            if(!realAge || !bodyAge) {
+                tag.innerText = "รอข้อมูล...";
+                tag.className = "mt-2 text-center text-xs font-bold text-gray-300 py-1 rounded bg-gray-50";
+                return;
+            }
+
+            const diff = bodyAge - realAge;
+
+            if (diff > 0) {
+                tag.innerText = `แก่กว่าวัย +${diff} ปี`;
+                tag.className = "mt-2 text-center text-xs font-bold text-red-600 py-1 rounded bg-red-100";
+            } else if (diff < 0) {
+                tag.innerText = `อ่อนกว่าวัย ${diff} ปี`;
+                tag.className = "mt-2 text-center text-xs font-bold text-green-600 py-1 rounded bg-green-100";
+            } else {
+                tag.innerText = "เท่าอายุจริง (สมส่วน)";
+                tag.className = "mt-2 text-center text-xs font-bold text-blue-600 py-1 rounded bg-blue-100";
+            }
+        }
+
+        function calculateIdealWeight(heightM, weight, bmi) {
+            const minW = CRITERIA.bmi.under * (heightM * heightM);
+            const maxW = CRITERIA.bmi.normal * (heightM * heightM);
+            document.getElementById('idealWeightRange').innerText = `${minW.toFixed(1)} - ${maxW.toFixed(1)} kg`;
+
+            let targetText = "";
+            if (weight < minW) {
+                targetText = `เพิ่ม +${(minW - weight).toFixed(1)}`;
+                document.getElementById('weightTarget').className = "text-lg font-bold text-yellow-600";
+            } else if (weight > maxW) {
+                targetText = `ลด -${(weight - maxW).toFixed(1)}`;
+                document.getElementById('weightTarget').className = "text-lg font-bold text-red-500";
+            } else {
+                targetText = "Keep";
+                document.getElementById('weightTarget').className = "text-lg font-bold text-green-600";
+            }
+            document.getElementById('weightTarget').innerText = targetText;
+            
+            const name = document.getElementById('name').value || "คุณลูกค้า";
+            document.getElementById('analysisText').innerHTML = `<b>คุณ ${name}</b> รูปร่างอยู่ในเกณฑ์ <b>${document.getElementById('bmiText').innerText}</b> เป้าหมายคือ <b>${targetText}</b> เพื่อให้สุขภาพแข็งแรงครับ`;
+        }
+
+        function saveAsImage() {
+            // Collapse inputs for cleaner image
+            const section = document.getElementById('inputSection');
+            const wasHidden = section.classList.contains('hidden');
+            if(!wasHidden) toggleInputs(); 
+
+            const element = document.getElementById("capture-area");
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...';
+
+            html2canvas(element, {
+                scale: 2, 
+                useCORS: true,
+                backgroundColor: "#f0fdfa",
+                windowWidth: 375 // Force mobile width capture
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Result-${document.getElementById('name').value || 'User'}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                btn.innerHTML = originalText;
+                
+                // Restore state
+                if(!wasHidden) toggleInputs();
+            }).catch(err => {
+                alert("Error: " + err);
+                btn.innerHTML = originalText;
+                if(!wasHidden) toggleInputs();
+            });
+        }
+    </script>
 </body>
 </html>
