@@ -70,23 +70,36 @@
             border-color: #14b8a6;
             ring: 2px solid #14b8a6;
         }
+        /* Modal Animation */
+        .modal {
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body class="text-gray-700 pb-20">
 
     <!-- Header / Nav -->
-    <nav class="bg-teal-600 text-white p-3 shadow-lg no-print sticky top-0 z-50">
+    <nav class="bg-teal-600 text-white p-3 shadow-lg no-print sticky top-0 z-40">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-lg font-bold flex items-center gap-2">
+            <h1 class="text-sm sm:text-lg font-bold flex items-center gap-2 truncate">
                 <i class="fa-solid fa-heart-pulse"></i> 
-                <span class="hidden sm:inline">Body Composition</span>
+                <span>UP Labs Body Composition</span>
             </h1>
             <div class="flex gap-2">
-                <button onclick="toggleInputs()" id="toggleBtn" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-full text-xs font-bold transition border border-teal-500">
+                <button onclick="generateScript()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-full text-xs font-bold transition shadow-md whitespace-nowrap">
+                    <i class="fa-solid fa-scroll mr-1"></i> สคริปต์
+                </button>
+                <button onclick="toggleInputs()" id="toggleBtn" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-full text-xs font-bold transition border border-teal-500 whitespace-nowrap">
                     <i class="fa-solid fa-eye-slash mr-1"></i> ซ่อนช่องกรอก
                 </button>
-                <button onclick="saveAsImage()" class="bg-white text-teal-700 px-3 py-1.5 rounded-full text-xs font-bold transition shadow hover:bg-gray-100">
-                    <i class="fa-solid fa-image mr-1"></i> บันทึกรูป
+                <button onclick="saveAsImage()" class="bg-white text-teal-700 px-3 py-1.5 rounded-full text-xs font-bold transition shadow hover:bg-gray-100 whitespace-nowrap">
+                    <i class="fa-solid fa-image mr-1"></i> รูป
                 </button>
             </div>
         </div>
@@ -155,26 +168,10 @@
                 </div>
             </div>
 
-            <!-- Section 2: Analysis Cards (Result Focused) -->
+            <!-- Section 2: Analysis Cards (Result Focused) - Reordered -->
             <div class="space-y-3">
                 
-                <!-- 1. Muscle Mass -->
-                <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
-                    <div class="flex justify-between items-center mb-1">
-                        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-dumbbell mr-1 text-green-500"></i> กล้ามเนื้อ (Muscle)</h3>
-                        <div class="text-right">
-                            <span id="musclePctDisplay" class="text-xl font-bold text-gray-800">- %</span>
-                            <span class="text-xs text-gray-400 ml-1">(<span id="muscleMassVal">-</span> kg)</span>
-                        </div>
-                    </div>
-                    <div class="gauge-container h-3 mt-2">
-                        <div id="muscleMarkers"></div>
-                        <div id="muscleBar" class="gauge-bar bg-green-500 w-0"></div>
-                    </div>
-                     <p id="muscleText" class="text-xs font-bold text-right text-gray-400 mt-4">-</p>
-                </div>
-
-                <!-- 2. Fat Mass -->
+                <!-- 1. Fat Mass -->
                 <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
                     <div class="flex justify-between items-center mb-1">
                         <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-layer-group mr-1 text-yellow-500"></i> ไขมัน (Fat)</h3>
@@ -190,7 +187,7 @@
                     <p id="fatText" class="text-xs font-bold text-right text-gray-400 mt-4">-</p>
                 </div>
 
-                <!-- 3. Visceral Fat -->
+                <!-- 2. Visceral Fat -->
                 <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
                     <div class="flex justify-between items-center mb-1">
                         <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-heart-crack mr-1 text-red-500"></i> ไขมันช่องท้อง (Visceral)</h3>
@@ -212,6 +209,22 @@
                     </div>
                 </div>
 
+                 <!-- 3. Muscle Mass -->
+                 <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-dumbbell mr-1 text-green-500"></i> กล้ามเนื้อ (Muscle)</h3>
+                        <div class="text-right">
+                            <span id="musclePctDisplay" class="text-xl font-bold text-gray-800">- %</span>
+                            <span class="text-xs text-gray-400 ml-1">(<span id="muscleMassVal">-</span> kg)</span>
+                        </div>
+                    </div>
+                    <div class="gauge-container h-3 mt-2">
+                        <div id="muscleMarkers"></div>
+                        <div id="muscleBar" class="gauge-bar bg-green-500 w-0"></div>
+                    </div>
+                     <p id="muscleText" class="text-xs font-bold text-right text-gray-400 mt-4">-</p>
+                </div>
+
                 <!-- 4. Body Age Card -->
                 <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100 flex flex-col justify-center">
                     <h3 class="font-bold text-gray-700 text-sm mb-2 text-center"><i class="fa-solid fa-hourglass-half mr-1 text-purple-500"></i> อายุร่างกาย (Body Age)</h3>
@@ -231,7 +244,23 @@
                     </div>
                 </div>
 
-                <!-- 5. BMI Card -->
+                 <!-- 5. BMR Card -->
+                 <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+                    <div class="flex justify-between items-end mb-2">
+                        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-fire mr-1 text-orange-500"></i> อัตราการเผาผลาญ (BMR)</h3>
+                        <div class="text-right">
+                            <span id="bmrValDisplay" class="text-2xl font-extrabold text-gray-800">-</span>
+                            <span class="text-xs text-gray-400">kcal</span>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 p-2 rounded-lg border border-orange-100">
+                        <p class="text-xs text-orange-800 text-center">
+                            การเผาผลาญถ้าอยู่เฉยๆ ทานวันละเท่านี้ น้ำหนักไม่ขึ้นไม่ลด
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 6. BMI Card -->
                 <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
                     <div class="flex justify-between items-end">
                         <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-weight-scale mr-1 text-blue-500"></i> BMI</h3>
@@ -246,22 +275,6 @@
                         <div id="bmiBar" class="gauge-bar bg-gray-200 w-0"></div>
                     </div>
                     <p id="bmiText" class="text-xs font-bold text-right text-gray-400 mt-4">-</p>
-                </div>
-
-                <!-- 6. BMR Card (New) -->
-                <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
-                    <div class="flex justify-between items-end mb-2">
-                        <h3 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-fire mr-1 text-orange-500"></i> อัตราการเผาผลาญ (BMR)</h3>
-                        <div class="text-right">
-                            <span id="bmrValDisplay" class="text-2xl font-extrabold text-gray-800">-</span>
-                            <span class="text-xs text-gray-400">kcal</span>
-                        </div>
-                    </div>
-                    <div class="bg-orange-50 p-2 rounded-lg border border-orange-100">
-                        <p class="text-xs text-orange-800 text-center">
-                            การเผาผลาญถ้าอยู่เฉยๆ ทานวันละเท่านี้ น้ำหนักไม่ขึ้นไม่ลด
-                        </p>
-                    </div>
                 </div>
 
                 <!-- Summary Box -->
@@ -286,6 +299,27 @@
 
             <div class="mt-6 text-center pb-4 text-[10px] text-gray-300 no-print">
                 UP Labs Body Composition
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Modal -->
+    <div id="scriptModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 px-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="bg-teal-600 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-file-invoice mr-2"></i>Script อ่านผลลูกค้า</h3>
+                <button onclick="closeScriptModal()" class="text-white hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 bg-gray-50">
+                <div id="scriptContent" class="bg-white p-4 rounded-lg border border-gray-200 text-sm leading-relaxed text-gray-800 font-medium font-sarabun whitespace-pre-wrap"></div>
+            </div>
+            <div class="p-4 bg-gray-100 border-t flex justify-end gap-2">
+                <button onclick="copyScript()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold shadow transition">
+                    <i class="fa-regular fa-copy mr-1"></i> คัดลอก
+                </button>
+                <button onclick="closeScriptModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg font-bold transition">
+                    ปิด
+                </button>
             </div>
         </div>
     </div>
@@ -345,7 +379,7 @@
             // Display Info
             if(realAge) document.getElementById('realAgeDisplay').innerText = realAge;
             if(bodyAge) document.getElementById('bodyAgeDisplay').innerText = bodyAge;
-            if(bmr) document.getElementById('bmrValDisplay').innerText = bmr.toLocaleString(); // Add commas
+            if(bmr) document.getElementById('bmrValDisplay').innerText = bmr.toLocaleString(); 
 
             if (!weight || !height) return;
 
@@ -504,17 +538,20 @@
             }
         }
 
+        let idealMinW = 0;
+        let idealMaxW = 0;
+
         function calculateIdealWeight(heightM, weight, bmi) {
-            const minW = CRITERIA.bmi.under * (heightM * heightM);
-            const maxW = CRITERIA.bmi.normal * (heightM * heightM);
-            document.getElementById('idealWeightRange').innerText = `${minW.toFixed(1)} - ${maxW.toFixed(1)} kg`;
+            idealMinW = CRITERIA.bmi.under * (heightM * heightM);
+            idealMaxW = CRITERIA.bmi.normal * (heightM * heightM);
+            document.getElementById('idealWeightRange').innerText = `${idealMinW.toFixed(1)} - ${idealMaxW.toFixed(1)} kg`;
 
             let targetText = "";
-            if (weight < minW) {
-                targetText = `เพิ่ม +${(minW - weight).toFixed(1)}`;
+            if (weight < idealMinW) {
+                targetText = `เพิ่ม +${(idealMinW - weight).toFixed(1)}`;
                 document.getElementById('weightTarget').className = "text-lg font-bold text-yellow-600";
-            } else if (weight > maxW) {
-                targetText = `ลด -${(weight - maxW).toFixed(1)}`;
+            } else if (weight > idealMaxW) {
+                targetText = `ลด -${(weight - idealMaxW).toFixed(1)}`;
                 document.getElementById('weightTarget').className = "text-lg font-bold text-red-500";
             } else {
                 targetText = "Keep";
@@ -527,7 +564,6 @@
         }
 
         function saveAsImage() {
-            // Collapse inputs for cleaner image
             const section = document.getElementById('inputSection');
             const wasHidden = section.classList.contains('hidden');
             if(!wasHidden) toggleInputs(); 
@@ -541,20 +577,100 @@
                 scale: 2, 
                 useCORS: true,
                 backgroundColor: "#f0fdfa",
-                windowWidth: 375 // Force mobile width capture
+                windowWidth: 375
             }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `Result-${document.getElementById('name').value || 'User'}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
                 btn.innerHTML = originalText;
-                
-                // Restore state
                 if(!wasHidden) toggleInputs();
             }).catch(err => {
                 alert("Error: " + err);
                 btn.innerHTML = originalText;
                 if(!wasHidden) toggleInputs();
+            });
+        }
+
+        /* Script Generation Logic */
+        function generateScript() {
+            const name = document.getElementById('name').value || "คุณลูกค้า";
+            const weight = parseFloat(document.getElementById('weight').value) || 0;
+            const fatPct = parseFloat(document.getElementById('fatPct').value) || 0;
+            const visceral = parseFloat(document.getElementById('visceral').value) || 0;
+            const musclePct = parseFloat(document.getElementById('musclePct').value) || 0;
+            const bodyAge = parseFloat(document.getElementById('bodyAge').value) || 0;
+            const realAge = parseFloat(document.getElementById('age').value) || 0;
+            const gender = document.getElementById('gender').value;
+
+            // 1. Weight Status
+            let weightStatus = "อยู่ในเกณฑ์";
+            if(weight > idealMaxW) weightStatus = "เกินเกณฑ์";
+            else if(weight < idealMinW) weightStatus = "ตกเกณฑ์ นิดหน่อย";
+
+            // 2. Fat Status
+            const fatLim = CRITERIA.fat[gender];
+            let fatStatus = "อยู่ในเกณฑ์";
+            if(fatPct < fatLim.low) fatStatus = "ตกเกณฑ์ นิดหน่อย";
+            else if(fatPct > fatLim.high) fatStatus = "เกินเกณฑ์";
+            else if(fatPct > fatLim.normal) fatStatus = "เริ่มเกินเกณฑ์";
+
+            // 3. Visceral Status (Text per user request)
+            let visStatusText = visceral; 
+            // The script template has fixed text: "...... ไขมันตัวนี้อันตราย..."
+            // We'll just pass the number, maybe add level.
+            let visLevel = "";
+            if(visceral > CRITERIA.visceral.startHigh) visLevel = " (สูง)";
+
+            // 4. Muscle Status
+            const musLim = CRITERIA.muscle[gender];
+            let muscleStatus = "มาตรฐาน";
+            if(musclePct < musLim.low) muscleStatus = "ไม่ดี (น้อยไป)";
+            else if(musclePct > musLim.normal) muscleStatus = "ดี";
+
+            // 5. Body Age Diff
+            let ageDiff = bodyAge - realAge;
+            let ageText = "";
+            if(ageDiff > 0) ageText = `เกินอายุจริงไป ${ageDiff} ปี`;
+            else if(ageDiff < 0) ageText = `อ่อนกว่าวัย ${Math.abs(ageDiff)} ปี`;
+            else ageText = "เท่าอายุจริง";
+
+            const script = `Script อ่านค่าแปลผล V Wellness Longevity
+เคยชั่งค่าวัดผล ? เคยวัดร่างกายไหม ? เราวัดให้จ้า ลองดูๆ ค่ะ
+
+น้ำหนัก = ${weight} kg ... ${weightStatus}
+ไขมัน = ${fatPct}% ... ${fatStatus}
+ไขมันช่องท้อง = ${visceral}${visLevel} ... ไขมันตัวนี้อันตราย เกาะตับ หัวใจ มีมากความดันเบาหวานก็ตามมา แม้น้ำหนักไม่เยอะเลย
+กล้ามเนื้อ = ${musclePct}% ... ${muscleStatus} กล้ามเนื้อยิ่งแก่ยิ่งลด ภูมิตก อ้วนง่าย คนแก่กล้ามเนื้อน้อยมาก กระดูกหักง่าย
+อายุร่างกาย = ${bodyAge} ปี (${ageText}) ... อันนี้เราวัดรวมๆ นะ ใน Longevity ที่เซเลป ดาราไปวัดกันแพงๆ เค้าวัดกันแต่ละอวัยวะเลย เพราะอยากมีอายุยืนแบบแข็งแรง มีคุณภาพชีวิตที่ดี จะได้ดูแลถูก
+BMR อัตราการเผาผลาญ อันนี้ง่ายๆ กล้ามเนื้อเยอะ อายุน้อยเผาผลาญดี อายุมาก กล้ามเนื้อน้อย นั่งหายใจก็อ้วนได้ 555+ เท่านี้แหละจ้า 
+
+---------------------------------------------
+(ช่วงถามลูกค้า)
+เราถามต่อว่า: มีแผนอยากดูแลตัวเองยังไง อยากลดน้ำหนักไหม หรือ ดูแล้วยังไม่หนักหนานะ ดูแลตัวเองแบบชิลๆ เดือนละ 1000-3000 ก็หลับดีขึ้น เผาผลาญดีขึ้นแบบยาวๆ แล้วจ้า
+
+(ช่วงนำเสนอ)
+เรามีโปรแกรม UP Labs กับ Full Course
+
+"ถ้าเน้นชิล ใช้ Budget น้อย 1000-3000 ชอบแบบสั้น เร็ว ถูก ทำได้ยาวๆ สุขภาพดียั่งยืน UP Labs ตอบโจทย์สุด 14 วันรู้เรื่องจ้า ได้ทั้ง Fat adaptation, Autophagy, ฝึก IF หลับดี สบายตัว"
+
+"แต่ถ้าเราข้อจำกัดเยอะ เช่น ต้องลด 20-30 kg หรือมีโรคประจำตัว เป็นแนวไม่อยากปรับตัวมาก กินยากไม่ได้ Full Course เลย เดือนละ 20,000 เยอะแต่จบ เราประทับใจมากกกกกก"
+
+(CTA)
+เริ่มกันเลยนร้า / เริ่มวันไหนดี เรา order ของมาให้จ้า / เริ่มอาทิตย์หน้าไหมพร้อมเรา มีเพื่อนจ้า / เชียร์`;
+
+            document.getElementById('scriptContent').innerText = script;
+            document.getElementById('scriptModal').classList.add('active');
+        }
+
+        function closeScriptModal() {
+            document.getElementById('scriptModal').classList.remove('active');
+        }
+
+        function copyScript() {
+            const text = document.getElementById('scriptContent').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("คัดลอกสคริปต์เรียบร้อย!");
             });
         }
     </script>
