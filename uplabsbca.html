@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP Labs Tracker v.2.0</title>
+    <title>UP Labs Tracker v2.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue 3 -->
@@ -44,7 +44,7 @@
         
         <!-- Navbar -->
         <nav class="bg-teal-600 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
-            <h1 class="font-bold text-lg"><i class="fa-solid fa-heart-pulse mr-2"></i>UP Labs Tracker</h1>
+            <h1 class="font-bold text-lg"><i class="fa-solid fa-heart-pulse mr-2"></i>UP Labs Tracker v2.0</h1>
             <div v-if="session" class="flex gap-2">
                 <!-- Backup Buttons (Only on Dashboard) -->
                 <div v-if="view === 'dashboard'" class="flex mr-2">
@@ -144,8 +144,7 @@
         <!-- 3. Customer Detail View -->
         <div v-else-if="view === 'customer_detail' && currentCustomer" key="view-customer-detail" class="container mx-auto max-w-2xl p-4">
             
-            <!-- CAPTURE AREA WRAPPER -->
-            <div id="capture-area" class="p-2 bg-[#f0fdfa] min-h-screen">
+            <div id="capture-area" class="p-2 bg-[#f0fdfa] min-h-screen"> <!-- Capture Wrapper -->
                 
                 <!-- Header Info -->
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-teal-100 mb-4 relative">
