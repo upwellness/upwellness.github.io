@@ -12,6 +12,8 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js DataLabels Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <!-- HTML2Canvas -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <!-- FontAwesome CSS -->
@@ -37,6 +39,9 @@
         /* Custom Scrollbar for Script */
         .script-container::-webkit-scrollbar { width: 6px; }
         .script-container::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+        
+        /* Table Compact for Mobile */
+        .table-compact th, .table-compact td { padding: 0.5rem 0.25rem; }
     </style>
 </head>
 <body class="text-gray-700">
@@ -184,12 +189,27 @@
                     
                     <!-- Detailed Input Form (Hide on Capture) -->
                     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-6 no-print-capture">
-                        <h3 class="text-base font-bold text-gray-700 mb-4 border-b pb-2 flex items-center">
-                            <i class="fa-solid fa-pen-to-square mr-2 text-teal-600"></i> กรอกค่าจากเครื่องวัด
+                        <h3 class="text-base font-bold text-gray-700 mb-4 border-b pb-2 flex items-center justify-between">
+                            <span><i class="fa-solid fa-pen-to-square mr-2 text-teal-600"></i> {{ editingId ? 'แก้ไขข้อมูล' : 'กรอกค่าจากเครื่องวัด' }}</span>
+                            <button v-if="editingId" @click="cancelEdit" class="text-xs text-red-500 underline">ยกเลิกแก้ไข</button>
                         </h3>
+                        
                         <div class="space-y-4">
+                            <!-- Date Input -->
                             <div class="flex items-center justify-between group">
-                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm"><i class="fa-solid fa-weight-scale"></i></div>น้ำหนัก (kg)</label>
+                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 text-sm"><i class="fa-regular fa-calendar"></i></div>
+                                    วันที่วัดผล
+                                </label>
+                                <input v-model="newMeasure.recorded_at" type="date" class="w-1/2 bg-teal-50 border border-teal-200 text-teal-800 font-bold rounded-lg p-2 text-right text-lg">
+                            </div>
+
+                            <!-- Weight -->
+                            <div class="flex items-center justify-between group">
+                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm"><i class="fa-solid fa-weight-scale"></i></div>
+                                    น้ำหนัก (kg)
+                                </label>
                                 <input v-model.number="newMeasure.weight" type="number" step="0.1" placeholder="0.0" class="w-1/2 bg-blue-50 border border-blue-200 text-blue-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
                             <div class="flex items-center justify-between group">
@@ -198,7 +218,7 @@
                             </div>
                             <div class="flex items-center justify-between group">
                                 <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-sm"><i class="fa-solid fa-heart-crack"></i></div>ไขมันช่องท้อง</label>
-                                <input v-model.number="newMeasure.visceral" type="number" step="0.5" placeholder="Level" class="w-1/2 bg-red-50 border border-red-200 text-red-800 font-bold rounded-lg p-2 text-right text-lg">
+                                <input v-model.number="newMeasure.visceral" type="number" step="1" placeholder="Level" class="w-1/2 bg-red-50 border border-red-200 text-red-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
                             <div class="flex items-center justify-between group">
                                 <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm"><i class="fa-solid fa-dumbbell"></i></div>% กล้ามเนื้อ</label>
@@ -207,39 +227,42 @@
                             <div class="border-t border-gray-100 my-2"></div>
                             <div class="flex items-center justify-between group">
                                 <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-sm"><i class="fa-solid fa-hourglass-half"></i></div>อายุร่างกาย</label>
-                                <input v-model.number="newMeasure.body_age" type="number" placeholder="ปี" class="w-1/2 bg-purple-50 border border-purple-200 text-purple-800 font-bold rounded-lg p-2 text-right text-lg">
+                                <input v-model.number="newMeasure.body_age" type="number" step="1" placeholder="ปี" class="w-1/2 bg-purple-50 border border-purple-200 text-purple-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
                             <div class="flex items-center justify-between group">
                                 <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-sm"><i class="fa-solid fa-fire"></i></div>BMR (kcal)</label>
-                                <input v-model.number="newMeasure.bmr" type="number" placeholder="kcal" class="w-1/2 bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-lg p-2 text-right text-lg">
+                                <input v-model.number="newMeasure.bmr" type="number" step="1" placeholder="kcal" class="w-1/2 bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
                         </div>
-                        <button @click="saveMeasurement" :disabled="loading" class="w-full mt-6 bg-teal-600 text-white py-3 rounded-lg font-bold shadow-md hover:bg-teal-700 transition flex justify-center items-center gap-2 text-lg">
+
+                        <button @click="saveMeasurement" :disabled="loading" 
+                            :class="['w-full mt-6 text-white py-3 rounded-lg font-bold shadow-md transition flex justify-center items-center gap-2 text-lg', editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-teal-600 hover:bg-teal-700']">
                             <i v-if="loading" class="fa-solid fa-spinner fa-spin"></i>
-                            <i v-else class="fa-solid fa-floppy-disk"></i> บันทึกผลเข้าระบบ
+                            <i v-else :class="editingId ? 'fa-solid fa-pen' : 'fa-solid fa-floppy-disk'"></i>
+                            {{ editingId ? 'บันทึกการแก้ไข' : 'บันทึกผลเข้าระบบ' }}
                         </button>
                     </div>
 
                     <!-- Analysis Cards (Results only) -->
                     <div v-if="newMeasure.weight" class="space-y-3">
                         <div class="flex justify-between items-center mb-2 px-1">
-                            <h3 class="font-bold text-gray-600">ผลวิเคราะห์</h3>
+                            <h3 class="font-bold text-gray-600">ผลวิเคราะห์ {{ editingId ? '(Preview แก้ไข)' : '' }}</h3>
                             <button @click="generateScript" class="text-xs bg-yellow-500 text-white px-2 py-1 rounded shadow hover:bg-yellow-600 no-print-capture">
                                 <i class="fa-solid fa-scroll mr-1"></i> สคริปต์
                             </button>
                         </div>
                         
                         <analysis-card title="ไขมัน (Fat)" icon="layer-group" title-color="text-yellow-600" :bar-class="getFatResult.colorClass" 
-                            :value="newMeasure.fat_pct" unit="%" :sub-value="calcFatMass" sub-unit="kg" :markers="getFatMarkers" :min="0" :max="50" 
+                            :value="formatDecimal(newMeasure.fat_pct, 1)" unit="%" :sub-value="calcFatMass" sub-unit="kg" :markers="getFatMarkers" :min="0" :max="50" 
                             :status="getFatResult.status" :status-color="getFatResult.textClass" :value-color="getFatResult.textClass" 
                             :range-labels="['น้อย', 'ปกติ', 'สูง', 'สูงมาก']" :range-colors="['text-yellow-500', 'text-green-500', 'text-orange-500', 'text-red-500']"></analysis-card>
                             
                         <analysis-card title="ไขมันช่องท้อง (Visceral)" icon="heart-crack" title-color="text-red-600" :bar-class="getVisResult.colorClass"
-                            :value="newMeasure.visceral" :markers="[2,5,9,15]" :min="0" :max="20" :status="getVisResult.status" :status-color="getVisResult.textClass" :value-color="getVisResult.textClass"
+                            :value="formatDecimal(newMeasure.visceral, 0)" :markers="[2,5,9,15]" :min="0" :max="20" :status="getVisResult.status" :status-color="getVisResult.textClass" :value-color="getVisResult.textClass"
                             :range-labels="['ดีมาก(1-2)', 'ปกติ(3-5)', 'สูง(6-9)', 'สูงมาก(10-15)', 'อันตราย(>15)']" :range-colors="['text-emerald-600', 'text-green-500', 'text-yellow-500', 'text-orange-500', 'text-red-600']"></analysis-card>
                             
                         <analysis-card title="กล้ามเนื้อ (Muscle)" icon="dumbbell" title-color="text-green-600" :bar-class="getMuscleResult.colorClass"
-                            :value="newMeasure.muscle_pct" unit="%" :sub-value="calcMuscleMass" sub-unit="kg" :markers="getMuscleMarkers" :min="10" :max="60" 
+                            :value="formatDecimal(newMeasure.muscle_pct, 1)" unit="%" :sub-value="calcMuscleMass" sub-unit="kg" :markers="getMuscleMarkers" :min="10" :max="60" 
                             :status="getMuscleResult.status" :status-color="getMuscleResult.textClass" :value-color="getMuscleResult.textClass"
                             :range-labels="['น้อย', 'มาตรฐาน', 'ดีมาก']" :range-colors="['text-yellow-500', 'text-green-500', 'text-emerald-600']"></analysis-card>
                         
@@ -247,13 +270,13 @@
                         <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-2">
                             <div class="flex justify-between items-center mb-1">
                                 <h3 class="font-bold text-gray-700 text-sm flex items-center"><i class="fa-solid fa-hourglass-half mr-2 text-purple-500"></i> อายุร่างกาย (Body Age)</h3>
-                                <span :class="['text-xl font-bold', (newMeasure.body_age - calculateAge(currentCustomer.birth_year)) > 0 ? 'text-red-600' : 'text-green-600']">{{ newMeasure.body_age }} ปี</span>
+                                <span :class="['text-xl font-bold', (newMeasure.body_age - calculateAge(currentCustomer.birth_year)) > 0 ? 'text-red-600' : 'text-green-600']">{{ formatDecimal(newMeasure.body_age, 0) }} ปี</span>
                             </div>
                             <div class="flex justify-between items-center text-xs text-gray-500 bg-purple-50 p-3 rounded-lg">
                                 <span>อายุจริง: <b>{{ calculateAge(currentCustomer.birth_year) }}</b></span>
                                 <span v-if="newMeasure.body_age" :class="(newMeasure.body_age - calculateAge(currentCustomer.birth_year)) > 0 ? 'text-red-500 font-bold' : 'text-green-600 font-bold'">
                                     {{ (newMeasure.body_age - calculateAge(currentCustomer.birth_year)) > 0 ? 'แก่กว่าวัย +' : 'อ่อนกว่าวัย ' }}
-                                    {{ Math.abs(newMeasure.body_age - calculateAge(currentCustomer.birth_year)) }} ปี
+                                    {{ Math.abs(newMeasure.body_age - calculateAge(currentCustomer.birth_year)).toFixed(0) }} ปี
                                 </span>
                             </div>
                         </div>
@@ -332,25 +355,32 @@
                     </div>
 
                     <!-- List History (Hide on capture) -->
-                    <div class="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm mt-4 no-print-capture">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50 text-gray-500 font-bold">
+                    <div class="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm mt-4 no-print-capture overflow-x-auto">
+                        <table class="w-full text-xs sm:text-sm text-left whitespace-nowrap table-compact">
+                            <thead class="bg-gray-50 text-gray-500 font-bold uppercase tracking-wider">
                                 <tr>
-                                    <th class="p-3">วันที่</th>
-                                    <th class="p-3 text-right">นน.</th>
-                                    <th class="p-3 text-right">%Fat</th>
-                                    <th class="p-3 text-right">Vis</th>
-                                    <th class="p-3 text-center">ลบ</th>
+                                    <th class="p-2 text-left">วันที่</th>
+                                    <th class="p-2 text-right text-blue-600">นน.</th>
+                                    <th class="p-2 text-right text-yellow-600">%Fat</th>
+                                    <th class="p-2 text-right text-yellow-700">Fat.kg</th>
+                                    <th class="p-2 text-right text-red-500">V.Fat</th>
+                                    <th class="p-2 text-right text-green-600">Mus%</th>
+                                    <th class="p-2 text-right text-purple-600">B.Age</th>
+                                    <th class="p-2 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="m in history" :key="m.id" class="border-t border-gray-100 hover:bg-gray-50">
-                                    <td class="p-3">{{ formatDateShort(m.recorded_at) }}</td>
-                                    <td class="p-3 text-right font-bold">{{ m.weight }}</td>
-                                    <td class="p-3 text-right text-yellow-600">{{ m.fat_pct }}</td>
-                                    <td class="p-3 text-right text-red-500">{{ m.visceral }}</td>
-                                    <td class="p-3 text-center">
-                                        <button @click.stop="deleteRecord(m.id)" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-trash"></i></button>
+                                <tr v-for="m in history" :key="m.id" class="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <td class="p-2 font-medium text-gray-600">{{ formatDate(m.recorded_at) }}</td>
+                                    <td class="p-2 text-right font-bold text-gray-800">{{ formatDecimal(m.weight, 1) }}</td>
+                                    <td class="p-2 text-right">{{ formatDecimal(m.fat_pct, 1) }}</td>
+                                    <td class="p-2 text-right font-semibold text-gray-600">{{ (m.weight * m.fat_pct / 100).toFixed(1) }}</td>
+                                    <td class="p-2 text-right font-bold" :class="m.visceral > 9 ? 'text-red-600' : (m.visceral > 5 ? 'text-orange-500' : 'text-green-600')">{{ formatDecimal(m.visceral, 0) }}</td>
+                                    <td class="p-2 text-right">{{ formatDecimal(m.muscle_pct, 1) }}</td>
+                                    <td class="p-2 text-right font-semibold">{{ formatDecimal(m.body_age, 0) }}</td>
+                                    <td class="p-2 text-center flex justify-center gap-2">
+                                        <button @click.stop="editRecord(m)" class="text-gray-400 hover:text-blue-500 transition p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <button @click.stop="deleteRecord(m.id)" class="text-gray-300 hover:text-red-500 transition p-1"><i class="fa-solid fa-trash-can"></i></button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -405,6 +435,8 @@
 
     <script>
         const { createApp, ref, computed, watch, nextTick } = Vue;
+        // Register DataLabels Plugin
+        Chart.register(ChartDataLabels);
 
         // --- 🟢 ตั้งค่า DATABASE (ใส่ค่าตรงนี้) ---
         const SUPABASE_URL = 'https://qzqvwbucjxwgtmbdkrlu.supabase.co'; 
@@ -432,7 +464,13 @@
                 const showAddCustomerModal = ref(false);
                 const newCustomer = ref({ name: '', gender: 'female', birth_year: '', height: '' });
 
-                const newMeasure = ref({ weight: null, fat_pct: null, visceral: null, muscle_pct: null, body_age: null, bmr: null });
+                const getTodayDate = () => new Date().toISOString().split('T')[0];
+                const newMeasure = ref({ 
+                    weight: null, fat_pct: null, visceral: null, muscle_pct: null, 
+                    body_age: null, bmr: null,
+                    recorded_at: getTodayDate()
+                });
+                const editingId = ref(null); // Track if editing a record
 
                 const showScriptModal = ref(false);
                 const scriptContent = ref('');
@@ -568,11 +606,16 @@
                     currentCustomer.value = c;
                     view.value = 'customer_detail';
                     subView.value = 'measure';
+                    editingId.value = null;
                     
                     Object.values(charts).forEach(chart => chart && chart.destroy());
                     charts = {};
                     
-                    newMeasure.value = { weight: null, fat_pct: null, visceral: null, muscle_pct: null, body_age: null, bmr: null };
+                    newMeasure.value = { 
+                        weight: null, fat_pct: null, visceral: null, muscle_pct: null, 
+                        body_age: null, bmr: null,
+                        recorded_at: getTodayDate()
+                    };
                 };
 
                 const changeSubView = (val) => {
@@ -682,20 +725,56 @@
                     return currentYear - birthYear;
                 };
 
+                const editRecord = (record) => {
+                    newMeasure.value = { 
+                        weight: record.weight, 
+                        fat_pct: record.fat_pct, 
+                        visceral: record.visceral, 
+                        muscle_pct: record.muscle_pct, 
+                        body_age: record.body_age, 
+                        bmr: record.bmr,
+                        recorded_at: new Date(record.recorded_at).toISOString().split('T')[0]
+                    };
+                    editingId.value = record.id;
+                    subView.value = 'measure'; // Switch back to measure tab
+                };
+
+                const cancelEdit = () => {
+                    editingId.value = null;
+                    newMeasure.value = { 
+                        weight: null, fat_pct: null, visceral: null, muscle_pct: null, 
+                        body_age: null, bmr: null,
+                        recorded_at: getTodayDate()
+                    };
+                };
+
                 const saveMeasurement = async () => {
                     if(!newMeasure.value.weight) return alert("กรุณากรอกน้ำหนัก");
                     loading.value = true;
                     
-                    const { error } = await supabase.value.from('measurements').insert({
-                        customer_id: currentCustomer.value.id,
-                        ...newMeasure.value
-                    });
+                    let error = null;
+                    
+                    if (editingId.value) {
+                         // Update existing record
+                         const { error: err } = await supabase.value.from('measurements')
+                            .update({ ...newMeasure.value })
+                            .eq('id', editingId.value);
+                         error = err;
+                    } else {
+                        // Insert new record
+                         const { error: err } = await supabase.value.from('measurements').insert({
+                            customer_id: currentCustomer.value.id,
+                            ...newMeasure.value
+                        });
+                        error = err;
+                    }
 
                     if(!error) {
                         await supabase.value.from('customers').update({ updated_at: new Date() })
                             .eq('id', currentCustomer.value.id);
-                        alert("บันทึกเรียบร้อย");
-                        fetchCustomers(); 
+                        alert(editingId.value ? "แก้ไขข้อมูลเรียบร้อย" : "บันทึกเรียบร้อย");
+                        cancelEdit(); // Reset form
+                        // fetchCustomers(); // Optional refresh list order
                     } else {
                         alert(error.message);
                     }
@@ -709,12 +788,14 @@
                     subView.value = 'history';
                     loading.value = true;
                    
+                    // Fetch descending for list display logic (latest first in table)
                     let { data, error } = await supabase.value.from('measurements')
                         .select('*')
                         .eq('customer_id', currentCustomer.value.id)
-                        .order('recorded_at', { ascending: true }); 
+                        .order('recorded_at', { ascending: false }); 
                     
                     if(!error) {
+                        // Filter by date
                         const cutoff = new Date();
                         cutoff.setDate(cutoff.getDate() - chartDays.value);
                         history.value = data.filter(d => new Date(d.recorded_at) >= cutoff);
@@ -758,65 +839,84 @@
                 };
 
                 const renderCharts = () => {
-                    const labels = history.value.map(h => new Date(h.recorded_at).toLocaleDateString('th-TH', {day:'numeric', month:'short'}));
+                    // Reverse data for charts (Chronological order: Oldest -> Newest)
+                    const chartData = [...history.value].reverse();
+                    
+                    const labels = chartData.map(h => new Date(h.recorded_at).toLocaleDateString('th-TH', {day:'numeric', month:'short'}));
                     
                     const createChart = (id, label, data, color) => {
                         const ctx = document.getElementById(id);
                         if(!ctx) return;
                         if(charts[id]) charts[id].destroy();
                         
-                        const mainDataPoints = history.value.map(h => h[data[0].key]);
+                        const mainDataPoints = chartData.map(h => h[data[0].key]);
                         const trendData = getLinearRegression(mainDataPoints);
 
                         const datasets = data.map(d => ({
                             label: d.label,
-                            data: history.value.map(h => h[d.key]),
+                            data: chartData.map(h => h[d.key]),
                             borderColor: d.color,
                             backgroundColor: d.color + '20',
                             tension: 0.4,
                             pointRadius: 4,
-                            fill: false
+                            fill: false,
+                            datalabels: { // Show small values on points
+                                align: 'top',
+                                anchor: 'end',
+                                font: { size: 10 },
+                                color: d.color,
+                                formatter: (val) => Number(val).toFixed(1).replace('.0','')
+                            }
                         }));
 
                         if(trendData) {
                             datasets.push({
-                                label: 'แนวโน้ม (Trend)',
+                                label: 'แนวโน้ม',
                                 data: trendData,
                                 borderColor: '#9ca3af',
                                 borderDash: [5, 5],
                                 borderWidth: 1,
                                 pointRadius: 0,
-                                tension: 0
+                                tension: 0,
+                                datalabels: { display: false }
                             });
                         }
 
                         charts[id] = new Chart(ctx, {
                             type: 'line',
                             data: { labels: labels, datasets: datasets },
-                            options: { responsive: true, plugins: { legend: { display: true } } }
+                            options: { 
+                                responsive: true, 
+                                plugins: { 
+                                    legend: { display: true },
+                                    datalabels: { display: true } // Enable global
+                                },
+                                layout: { padding: { top: 20 } } // Add padding for labels
+                            }
                         });
                     };
 
                     createChart('weightChart', 'น้ำหนัก', [{label: 'Weight', key: 'weight', color: '#2563eb'}]);
                     
-                    const fatMassData = history.value.map(h => parseFloat((h.weight * h.fat_pct / 100).toFixed(1)));
-                    const trendFat = getLinearRegression(fatMassData);
+                    // Calc Fat Mass for chart data
+                    const fatMassData = chartData.map(h => ({ ...h, fat_mass: parseFloat((h.weight * h.fat_pct / 100).toFixed(1)) }));
                     
                     if(charts['fatChart']) charts['fatChart'].destroy();
-                    const fatDatasets = [
-                        { label: 'Fat Mass (kg)', data: fatMassData, borderColor: '#eab308', tension: 0.4, yAxisID: 'y' },
-                        { label: '% Fat', data: history.value.map(h => h.fat_pct), borderColor: '#facc15', borderDash: [2,2], tension: 0.4, yAxisID: 'y1' }
-                    ];
-                    if(trendFat) {
-                        fatDatasets.push({
-                            label: 'Trend (Mass)', data: trendFat, borderColor: '#9ca3af', borderDash: [5,5], borderWidth: 1, pointRadius: 0, yAxisID: 'y'
-                        });
-                    }
-
-                    charts['fatChart'] = new Chart(document.getElementById('fatChart'), {
+                    // Custom fat chart call manually to inject calculated data
+                    const fatCtx = document.getElementById('fatChart');
+                    charts['fatChart'] = new Chart(fatCtx, {
                         type: 'line',
-                        data: { labels: labels, datasets: fatDatasets },
-                        options: { scales: { y: {position: 'left'}, y1: {position: 'right'} } }
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Fat Mass (kg)', data: fatMassData.map(d=>d.fat_mass), borderColor: '#eab308', tension: 0.4, yAxisID: 'y', datalabels: { align:'top', anchor:'end', color: '#eab308', font:{size:10} } },
+                                { label: '% Fat', data: fatMassData.map(d=>d.fat_pct), borderColor: '#facc15', borderDash: [2,2], tension: 0.4, yAxisID: 'y1', datalabels: { display:false } }
+                            ]
+                        },
+                        options: { 
+                            scales: { y: {position: 'left'}, y1: {position: 'right'} },
+                            plugins: { datalabels: { display: true } }
+                        }
                     });
 
                     createChart('muscleChart', 'กล้ามเนื้อ', [{label: '% Muscle', key: 'muscle_pct', color: '#16a34a'}]);
@@ -826,6 +926,11 @@
                 // --- Helpers & Computed ---
                 const formatDate = (iso) => new Date(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
                 const formatDateShort = (iso) => new Date(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'numeric' });
+                
+                const formatDecimal = (val, digit) => {
+                    if (val === null || val === undefined || isNaN(val)) return '-';
+                    return Number(val).toFixed(digit);
+                };
 
                 const calcFatMass = computed(() => {
                     if(!newMeasure.value.weight || !newMeasure.value.fat_pct) return '-';
@@ -951,6 +1056,7 @@
                 });
 
                 const generateScript = () => {
+                    // Script logic remains same...
                     const weight = newMeasure.value.weight || 0;
                     const fatPct = newMeasure.value.fat_pct || 0;
                     const visceral = newMeasure.value.visceral || 0;
@@ -1075,8 +1181,8 @@ BMR อัตราการเผาผลาญ ${bmr} kcal อันนี้
                     view, subView, changeSubView,
                     customers, filteredCustomers, searchQuery, selectCustomer,
                     showAddCustomerModal, newCustomer, addCustomer,
-                    currentCustomer, calculateAge, formatDate, formatDateShort,
-                    newMeasure, saveMeasurement,
+                    currentCustomer, calculateAge, formatDate, formatDateShort, formatDecimal,
+                    newMeasure, saveMeasurement, editRecord, cancelEdit, editingId,
                     history, loadHistory, deleteRecord, chartDays,
                     // Analysis
                     calcFatMass, calcMuscleMass, calcBMI, getBMIWidth,
