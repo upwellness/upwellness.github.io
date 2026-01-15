@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP Labs Tracker v2.0</title>
+    <title>UP Labs Tracker v2.7</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue 3 -->
@@ -36,12 +36,6 @@
             font-weight: 700;
             line-height: 1;
         }
-        /* Custom Scrollbar for Script */
-        .script-container::-webkit-scrollbar { width: 6px; }
-        .script-container::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
-        
-        /* Table Compact for Mobile */
-        .table-compact th, .table-compact td { padding: 0.5rem 0.25rem; }
     </style>
 </head>
 <body class="text-gray-700">
@@ -49,38 +43,46 @@
         
         <!-- Navbar -->
         <nav class="bg-teal-600 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
-            <h1 class="font-bold text-lg"><i class="fa-solid fa-heart-pulse mr-2"></i>UP Labs Tracker v2.0</h1>
-            <div v-if="session" class="flex gap-2">
-                <!-- Backup Buttons (Only on Dashboard) -->
+            <h1 class="font-bold text-lg flex items-center gap-2">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <span class="hidden sm:inline">UP Labs Tracker v2.7</span>
+            </h1>
+            <div v-if="session" class="flex gap-2 items-center">
+                <!-- Dashboard Buttons -->
                 <div v-if="view === 'dashboard'" class="flex mr-2">
-                    <label class="cursor-pointer bg-teal-700 hover:bg-teal-800 text-white px-2 py-1 rounded-l text-xs flex items-center border-r border-teal-600" title="Import CSV">
-                        <i class="fa-solid fa-file-import mr-1"></i> Import
+                    <label class="cursor-pointer bg-teal-700 hover:bg-teal-800 text-white px-2 py-1 rounded-l text-xs flex items-center border-r border-teal-600" title="Import CSV Backup (Full DB)">
+                        <i class="fa-solid fa-database mr-1"></i> Import DB
                         <input type="file" accept=".csv" class="hidden" @change="importCSV">
                     </label>
-                    <button @click="exportCSV" class="bg-teal-700 hover:bg-teal-800 text-white px-2 py-1 rounded-r text-xs flex items-center" title="Export CSV">
-                        <i class="fa-solid fa-file-export mr-1"></i> Export
+                    <button @click="exportCSV" class="bg-teal-700 hover:bg-teal-800 text-white px-2 py-1 rounded-r text-xs flex items-center" title="Export CSV Backup">
+                        <i class="fa-solid fa-download"></i>
                     </button>
                 </div>
 
-                <span class="text-xs self-center bg-teal-800 px-2 py-1 rounded text-teal-200 mr-2 hidden sm:inline">
+                <span class="text-xs bg-teal-800 px-2 py-1 rounded text-teal-200 hidden sm:inline mr-1">
                     <i class="fa-solid fa-id-badge mr-1"></i>{{ userAbo }}
                 </span>
                 
+                <button @click="showChangePasswordModal = true" class="text-sm bg-teal-700 px-2 py-1 rounded hover:bg-teal-800 transition" title="เปลี่ยนรหัสผ่าน">
+                    <i class="fa-solid fa-key"></i>
+                </button>
+
                 <!-- Detail View Buttons -->
-                <button v-if="view === 'customer_detail'" @click="saveAsImage" class="text-sm bg-white text-teal-700 px-3 py-1 rounded-full hover:bg-gray-100 transition shadow font-bold">
-                    <i class="fa-solid fa-camera"></i> <span class="hidden sm:inline">บันทึกรูป</span>
+                <button v-if="view === 'customer_detail'" @click="saveAsImage" class="text-sm bg-white text-teal-700 px-3 py-1 rounded-full hover:bg-gray-100 transition shadow font-bold ml-1">
+                    <i class="fa-solid fa-camera"></i> <span class="hidden sm:inline">รูป</span>
                 </button>
                 
-                <button @click="view = 'dashboard'" class="text-sm bg-teal-700 px-3 py-1 rounded-full hover:bg-teal-800 transition">
+                <button v-if="view === 'customer_detail'" @click="view = 'dashboard'" class="text-sm bg-teal-700 px-3 py-1 rounded-full hover:bg-teal-800 transition ml-1">
                     <i class="fa-solid fa-users"></i>
                 </button>
-                <button @click="logout" class="text-sm bg-red-500 px-3 py-1 rounded-full hover:bg-red-600 transition">
+                
+                <button @click="logout" class="text-sm bg-red-500 px-3 py-1 rounded-full hover:bg-red-600 transition ml-1">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </div>
         </nav>
 
-        <!-- 1. Config / Login Screen -->
+        <!-- 1. Login Screen -->
         <div v-if="!session" class="container mx-auto max-w-md p-6 mt-10">
             <div class="bg-white p-6 rounded-xl shadow-lg border border-teal-100">
                 <h2 class="text-2xl font-bold text-center text-teal-800 mb-6">เข้าสู่ระบบโค้ช</h2>
@@ -101,6 +103,11 @@
                         <div class="mb-6">
                             <label class="block text-sm font-bold mb-1 text-teal-700">รหัสผ่าน</label>
                             <input v-model="auth.password" type="password" placeholder="รหัสผ่าน" required class="w-full p-3 border border-teal-200 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none">
+                            <div class="text-right mt-2">
+                                <button type="button" @click="showForgotPasswordInfo" class="text-xs text-orange-500 hover:text-orange-700 underline font-bold">
+                                    <i class="fa-solid fa-circle-question mr-1"></i>ลืมรหัสผ่าน?
+                                </button>
+                            </div>
                         </div>
                         <button type="submit" :disabled="loading" class="w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white py-3 rounded-lg font-bold hover:shadow-lg transition flex justify-center items-center">
                             <i v-if="loading" class="fa-solid fa-spinner fa-spin mr-2"></i>
@@ -114,7 +121,7 @@
             </div>
         </div>
 
-        <!-- 2. Dashboard: Customer List -->
+        <!-- 2. Dashboard -->
         <div v-else-if="view === 'dashboard'" key="view-dashboard" class="container mx-auto max-w-2xl p-4">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-teal-800">รายชื่อลูกค้า</h2>
@@ -139,17 +146,13 @@
                     </div>
                     <i class="fa-solid fa-chevron-right text-gray-300"></i>
                 </div>
-                <div v-if="filteredCustomers.length === 0" class="text-center py-10 text-gray-400">
-                    <i class="fa-solid fa-user-slash text-4xl mb-2 text-gray-200"></i><br>
-                    ยังไม่มีข้อมูลลูกค้า
-                </div>
             </div>
         </div>
 
         <!-- 3. Customer Detail View -->
         <div v-else-if="view === 'customer_detail' && currentCustomer" key="view-customer-detail" class="container mx-auto max-w-2xl p-4">
             
-            <div id="capture-area" class="p-2 bg-[#f0fdfa] min-h-screen"> <!-- Capture Wrapper -->
+            <div id="capture-area" class="p-2 bg-[#f0fdfa] min-h-screen"> 
                 
                 <!-- Header Info -->
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-teal-100 mb-4 relative">
@@ -175,41 +178,36 @@
                 </div>
 
                 <!-- Tabs (Hide on Capture) -->
-                <div class="flex bg-gray-200 p-1 rounded-lg mb-4 no-print-capture">
+                <div class="flex bg-gray-200 p-1 rounded-lg mb-4 no-print-capture items-center">
                     <button @click="changeSubView('measure')" :class="['flex-1 py-2 text-sm font-bold rounded-md transition', subView === 'measure' ? 'bg-white shadow text-teal-700' : 'text-gray-500']">
                         <i class="fa-solid fa-scale-balanced mr-1"></i> วัดค่าใหม่
                     </button>
                     <button @click="changeSubView('history')" :class="['flex-1 py-2 text-sm font-bold rounded-md transition', subView === 'history' ? 'bg-white shadow text-teal-700' : 'text-gray-500']">
                         <i class="fa-solid fa-chart-line mr-1"></i> กราฟ & ประวัติ
                     </button>
+                    <!-- Legacy Import Button -->
+                    <label class="cursor-pointer bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-md text-xs flex items-center ml-1 transition shadow" title="นำเข้าไฟล์ CSV รายคน">
+                        <i class="fa-solid fa-file-csv mr-1"></i> นำเข้าไฟล์เก่า
+                        <input type="file" accept=".csv" class="hidden" @change="importLegacyCSV">
+                    </label>
                 </div>
 
                 <!-- Tab: New Measurement -->
                 <div v-if="subView === 'measure'" key="subview-measure">
                     
-                    <!-- Detailed Input Form (Hide on Capture) -->
+                    <!-- Detailed Input Form -->
                     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-6 no-print-capture">
                         <h3 class="text-base font-bold text-gray-700 mb-4 border-b pb-2 flex items-center justify-between">
                             <span><i class="fa-solid fa-pen-to-square mr-2 text-teal-600"></i> {{ editingId ? 'แก้ไขข้อมูล' : 'กรอกค่าจากเครื่องวัด' }}</span>
                             <button v-if="editingId" @click="cancelEdit" class="text-xs text-red-500 underline">ยกเลิกแก้ไข</button>
                         </h3>
-                        
                         <div class="space-y-4">
-                            <!-- Date Input -->
                             <div class="flex items-center justify-between group">
-                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2">
-                                    <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 text-sm"><i class="fa-regular fa-calendar"></i></div>
-                                    วันที่วัดผล
-                                </label>
+                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 text-sm"><i class="fa-regular fa-calendar"></i></div>วันที่วัดผล</label>
                                 <input v-model="newMeasure.recorded_at" type="date" class="w-1/2 bg-teal-50 border border-teal-200 text-teal-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
-
-                            <!-- Weight -->
                             <div class="flex items-center justify-between group">
-                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2">
-                                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm"><i class="fa-solid fa-weight-scale"></i></div>
-                                    น้ำหนัก (kg)
-                                </label>
+                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm"><i class="fa-solid fa-weight-scale"></i></div>น้ำหนัก (kg)</label>
                                 <input v-model.number="newMeasure.weight" type="number" step="0.1" placeholder="0.0" class="w-1/2 bg-blue-50 border border-blue-200 text-blue-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
                             <div class="flex items-center justify-between group">
@@ -234,7 +232,6 @@
                                 <input v-model.number="newMeasure.bmr" type="number" step="1" placeholder="kcal" class="w-1/2 bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
                         </div>
-
                         <button @click="saveMeasurement" :disabled="loading" 
                             :class="['w-full mt-6 text-white py-3 rounded-lg font-bold shadow-md transition flex justify-center items-center gap-2 text-lg', editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-teal-600 hover:bg-teal-700']">
                             <i v-if="loading" class="fa-solid fa-spinner fa-spin"></i>
@@ -266,7 +263,6 @@
                             :status="getMuscleResult.status" :status-color="getMuscleResult.textClass" :value-color="getMuscleResult.textClass"
                             :range-labels="['น้อย', 'มาตรฐาน', 'ดีมาก']" :range-colors="['text-yellow-500', 'text-green-500', 'text-emerald-600']"></analysis-card>
                         
-                        <!-- BODY AGE -->
                         <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-2">
                             <div class="flex justify-between items-center mb-1">
                                 <h3 class="font-bold text-gray-700 text-sm flex items-center"><i class="fa-solid fa-hourglass-half mr-2 text-purple-500"></i> อายุร่างกาย (Body Age)</h3>
@@ -281,7 +277,6 @@
                             </div>
                         </div>
 
-                        <!-- BMR -->
                         <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-2">
                             <div class="flex justify-between items-center mb-1">
                                 <h3 class="font-bold text-gray-700 text-sm flex items-center"><i class="fa-solid fa-fire mr-2 text-orange-500"></i> อัตราการเผาผลาญ (BMR)</h3>
@@ -290,7 +285,6 @@
                             <div class="text-xs text-orange-800 bg-orange-50 p-2 rounded-lg text-center">หากทานเท่านี้ น้ำหนักจะคงที่ (ไม่ออกกำลังกาย)</div>
                         </div>
 
-                        <!-- BMI -->
                         <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-2 relative overflow-visible">
                             <div class="flex justify-between items-end mb-1">
                                 <h3 class="font-bold text-gray-700 text-sm flex items-center"><i class="fa-solid fa-weight-scale mr-2 text-blue-500"></i> BMI</h3>
@@ -313,7 +307,6 @@
                             <p :class="['text-xs font-bold text-right mt-1', getBMIResult.textClass]">{{ getBMIResult.status }}</p>
                         </div>
 
-                        <!-- Recommendation Box -->
                         <div class="mt-4 bg-gradient-to-br from-indigo-50 to-white border border-indigo-200 rounded-xl p-5 shadow-sm">
                             <h3 class="text-base font-bold text-indigo-800 mb-4 flex items-center"><i class="fa-solid fa-user-doctor mr-2"></i> คำแนะนำสุขภาพ</h3>
                             <div class="mb-4">
@@ -333,7 +326,6 @@
                                 <div class="bg-white p-3 rounded-lg border border-indigo-100 flex items-center justify-between"><span class="text-xs text-gray-500">สร้างกล้ามเนื้อ/ซ่อมแซม:</span><span class="text-lg font-bold text-green-600">{{ (newMeasure.weight * 1.5).toFixed(0) }} g/วัน</span></div>
                             </div>
                         </div>
-
                     </div>
                 </div> <!-- End Measure Tab -->
 
@@ -389,7 +381,6 @@
                 </div>
 
             </div> <!-- End Capture Area -->
-
         </div>
 
         <!-- Modal: Add Customer -->
@@ -408,6 +399,22 @@
                     <input v-model.number="newCustomer.height" type="number" placeholder="ส่วนสูง (cm)" required class="w-full p-2 border rounded">
                     <div class="flex gap-2 mt-4">
                         <button type="button" @click="showAddCustomerModal = false" class="flex-1 bg-gray-200 py-2 rounded font-bold">ยกเลิก</button>
+                        <button type="submit" class="flex-1 bg-teal-600 text-white py-2 rounded font-bold">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal: Change Password -->
+        <div v-if="showChangePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+            <div class="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
+                <h3 class="text-lg font-bold mb-4">เปลี่ยนรหัสผ่าน</h3>
+                <form @submit.prevent="handleChangePassword" class="space-y-3">
+                    <input v-model="passwordForm.newPassword" type="password" placeholder="รหัสผ่านใหม่" required class="w-full p-2 border rounded">
+                    <input v-model="passwordForm.confirmPassword" type="password" placeholder="ยืนยันรหัสผ่านใหม่" required class="w-full p-2 border rounded">
+                    <p v-if="passwordError" class="text-red-500 text-xs">{{ passwordError }}</p>
+                    <div class="flex gap-2 mt-4">
+                        <button type="button" @click="showChangePasswordModal = false" class="flex-1 bg-gray-200 py-2 rounded font-bold">ยกเลิก</button>
                         <button type="submit" class="flex-1 bg-teal-600 text-white py-2 rounded font-bold">บันทึก</button>
                     </div>
                 </form>
@@ -471,6 +478,10 @@
                     recorded_at: getTodayDate()
                 });
                 const editingId = ref(null); // Track if editing a record
+
+                const showChangePasswordModal = ref(false);
+                const passwordForm = ref({ newPassword: '', confirmPassword: '' });
+                const passwordError = ref('');
 
                 const showScriptModal = ref(false);
                 const scriptContent = ref('');
@@ -566,6 +577,33 @@
                     }
                     loading.value = false;
                 };
+
+                const showForgotPasswordInfo = () => {
+                    alert("เนื่องจากเราใช้อีเมลจำลอง (Fake Email) ระบบจะไม่สามารถส่งอีเมลรีเซ็ตจริงได้ครับ\n\nกรุณาติดต่อ Admin หรือเข้าไปที่ Supabase Dashboard > Authentication > Users เพื่อเปลี่ยนรหัสผ่านด้วยตนเองครับ");
+                };
+
+                const handleChangePassword = async () => {
+                    if(passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+                        passwordError.value = "รหัสผ่านไม่ตรงกัน";
+                        return;
+                    }
+                    if(passwordForm.value.newPassword.length < 6) {
+                        passwordError.value = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+                        return;
+                    }
+                    
+                    loading.value = true;
+                    const { error } = await supabase.value.auth.updateUser({ password: passwordForm.value.newPassword });
+                    
+                    if(error) {
+                        alert("เปลี่ยนรหัสผ่านไม่สำเร็จ: " + error.message);
+                    } else {
+                        alert("เปลี่ยนรหัสผ่านเรียบร้อย!");
+                        showChangePasswordModal.value = false;
+                        passwordForm.value = { newPassword: '', confirmPassword: '' };
+                    }
+                    loading.value = false;
+                };
                 
                 const logout = async () => {
                     await supabase.value.auth.signOut();
@@ -658,6 +696,124 @@
                     document.body.appendChild(link);
                     link.click();
                     loading.value = false;
+                };
+
+                const importLegacyCSV = (event) => {
+                    const file = event.target.files[0];
+                    if (!file || !currentCustomer.value) return;
+
+                    const readFile = (encoding) => {
+                        return new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.onerror = (e) => reject(e);
+                            reader.readAsText(file, encoding);
+                        });
+                    };
+
+                    const processText = async (text) => {
+                        const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
+                        
+                        // Find header row based on "รายการ"
+                        let headerIdx = -1;
+                        for(let i=0; i<lines.length; i++) {
+                            if (lines[i].includes('รายการ') || lines[i].includes('Item')) {
+                                headerIdx = i;
+                                break;
+                            }
+                        }
+
+                        if(headerIdx === -1) return false; 
+
+                        const dateRow = lines[headerIdx + 1].split(',');
+                        
+                        let weightRow, fatRow, visRow, musRow, ageRow, bmrRow;
+                        
+                        for(let i=headerIdx+2; i<lines.length; i++) {
+                            const l = lines[i];
+                            if(l.includes('น้ำหนัก') || l.includes('Weight')) weightRow = l.split(',');
+                            else if(l.includes('Fat-%') || l.includes('ไขมัน') || l.includes('Body Fat') || l.includes('%Fat')) fatRow = l.split(',');
+                            else if(l.includes('Visceral') || l.includes('ช่องท้อง')) visRow = l.split(',');
+                            else if(l.includes('Muscle') || l.includes('กล้ามเนื้อ')) musRow = l.split(',');
+                            else if(l.includes('Body Age') || l.includes('อายุร่างกาย')) ageRow = l.split(',');
+                            else if(l.includes('BMR')) bmrRow = l.split(',');
+                        }
+
+                        if(!weightRow) return false; 
+
+                        loading.value = true;
+                        let count = 0;
+
+                        // Start from col index 2 (Date columns)
+                        for(let i=2; i<dateRow.length; i++) {
+                            let dStr = dateRow[i];
+                            if(!dStr || !dStr.includes('/')) continue;
+                            
+                            const parts = dStr.trim().split('/');
+                            if(parts.length !== 3) continue;
+
+                            let y = parseInt(parts[2]);
+                            if(y < 2000) y += 2000;
+                            // Buddhist Year Adjust
+                            if(y > 2400) y -= 543;
+
+                            let m = parts[1];
+                            let d = parts[0];
+                            let isoDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+
+                            // Helper to extract value
+                            const clean = (row) => {
+                                if(!row || !row[i]) return null;
+                                let s = row[i].toString().replace('%', '').trim();
+                                let v = parseFloat(s);
+                                return isNaN(v) ? null : v;
+                            };
+
+                            let w = clean(weightRow);
+                            let f = clean(fatRow);
+                            let v = clean(visRow);
+                            let mus = clean(musRow);
+                            let age = clean(ageRow);
+                            let b = clean(bmrRow);
+
+                            if(w) {
+                                await supabase.value.from('measurements').insert({
+                                    customer_id: currentCustomer.value.id,
+                                    recorded_at: isoDate,
+                                    weight: w,
+                                    fat_pct: f,
+                                    visceral: v,
+                                    muscle_pct: mus,
+                                    body_age: age,
+                                    bmr: b
+                                });
+                                count++;
+                            }
+                        }
+                        return count; 
+                    };
+
+                    // Try reading (TIS-620 first)
+                    readFile('windows-874').then(async (text) => {
+                        let result = await processText(text);
+                        if (result === false) {
+                            const utfText = await readFile('UTF-8');
+                            result = await processText(utfText);
+                        }
+                        
+                        if (result === false) {
+                             alert("ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบว่ามีแถว 'รายการ' และ 'น้ำหนัก' หรือไม่");
+                             loading.value = false;
+                        } else {
+                             alert(`นำเข้าข้อมูลเรียบร้อย ${result} รายการ`);
+                             loadHistory();
+                             loading.value = false;
+                        }
+                    }).catch(err => {
+                        console.error(err);
+                        alert("เกิดข้อผิดพลาดในการอ่านไฟล์");
+                        loading.value = false;
+                    });
                 };
 
                 const importCSV = (event) => {
@@ -978,6 +1134,7 @@
                     const gender = currentCustomer.value.gender;
                     if(mus === null) return { status: '-', colorClass: 'bg-gray-300', textClass: 'text-gray-400' };
                     
+                    // Adjusted Logic based on typical ranges
                     let low = gender === 'male' ? 33 : 24;
                     let norm = gender === 'male' ? 39 : 30;
 
@@ -1177,10 +1334,10 @@ BMR อัตราการเผาผลาญ ${bmr} kcal อันนี้
 
                 return {
                     supabaseConfigured, config, initSupabase, clearConfig, isHardcodedConfig,
-                    session, auth, handleLogin, logout, loading, userAbo,
+                    session, auth, handleLogin, logout, loading, userAbo, showForgotPasswordInfo,
                     view, subView, changeSubView,
                     customers, filteredCustomers, searchQuery, selectCustomer,
-                    showAddCustomerModal, newCustomer, addCustomer,
+                    showAddCustomerModal, newCustomer, addCustomer, showChangePasswordModal, passwordForm, passwordError, handleChangePassword,
                     currentCustomer, calculateAge, formatDate, formatDateShort, formatDecimal,
                     newMeasure, saveMeasurement, editRecord, cancelEdit, editingId,
                     history, loadHistory, deleteRecord, chartDays,
@@ -1193,7 +1350,7 @@ BMR อัตราการเผาผลาญ ${bmr} kcal อันนี้
                     targetLoss, recommendKcal,
                     // Script & Image
                     showScriptModal, scriptContent, scriptPlainText, generateScript, speak, copyScript, saveAsImage, captureTimestamp,
-                    exportCSV, importCSV
+                    exportCSV, importCSV, importLegacyCSV // Added importLegacyCSV
                 };
             }
         };
