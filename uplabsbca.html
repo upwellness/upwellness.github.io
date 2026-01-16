@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP Labs Tracker v2.7</title>
+    <title>UP Labs Tracker v2.9</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue 3 -->
@@ -36,6 +36,12 @@
             font-weight: 700;
             line-height: 1;
         }
+        /* Custom Scrollbar for Script */
+        .script-container::-webkit-scrollbar { width: 6px; }
+        .script-container::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+        
+        /* Table Compact for Mobile */
+        .table-compact th, .table-compact td { padding: 0.5rem 0.25rem; }
     </style>
 </head>
 <body class="text-gray-700">
@@ -45,10 +51,10 @@
         <nav class="bg-teal-600 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
             <h1 class="font-bold text-lg flex items-center gap-2">
                 <i class="fa-solid fa-heart-pulse"></i>
-                <span class="hidden sm:inline">UP Labs Tracker v2.7</span>
+                <span class="hidden sm:inline">UP Labs Tracker v2.9</span>
             </h1>
             <div v-if="session" class="flex gap-2 items-center">
-                <!-- Dashboard Buttons -->
+                <!-- Backup Buttons (Only on Dashboard) -->
                 <div v-if="view === 'dashboard'" class="flex mr-2">
                     <label class="cursor-pointer bg-teal-700 hover:bg-teal-800 text-white px-2 py-1 rounded-l text-xs flex items-center border-r border-teal-600" title="Import CSV Backup (Full DB)">
                         <i class="fa-solid fa-database mr-1"></i> Import DB
@@ -63,6 +69,7 @@
                     <i class="fa-solid fa-id-badge mr-1"></i>{{ userAbo }}
                 </span>
                 
+                <!-- Change Password Button -->
                 <button @click="showChangePasswordModal = true" class="text-sm bg-teal-700 px-2 py-1 rounded hover:bg-teal-800 transition" title="เปลี่ยนรหัสผ่าน">
                     <i class="fa-solid fa-key"></i>
                 </button>
@@ -82,7 +89,7 @@
             </div>
         </nav>
 
-        <!-- 1. Login Screen -->
+        <!-- 1. Config / Login Screen -->
         <div v-if="!session" class="container mx-auto max-w-md p-6 mt-10">
             <div class="bg-white p-6 rounded-xl shadow-lg border border-teal-100">
                 <h2 class="text-2xl font-bold text-center text-teal-800 mb-6">เข้าสู่ระบบโค้ช</h2>
@@ -103,6 +110,7 @@
                         <div class="mb-6">
                             <label class="block text-sm font-bold mb-1 text-teal-700">รหัสผ่าน</label>
                             <input v-model="auth.password" type="password" placeholder="รหัสผ่าน" required class="w-full p-3 border border-teal-200 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none">
+                            <!-- Forgot Password Link -->
                             <div class="text-right mt-2">
                                 <button type="button" @click="showForgotPasswordInfo" class="text-xs text-orange-500 hover:text-orange-700 underline font-bold">
                                     <i class="fa-solid fa-circle-question mr-1"></i>ลืมรหัสผ่าน?
@@ -121,7 +129,7 @@
             </div>
         </div>
 
-        <!-- 2. Dashboard -->
+        <!-- 2. Dashboard: Customer List -->
         <div v-else-if="view === 'dashboard'" key="view-dashboard" class="container mx-auto max-w-2xl p-4">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-teal-800">รายชื่อลูกค้า</h2>
@@ -146,13 +154,17 @@
                     </div>
                     <i class="fa-solid fa-chevron-right text-gray-300"></i>
                 </div>
+                <div v-if="filteredCustomers.length === 0" class="text-center py-10 text-gray-400">
+                    <i class="fa-solid fa-user-slash text-4xl mb-2 text-gray-200"></i><br>
+                    ยังไม่มีข้อมูลลูกค้า
+                </div>
             </div>
         </div>
 
         <!-- 3. Customer Detail View -->
         <div v-else-if="view === 'customer_detail' && currentCustomer" key="view-customer-detail" class="container mx-auto max-w-2xl p-4">
             
-            <div id="capture-area" class="p-2 bg-[#f0fdfa] min-h-screen"> 
+            <div id="capture-area" class="p-2 bg-[#f0fdfa] min-h-screen"> <!-- Capture Wrapper -->
                 
                 <!-- Header Info -->
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-teal-100 mb-4 relative">
@@ -195,19 +207,29 @@
                 <!-- Tab: New Measurement -->
                 <div v-if="subView === 'measure'" key="subview-measure">
                     
-                    <!-- Detailed Input Form -->
+                    <!-- Detailed Input Form (Hide on Capture) -->
                     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-6 no-print-capture">
                         <h3 class="text-base font-bold text-gray-700 mb-4 border-b pb-2 flex items-center justify-between">
                             <span><i class="fa-solid fa-pen-to-square mr-2 text-teal-600"></i> {{ editingId ? 'แก้ไขข้อมูล' : 'กรอกค่าจากเครื่องวัด' }}</span>
                             <button v-if="editingId" @click="cancelEdit" class="text-xs text-red-500 underline">ยกเลิกแก้ไข</button>
                         </h3>
+                        
                         <div class="space-y-4">
+                            <!-- Date Input -->
                             <div class="flex items-center justify-between group">
-                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 text-sm"><i class="fa-regular fa-calendar"></i></div>วันที่วัดผล</label>
+                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 text-sm"><i class="fa-regular fa-calendar"></i></div>
+                                    วันที่วัดผล
+                                </label>
                                 <input v-model="newMeasure.recorded_at" type="date" class="w-1/2 bg-teal-50 border border-teal-200 text-teal-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
+
+                            <!-- Weight -->
                             <div class="flex items-center justify-between group">
-                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm"><i class="fa-solid fa-weight-scale"></i></div>น้ำหนัก (kg)</label>
+                                <label class="font-semibold text-gray-600 w-1/2 flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm"><i class="fa-solid fa-weight-scale"></i></div>
+                                    น้ำหนัก (kg)
+                                </label>
                                 <input v-model.number="newMeasure.weight" type="number" step="0.1" placeholder="0.0" class="w-1/2 bg-blue-50 border border-blue-200 text-blue-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
                             <div class="flex items-center justify-between group">
@@ -232,6 +254,7 @@
                                 <input v-model.number="newMeasure.bmr" type="number" step="1" placeholder="kcal" class="w-1/2 bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-lg p-2 text-right text-lg">
                             </div>
                         </div>
+
                         <button @click="saveMeasurement" :disabled="loading" 
                             :class="['w-full mt-6 text-white py-3 rounded-lg font-bold shadow-md transition flex justify-center items-center gap-2 text-lg', editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-teal-600 hover:bg-teal-700']">
                             <i v-if="loading" class="fa-solid fa-spinner fa-spin"></i>
@@ -263,6 +286,7 @@
                             :status="getMuscleResult.status" :status-color="getMuscleResult.textClass" :value-color="getMuscleResult.textClass"
                             :range-labels="['น้อย', 'มาตรฐาน', 'ดีมาก']" :range-colors="['text-yellow-500', 'text-green-500', 'text-emerald-600']"></analysis-card>
                         
+                        <!-- BODY AGE -->
                         <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-2">
                             <div class="flex justify-between items-center mb-1">
                                 <h3 class="font-bold text-gray-700 text-sm flex items-center"><i class="fa-solid fa-hourglass-half mr-2 text-purple-500"></i> อายุร่างกาย (Body Age)</h3>
@@ -277,6 +301,7 @@
                             </div>
                         </div>
 
+                        <!-- BMR -->
                         <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-2">
                             <div class="flex justify-between items-center mb-1">
                                 <h3 class="font-bold text-gray-700 text-sm flex items-center"><i class="fa-solid fa-fire mr-2 text-orange-500"></i> อัตราการเผาผลาญ (BMR)</h3>
@@ -285,6 +310,7 @@
                             <div class="text-xs text-orange-800 bg-orange-50 p-2 rounded-lg text-center">หากทานเท่านี้ น้ำหนักจะคงที่ (ไม่ออกกำลังกาย)</div>
                         </div>
 
+                        <!-- BMI -->
                         <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-2 relative overflow-visible">
                             <div class="flex justify-between items-end mb-1">
                                 <h3 class="font-bold text-gray-700 text-sm flex items-center"><i class="fa-solid fa-weight-scale mr-2 text-blue-500"></i> BMI</h3>
@@ -307,6 +333,7 @@
                             <p :class="['text-xs font-bold text-right mt-1', getBMIResult.textClass]">{{ getBMIResult.status }}</p>
                         </div>
 
+                        <!-- Recommendation Box -->
                         <div class="mt-4 bg-gradient-to-br from-indigo-50 to-white border border-indigo-200 rounded-xl p-5 shadow-sm">
                             <h3 class="text-base font-bold text-indigo-800 mb-4 flex items-center"><i class="fa-solid fa-user-doctor mr-2"></i> คำแนะนำสุขภาพ</h3>
                             <div class="mb-4">
@@ -326,6 +353,7 @@
                                 <div class="bg-white p-3 rounded-lg border border-indigo-100 flex items-center justify-between"><span class="text-xs text-gray-500">สร้างกล้ามเนื้อ/ซ่อมแซม:</span><span class="text-lg font-bold text-green-600">{{ (newMeasure.weight * 1.5).toFixed(0) }} g/วัน</span></div>
                             </div>
                         </div>
+
                     </div>
                 </div> <!-- End Measure Tab -->
 
@@ -381,6 +409,7 @@
                 </div>
 
             </div> <!-- End Capture Area -->
+
         </div>
 
         <!-- Modal: Add Customer -->
@@ -698,124 +727,6 @@
                     loading.value = false;
                 };
 
-                const importLegacyCSV = (event) => {
-                    const file = event.target.files[0];
-                    if (!file || !currentCustomer.value) return;
-
-                    const readFile = (encoding) => {
-                        return new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onload = (e) => resolve(e.target.result);
-                            reader.onerror = (e) => reject(e);
-                            reader.readAsText(file, encoding);
-                        });
-                    };
-
-                    const processText = async (text) => {
-                        const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
-                        
-                        // Find header row based on "รายการ"
-                        let headerIdx = -1;
-                        for(let i=0; i<lines.length; i++) {
-                            if (lines[i].includes('รายการ') || lines[i].includes('Item')) {
-                                headerIdx = i;
-                                break;
-                            }
-                        }
-
-                        if(headerIdx === -1) return false; 
-
-                        const dateRow = lines[headerIdx + 1].split(',');
-                        
-                        let weightRow, fatRow, visRow, musRow, ageRow, bmrRow;
-                        
-                        for(let i=headerIdx+2; i<lines.length; i++) {
-                            const l = lines[i];
-                            if(l.includes('น้ำหนัก') || l.includes('Weight')) weightRow = l.split(',');
-                            else if(l.includes('Fat-%') || l.includes('ไขมัน') || l.includes('Body Fat') || l.includes('%Fat')) fatRow = l.split(',');
-                            else if(l.includes('Visceral') || l.includes('ช่องท้อง')) visRow = l.split(',');
-                            else if(l.includes('Muscle') || l.includes('กล้ามเนื้อ')) musRow = l.split(',');
-                            else if(l.includes('Body Age') || l.includes('อายุร่างกาย')) ageRow = l.split(',');
-                            else if(l.includes('BMR')) bmrRow = l.split(',');
-                        }
-
-                        if(!weightRow) return false; 
-
-                        loading.value = true;
-                        let count = 0;
-
-                        // Start from col index 2 (Date columns)
-                        for(let i=2; i<dateRow.length; i++) {
-                            let dStr = dateRow[i];
-                            if(!dStr || !dStr.includes('/')) continue;
-                            
-                            const parts = dStr.trim().split('/');
-                            if(parts.length !== 3) continue;
-
-                            let y = parseInt(parts[2]);
-                            if(y < 2000) y += 2000;
-                            // Buddhist Year Adjust
-                            if(y > 2400) y -= 543;
-
-                            let m = parts[1];
-                            let d = parts[0];
-                            let isoDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-
-                            // Helper to extract value
-                            const clean = (row) => {
-                                if(!row || !row[i]) return null;
-                                let s = row[i].toString().replace('%', '').trim();
-                                let v = parseFloat(s);
-                                return isNaN(v) ? null : v;
-                            };
-
-                            let w = clean(weightRow);
-                            let f = clean(fatRow);
-                            let v = clean(visRow);
-                            let mus = clean(musRow);
-                            let age = clean(ageRow);
-                            let b = clean(bmrRow);
-
-                            if(w) {
-                                await supabase.value.from('measurements').insert({
-                                    customer_id: currentCustomer.value.id,
-                                    recorded_at: isoDate,
-                                    weight: w,
-                                    fat_pct: f,
-                                    visceral: v,
-                                    muscle_pct: mus,
-                                    body_age: age,
-                                    bmr: b
-                                });
-                                count++;
-                            }
-                        }
-                        return count; 
-                    };
-
-                    // Try reading (TIS-620 first)
-                    readFile('windows-874').then(async (text) => {
-                        let result = await processText(text);
-                        if (result === false) {
-                            const utfText = await readFile('UTF-8');
-                            result = await processText(utfText);
-                        }
-                        
-                        if (result === false) {
-                             alert("ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบว่ามีแถว 'รายการ' และ 'น้ำหนัก' หรือไม่");
-                             loading.value = false;
-                        } else {
-                             alert(`นำเข้าข้อมูลเรียบร้อย ${result} รายการ`);
-                             loadHistory();
-                             loading.value = false;
-                        }
-                    }).catch(err => {
-                        console.error(err);
-                        alert("เกิดข้อผิดพลาดในการอ่านไฟล์");
-                        loading.value = false;
-                    });
-                };
-
                 const importCSV = (event) => {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -873,6 +784,132 @@
                         loading.value = false;
                     };
                     reader.readAsText(file);
+                };
+
+                const importLegacyCSV = (event) => {
+                    const file = event.target.files[0];
+                    if (!file || !currentCustomer.value) return;
+
+                    const readFile = (encoding) => {
+                        return new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.onerror = (e) => reject(e);
+                            reader.readAsText(file, encoding);
+                        });
+                    };
+
+                    const processText = async (text) => {
+                        const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
+                        
+                        // Find keywords to map rows. Order doesn't matter now.
+                        let dateRowIdx = -1, weightRowIdx = -1, fatRowIdx = -1, visRowIdx = -1, musRowIdx = -1, ageRowIdx = -1, bmrRowIdx = -1;
+                        
+                        lines.forEach((l, idx) => {
+                            const lower = l.toLowerCase();
+                            // Find Date Row (Look for "Date", "วันที่" or "รายการ")
+                            if (l.includes('รายการ') || lower.includes('date') || l.includes('วันที่')) {
+                                // If "รายการ", date is likely next row (idx+1), OR this row has dates if it contains '/'
+                                if (l.includes('รายการ')) dateRowIdx = idx + 1;
+                                else dateRowIdx = idx;
+                            }
+                            
+                            // Find Data Rows
+                            if(l.includes('น้ำหนัก') || l.includes('Weight')) weightRowIdx = idx;
+                            else if(l.includes('Fat-%') || l.includes('ไขมัน') || l.includes('Body Fat') || l.includes('%Fat')) fatRowIdx = idx;
+                            else if(l.includes('Visceral') || l.includes('ช่องท้อง') || l.includes('V.Fat')) visRowIdx = idx;
+                            else if(l.includes('Muscle') || l.includes('กล้ามเนื้อ') || l.includes('%Muscle')) musRowIdx = idx;
+                            else if(l.includes('Body Age') || l.includes('อายุร่างกาย') || l.includes('B.Age')) ageRowIdx = idx;
+                            else if(l.includes('BMR') || lower.includes('bmr')) bmrRowIdx = idx;
+                        });
+
+                        if (weightRowIdx === -1 || dateRowIdx === -1) return false;
+
+                        const dateRow = lines[dateRowIdx].split(',');
+                        const weightRow = lines[weightRowIdx].split(',');
+                        const fatRow = fatRowIdx !== -1 ? lines[fatRowIdx].split(',') : null;
+                        const visRow = visRowIdx !== -1 ? lines[visRowIdx].split(',') : null;
+                        const musRow = musRowIdx !== -1 ? lines[musRowIdx].split(',') : null;
+                        const ageRow = ageRowIdx !== -1 ? lines[ageRowIdx].split(',') : null;
+                        const bmrRow = bmrRowIdx !== -1 ? lines[bmrRowIdx].split(',') : null;
+
+                        loading.value = true;
+                        let count = 0;
+
+                        // Start reading columns (skip first few label columns, usually date starts col 1 or 2)
+                        for(let i=0; i<dateRow.length; i++) {
+                            let dStr = dateRow[i];
+                            // Must contain '/' to be a valid date
+                            if(!dStr || !dStr.includes('/')) continue;
+                            
+                            const parts = dStr.trim().split('/');
+                            if(parts.length !== 3) continue;
+
+                            let y = parseInt(parts[2]);
+                            if(y < 2000) y += 2000;
+                            if(y > 2400) y -= 543; // Buddhist to AD
+
+                            let m = parts[1];
+                            let d = parts[0];
+                            // Validate Date
+                            if(isNaN(y) || isNaN(parseInt(m)) || isNaN(parseInt(d))) continue;
+
+                            let isoDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+
+                            const clean = (val) => {
+                                if(!val) return null;
+                                let s = val.toString().replace('%', '').trim();
+                                let v = parseFloat(s);
+                                return isNaN(v) ? null : v;
+                            };
+
+                            let w = clean(weightRow[i]);
+                            let f = fatRow ? clean(fatRow[i]) : null;
+                            let v = visRow ? clean(visRow[i]) : null;
+                            let mus = musRow ? clean(musRow[i]) : null;
+                            let age = ageRow ? clean(ageRow[i]) : null;
+                            let b = bmrRow ? clean(bmrRow[i]) : null;
+
+                            if(w) {
+                                // Insert into DB
+                                await supabase.value.from('measurements').insert({
+                                    customer_id: currentCustomer.value.id,
+                                    recorded_at: isoDate,
+                                    weight: w,
+                                    fat_pct: f,
+                                    visceral: v,
+                                    muscle_pct: mus,
+                                    body_age: age,
+                                    bmr: b
+                                });
+                                count++;
+                            }
+                        }
+                        return count; 
+                    };
+
+                    // Try reading (TIS-620 first)
+                    readFile('windows-874').then(async (text) => {
+                        let result = await processText(text);
+                        if (result === false || result === 0) {
+                            // Retry UTF-8 if TIS-620 failed or returned 0 records
+                            const utfText = await readFile('UTF-8');
+                            result = await processText(utfText);
+                        }
+                        
+                        if (result === false || result === 0) {
+                             alert("ไม่สามารถอ่านข้อมูลได้ กรุณาตรวจสอบว่ามีแถว 'น้ำหนัก' และวันที่รูปแบบ d/m/y");
+                             loading.value = false;
+                        } else {
+                             alert(`นำเข้าข้อมูลเรียบร้อย ${result} รายการ`);
+                             loadHistory();
+                             loading.value = false;
+                        }
+                    }).catch(err => {
+                        console.error(err);
+                        alert("เกิดข้อผิดพลาดในการอ่านไฟล์");
+                        loading.value = false;
+                    });
                 };
 
                 // --- Measurement Logic ---
@@ -1134,7 +1171,6 @@
                     const gender = currentCustomer.value.gender;
                     if(mus === null) return { status: '-', colorClass: 'bg-gray-300', textClass: 'text-gray-400' };
                     
-                    // Adjusted Logic based on typical ranges
                     let low = gender === 'male' ? 33 : 24;
                     let norm = gender === 'male' ? 39 : 30;
 
