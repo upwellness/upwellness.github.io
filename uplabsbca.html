@@ -166,7 +166,7 @@
             
             <div id="capture-area" class="p-2 bg-[#f0fdfa] min-h-screen"> <!-- Capture Wrapper -->
                 
-                <!-- Header Info -->
+                <!-- Header Info (Updated with Date Format) -->
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-teal-100 mb-4 relative">
                     <button @click="view = 'dashboard'" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 no-print-capture"><i class="fa-solid fa-xmark text-xl"></i></button>
                     
@@ -180,11 +180,11 @@
                         </div>
                         <div>
                             <h2 class="text-xl font-bold text-gray-800">{{ currentCustomer.name }}</h2>
-                            <p class="text-sm text-gray-500">
-                                {{ currentCustomer.gender === 'male' ? 'ชาย' : 'หญิง' }} | 
-                                อายุ {{ calculateAge(currentCustomer.birth_year) }} ปี | 
-                                สูง {{ currentCustomer.height }} cm
-                            </p>
+                            <div class="text-sm text-gray-500 mt-1 space-y-0.5">
+                                <p><i class="fa-solid fa-venus-mars w-4"></i> {{ currentCustomer.gender === 'male' ? 'ชาย' : 'หญิง' }}</p>
+                                <p><i class="fa-solid fa-cake-candles w-4"></i> {{ formatBirthDate(currentCustomer.birth_year) }} (อายุ {{ calculateAge(currentCustomer.birth_year) }} ปี)</p>
+                                <p><i class="fa-solid fa-ruler-vertical w-4"></i> {{ currentCustomer.height }} cm</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -802,16 +802,15 @@
                     const processText = async (text) => {
                         const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
                         
-                        // Find keywords to map rows. Order doesn't matter now.
+                        // Find keywords map. Use keywords for flexible row finding.
                         let dateRowIdx = -1, weightRowIdx = -1, fatRowIdx = -1, visRowIdx = -1, musRowIdx = -1, ageRowIdx = -1, bmrRowIdx = -1;
                         
                         lines.forEach((l, idx) => {
                             const lower = l.toLowerCase();
                             // Find Date Row (Look for "Date", "วันที่" or "รายการ")
                             if (l.includes('รายการ') || lower.includes('date') || l.includes('วันที่')) {
-                                // If "รายการ", date is likely next row (idx+1), OR this row has dates if it contains '/'
-                                if (l.includes('รายการ')) dateRowIdx = idx + 1;
-                                else dateRowIdx = idx;
+                                if(l.includes('รายการ') || l.includes('Latest')) dateRowIdx = idx + 1; // Date usually follows header
+                                else dateRowIdx = idx; // This row IS date row
                             }
                             
                             // Find Data Rows
@@ -912,6 +911,17 @@
                     });
                 };
 
+                const formatBirthDate = (year) => {
+                     if (!year) return '-';
+                     // Approx date since we only have year. Use Jan 1st? Or just show years.
+                     // The user asked to input Date of Birth (Full date) in future? 
+                     // For now, let's assume year input and display as BE/AD
+                     return `${year} (ค.ศ. ${year-543})`;
+                };
+                
+                // Helper to format full date if we have full DOB stored (future improvement)
+                // Since current schema only has birth_year (int), we display years.
+                
                 // --- Measurement Logic ---
                 const calculateAge = (birthYear) => {
                     const currentYear = new Date().getFullYear() + 543;
@@ -1171,6 +1181,7 @@
                     const gender = currentCustomer.value.gender;
                     if(mus === null) return { status: '-', colorClass: 'bg-gray-300', textClass: 'text-gray-400' };
                     
+                    // Adjusted Logic based on typical ranges
                     let low = gender === 'male' ? 33 : 24;
                     let norm = gender === 'male' ? 39 : 30;
 
@@ -1374,7 +1385,7 @@ BMR อัตราการเผาผลาญ ${bmr} kcal อันนี้
                     view, subView, changeSubView,
                     customers, filteredCustomers, searchQuery, selectCustomer,
                     showAddCustomerModal, newCustomer, addCustomer, showChangePasswordModal, passwordForm, passwordError, handleChangePassword,
-                    currentCustomer, calculateAge, formatDate, formatDateShort, formatDecimal,
+                    currentCustomer, calculateAge, formatDate, formatDateShort, formatDecimal, formatBirthDate,
                     newMeasure, saveMeasurement, editRecord, cancelEdit, editingId,
                     history, loadHistory, deleteRecord, chartDays,
                     // Analysis
