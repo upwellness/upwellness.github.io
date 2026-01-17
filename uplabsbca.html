@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP Labs Tracker v2.9</title>
+    <title>UP Labs Tracker v3.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue 3 -->
@@ -51,7 +51,7 @@
         <nav class="bg-teal-600 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
             <h1 class="font-bold text-lg flex items-center gap-2">
                 <i class="fa-solid fa-heart-pulse"></i>
-                <span class="hidden sm:inline">UP Labs Tracker v2.9</span>
+                <span class="hidden sm:inline">UP Labs Tracker v3.1</span>
             </h1>
             <div v-if="session" class="flex gap-2 items-center">
                 <!-- Backup Buttons (Only on Dashboard) -->
@@ -361,9 +361,12 @@
                 <div v-else-if="subView === 'history'" key="subview-history" class="space-y-4">
                     <!-- Filter (Hide on capture) -->
                     <div class="flex justify-end gap-2 text-xs no-print-capture">
-                        <button @click="chartDays = 30" :class="['px-3 py-1 rounded-full border', chartDays===30 ? 'bg-teal-600 text-white' : 'bg-white']">30 วัน</button>
+                        <button @click="chartDays = 14" :class="['px-3 py-1 rounded-full border', chartDays===14 ? 'bg-teal-600 text-white' : 'bg-white']">14 วัน</button>
+                        <button @click="chartDays = 30" :class="['px-3 py-1 rounded-full border', chartDays===30 ? 'bg-teal-600 text-white' : 'bg-white']">1 เดือน</button>
                         <button @click="chartDays = 90" :class="['px-3 py-1 rounded-full border', chartDays===90 ? 'bg-teal-600 text-white' : 'bg-white']">3 เดือน</button>
+                        <button @click="chartDays = 180" :class="['px-3 py-1 rounded-full border', chartDays===180 ? 'bg-teal-600 text-white' : 'bg-white']">6 เดือน</button>
                         <button @click="chartDays = 365" :class="['px-3 py-1 rounded-full border', chartDays===365 ? 'bg-teal-600 text-white' : 'bg-white']">1 ปี</button>
+                        <button @click="chartDays = 9999" :class="['px-3 py-1 rounded-full border', chartDays===9999 ? 'bg-teal-600 text-white' : 'bg-white']">ทั้งหมด</button>
                     </div>
 
                     <!-- Charts Stacked -->
@@ -495,7 +498,7 @@
                 const searchQuery = ref('');
                 const currentCustomer = ref(null);
                 const history = ref([]);
-                const chartDays = ref(90);
+                const chartDays = ref(180); // Default to 6 months
 
                 const showAddCustomerModal = ref(false);
                 const newCustomer = ref({ name: '', gender: 'female', birth_year: '', height: '' });
@@ -807,13 +810,11 @@
                         
                         lines.forEach((l, idx) => {
                             const lower = l.toLowerCase();
-                            // Find Date Row (Look for "Date", "วันที่" or "รายการ")
                             if (l.includes('รายการ') || lower.includes('date') || l.includes('วันที่')) {
                                 if(l.includes('รายการ') || l.includes('Latest')) dateRowIdx = idx + 1; // Date usually follows header
                                 else dateRowIdx = idx; // This row IS date row
                             }
                             
-                            // Find Data Rows
                             if(l.includes('น้ำหนัก') || l.includes('Weight')) weightRowIdx = idx;
                             else if(l.includes('Fat-%') || l.includes('ไขมัน') || l.includes('Body Fat') || l.includes('%Fat')) fatRowIdx = idx;
                             else if(l.includes('Visceral') || l.includes('ช่องท้อง') || l.includes('V.Fat')) visRowIdx = idx;
@@ -1000,8 +1001,12 @@
                     if(!error) {
                         // Filter by date
                         const cutoff = new Date();
-                        cutoff.setDate(cutoff.getDate() - chartDays.value);
-                        history.value = data.filter(d => new Date(d.recorded_at) >= cutoff);
+                        if(chartDays.value !== 9999) {
+                            cutoff.setDate(cutoff.getDate() - chartDays.value);
+                            history.value = data.filter(d => new Date(d.recorded_at) >= cutoff);
+                        } else {
+                            history.value = data; // All time
+                        }
                         
                         await nextTick();
                         renderCharts();
@@ -1181,7 +1186,6 @@
                     const gender = currentCustomer.value.gender;
                     if(mus === null) return { status: '-', colorClass: 'bg-gray-300', textClass: 'text-gray-400' };
                     
-                    // Adjusted Logic based on typical ranges
                     let low = gender === 'male' ? 33 : 24;
                     let norm = gender === 'male' ? 39 : 30;
 
@@ -1260,7 +1264,6 @@
                 });
 
                 const generateScript = () => {
-                    // Script logic remains same...
                     const weight = newMeasure.value.weight || 0;
                     const fatPct = newMeasure.value.fat_pct || 0;
                     const visceral = newMeasure.value.visceral || 0;
