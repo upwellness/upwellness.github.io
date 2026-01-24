@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UP Full Course Designer - Metabolic Optimization</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & Babel for JSX -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; -webkit-print-color-adjust: exact; }
+        h1, h2, h3, .font-prompt { font-family: 'Prompt', sans-serif; }
+        
+        /* Custom Checkbox Style */
+        input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        @media print {
+            @page { margin: 10mm; }
+            body { background: white !important; padding: 0 !important; color: black !important; }
+            .no-print { display: none !important; }
+            #printable-area { display: block !important; visibility: visible; }
+            .print-border { border: 2px solid #e2e8f0 !important; border-radius: 1.5rem !important; }
+            .bg-indigo-600 { background-color: #4f46e5 !important; color: white !important; }
+            .bg-slate-900 { background-color: #0f172a !important; color: white !important; }
+        }
+    </style>
+</head>
+<body class="bg-[#F8FAFC]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        const PV_RATE = 3.23;
+
+        const PRODUCT_DATA = [
+            { id: 'p1', name: 'BodyKey', price: 1700, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500' },
+            { id: 'p2', name: 'All Plant 900', price: 2300, category: 'Calories Restriction', canDiscount: false, color: 'bg-orange-500' },
+            { id: 'p3', name: 'All Plant 450', price: 1209, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500' },
+            { id: 'p4', name: 'GT/Choc/Plus Protein', price: 1500, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500' },
+            { id: 'p5', name: 'Green Tea Plus', price: 1732, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500' },
+            { id: 'p6', name: 'DoubleX', price: 2364, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
+            { id: 'p7', name: 'DoubleX Refill', price: 4486, category: 'Nutrients', canDiscount: false, color: 'bg-emerald-500' },
+            { id: 'p8', name: 'LecithinE', price: 659, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
+            { id: 'p9', name: 'Triple Omega', price: 975, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
+            { id: 'p10', name: 'Vitamin B Plus', price: 527, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
+            { id: 'p11', name: 'BioC', price: 990, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
+            { id: 'p12', name: 'Fiber Blend', price: 1168, category: 'Hormone Balance', canDiscount: false, color: 'bg-indigo-500' },
+            { id: 'p13', name: 'PostB', price: 1650, category: 'Hormone Balance', canDiscount: false, color: 'bg-indigo-500' },
+            { id: 'p14', name: 'Fiber Powder', price: 1627, category: 'Hormone Balance', canDiscount: true, color: 'bg-indigo-500' },
+            { id: 'p15', name: 'Probiotics', price: 1650, category: 'Hormone Balance', canDiscount: true, color: 'bg-indigo-500' },
+            { id: 'p16', name: 'Garlic', price: 1195, category: 'NCDs', canDiscount: true, color: 'bg-rose-500' },
+            { id: 'p17', name: 'CoQ10', price: 2209, category: 'NCDs', canDiscount: true, color: 'bg-rose-500' },
+            { id: 'p18', name: 'Ginseng', price: 1300, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
+            { id: 'p19', name: 'CVF', price: 1468, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
+            { id: 'p20', name: 'Calow', price: 1314, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
+            { id: 'p21', name: 'แก้ว', price: 100, category: 'Etc', canDiscount: false, color: 'bg-slate-500', noPV: true },
+        ];
+
+        const PRESETS = [
+            { id: 'std', title: 'Standard Course', desc: 'คอร์สพื้นฐานปรับสมดุล', items: { 'p1': 2, 'p2': 1, 'p6': 1, 'p11': 1, 'p12': 1 } },
+            { id: 'plateau', title: 'Weight Reset', desc: 'สำหรับผู้ที่น้ำหนักนิ่ง', items: { 'p1': 2, 'p2': 1, 'p6': 1, 'p10': 1, 'p15': 1 } },
+            { id: 'hypertension', title: 'NCDs: Hyper', desc: 'ดูแลความดัน/หลอดเลือด', items: { 'p1': 2, 'p6': 1, 'p16': 1, 'p17': 1, 'p9': 1 } },
+            { id: 'diabetes', title: 'NCDs: Diabetes', desc: 'ดูแลน้ำตาล/ความหิว', items: { 'p1': 2, 'p10': 2, 'p12': 1, 'p20': 1 } }
+        ];
+
+        const INITIAL_STATE = PRODUCT_DATA.map(p => ({ ...p, qty: 0, dM: '', dN: '', dE: '', disc: p.canDiscount }));
+
+        function App() {
+            const [items, setItems] = useState(INITIAL_STATE);
+            const [name, setName] = useState('');
+            const [presetId, setPresetId] = useState(null);
+            const [fees, setFees] = useState({ reg: false, estart: false, ajoy: false });
+
+            useEffect(() => { lucide.createIcons(); }, []);
+
+            const totals = useMemo(() => {
+                const active = items.filter(i => i.qty > 0);
+                const rawTotal = active.reduce((s, i) => s + (i.price * i.qty), 0);
+                const itemDisc = active.reduce((s, i) => i.disc ? s + (i.name === 'BodyKey' ? i.price * i.qty * 0.15 : i.price * 0.15) : s, 0);
+                
+                let net = rawTotal - itemDisc;
+                const regFee = fees.reg ? 900 : 0;
+                net += regFee;
+                if (fees.estart) net -= 300;
+                if (fees.ajoy) net -= 500;
+
+                const nonPVPaid = active.reduce((s, i) => i.noPV ? s + (i.price * i.qty - (i.disc ? i.price * 0.15 : 0)) : s, 0);
+                const pvBasis = Math.max(0, net - regFee - nonPVPaid);
+                const pv = pvBasis / PV_RATE;
+
+                let rate = 0;
+                if (pv >= 150000) rate = 21;
+                else if (pv >= 90000) rate = 18;
+                else if (pv >= 55000) rate = 15;
+                else if (pv >= 30000) rate = 12;
+                else if (pv >= 15000) rate = 9;
+                else if (pv >= 5000) rate = 6;
+                else if (pv >= 2500) rate = 3;
+
+                return { rawTotal, itemDisc, net, pv, rate, cb: pv * (rate / 100) * PV_RATE, pvBasis };
+            }, [items, fees]);
+
+            const applyPreset = (p) => {
+                setItems(INITIAL_STATE.map(item => p.items[item.id] ? { ...item, qty: p.items[item.id] } : item));
+                setPresetId(p.id);
+            };
+
+            const update = (id, field, val) => {
+                setItems(prev => prev.map(i => i.id === id ? { ...i, [field]: val } : i));
+                setPresetId(null);
+            };
+
+            return (
+                <div className="container mx-auto">
+                    {/* Header */}
+                    <header className="mb-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 no-print pt-8 px-4">
+                        <div className="flex items-center gap-6">
+                            <div className="bg-indigo-600 p-4 rounded-[2rem] shadow-xl text-white">
+                                <i data-lucide="calculator" size="32"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight uppercase">UP Full Course Designer</h1>
+                                <p className="text-slate-400 font-medium">Metabolic Flex Optimization</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={handleReset} className="px-6 py-3 bg-white border border-slate-200 text-slate-500 font-bold rounded-2xl hover:bg-slate-50">ล้างข้อมูล</button>
+                            <button onClick={() => window.print()} className="px-8 py-3 bg-slate-900 text-white font-bold rounded-2xl hover:bg-black shadow-lg shadow-slate-200">พิมพ์แผน</button>
+                        </div>
+                    </header>
+
+                    {/* Presets */}
+                    <div className="mb-10 no-print px-4">
+                        <h2 className="font-prompt font-bold text-slate-800 uppercase tracking-widest text-xs mb-4">Course Presets</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {PRESETS.map(p => (
+                                <button key={p.id} onClick={() => applyPreset(p)} className={`p-6 rounded-[2rem] border-2 text-left transition-all ${presetId === p.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl' : 'bg-white border-slate-100 hover:border-indigo-300'}`}>
+                                    <div className="font-prompt font-bold text-base">{p.title}</div>
+                                    <div className={`text-xs opacity-70 ${presetId === p.id ? 'text-white' : 'text-slate-400'}`}>{p.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 no-print px-4 pb-20">
+                        {/* Table */}
+                        <div className="xl:col-span-8 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+                            <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-50/30">
+                                <div className="font-prompt font-bold text-slate-800 uppercase text-xs">Product Selection</div>
+                                <input type="text" placeholder="ชื่อลูกค้า..." className="w-full md:w-80 bg-white border border-slate-200 rounded-2xl px-6 py-3 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none" value={name} onChange={e => setName(e.target.value)} />
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="text-[10px] font-prompt font-black text-slate-400 uppercase tracking-widest bg-slate-50/20">
+                                        <tr><th className="px-8 py-5">ผลิตภัณฑ์</th><th className="px-4 py-5 text-center">จำนวน</th><th className="px-4 py-5 text-center">ลด 15%</th><th className="px-4 py-5 text-center">ช/ก/ย</th><th className="px-8 py-5 text-right">ยอดสุทธิ</th></tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {items.map(i => {
+                                            const final = i.qty > 0 ? (i.disc ? (i.name === 'BodyKey' ? i.price * i.qty * 0.85 : i.price * i.qty - i.price * 0.15) : i.price * i.qty) : 0;
+                                            return (
+                                                <tr key={i.id} className={`${i.qty > 0 ? 'bg-indigo-50/20' : ''}`}>
+                                                    <td className="px-8 py-5 font-bold text-sm text-slate-800">{i.name}</td>
+                                                    <td className="px-4 py-5 text-center">
+                                                        <div className="flex items-center justify-center gap-3 bg-white border border-slate-100 p-1 rounded-xl w-fit mx-auto">
+                                                            <button onClick={() => update(i.id, 'qty', Math.max(0, i.qty-1))} className="w-6 h-6 rounded-lg text-slate-300 hover:text-rose-500">-</button>
+                                                            <span className="w-4 font-bold">{i.qty}</span>
+                                                            <button onClick={() => update(i.id, 'qty', i.qty+1)} className="w-6 h-6 rounded-lg text-slate-300 hover:text-emerald-500">+</button>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-5 text-center"><input type="checkbox" className="w-5 h-5 accent-indigo-600" checked={i.disc} onChange={e => update(i.id, 'disc', e.target.checked)} disabled={!i.canDiscount} /></td>
+                                                    <td className="px-4 py-5 flex justify-center gap-1">
+                                                        {['dM','dN','dE'].map(f => <input key={f} type="text" className="w-8 h-8 text-center text-xs font-bold border rounded-lg" value={i[f]} onChange={e => update(i.id, f, e.target.value)} />)}
+                                                    </td>
+                                                    <td className="px-8 py-5 text-right font-bold">฿{final.toLocaleString()}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Sidebar */}
+                        <div className="xl:col-span-4 space-y-6">
+                            <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+                                <h3 className="font-prompt text-xs font-black text-slate-400 uppercase tracking-widest mb-8">Summary</h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between text-sm font-bold text-slate-500 px-1"><span>ราคาปลีกรวม</span><span>฿{totals.rawTotal.toLocaleString()}</span></div>
+                                    {totals.itemDisc > 0 && <div className="flex justify-between text-sm font-bold text-emerald-600 bg-emerald-50 p-4 rounded-2xl">- ฿{totals.itemDisc.toLocaleString()}</div>}
+                                    <div className="py-6 border-y space-y-3">
+                                        {[ {id:'reg', l:'ค่าสมัครสมาชิก', v:900, t:'+'}, {id:'estart', l:'ส่วนลด e-Starter', v:300, t:'-'}, {id:'ajoy', l:'ส่วนลด A-Joy', v:500, t:'-'} ].map(f => (
+                                            <div key={f.id} className="flex justify-between items-center text-sm font-bold">
+                                                <div className="flex gap-2"><input type="checkbox" checked={fees[f.id]} onChange={() => setFees(prev => ({...prev, [f.id]: !prev[f.id]}))} /> {f.l}</div>
+                                                <span className={f.t === '-' ? 'text-rose-500' : ''}>{f.t} ฿{f.v}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="bg-slate-50 p-6 rounded-3xl border text-center">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calculated PV & Cashback ({totals.rate}%)</p>
+                                        <p className="text-3xl font-prompt font-black text-indigo-600 my-1">{totals.pv.toLocaleString(undefined, {maximumFractionDigits:0})} PV</p>
+                                        <p className="text-xl font-prompt font-black text-emerald-600">฿{totals.cb.toLocaleString(undefined, {maximumFractionDigits:0})}</p>
+                                    </div>
+                                    <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] text-center shadow-2xl">
+                                        <p className="text-xs font-bold uppercase opacity-50 mb-2">NET PAYMENT</p>
+                                        <div className="text-5xl font-prompt font-black tracking-tighter">฿{Math.max(0, totals.net).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    {/* Print Area */}
+                    <div id="printable-area" className="hidden p-12 bg-white text-slate-900">
+                        <div className="border-b-8 border-slate-900 pb-8 mb-10 flex justify-between items-end">
+                            <div><h1 className="text-5xl font-prompt font-black uppercase italic">Weight Reset</h1><p className="text-xl font-prompt font-black text-indigo-600 uppercase tracking-[0.4em]">Metabolic Optimization</p></div>
+                            <div className="text-right"><p className="text-sm font-black text-slate-400 uppercase">Personalized For:</p><p className="text-3xl font-black border-b-4 min-w-[300px]">{name || '...........................................'}</p></div>
+                        </div>
+                        <table className="w-full mb-10 border border-slate-200 rounded-[2.5rem] overflow-hidden">
+                            <thead className="bg-slate-900 text-white text-xs font-black uppercase tracking-widest">
+                                <tr><th className="px-8 py-6 text-left">Nutrients Plan</th><th className="px-8 py-6 text-center">จำนวน</th><th className="px-6 py-6 text-center">เช้า</th><th className="px-6 py-6 text-center">กลางวัน</th><th className="px-6 py-6 text-center">เย็น</th></tr>
+                            </thead>
+                            <tbody>
+                                {items.filter(i => i.qty > 0).map((i, idx) => (
+                                    <tr key={i.id} className={`font-bold border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                                        <td className="px-8 py-6 text-xl">{i.name}</td><td className="px-8 py-6 text-center text-indigo-600 text-xl">{i.qty}</td><td className="px-6 py-6 text-center text-xl">{i.dM || '-'}</td><td className="px-6 py-6 text-center text-xl">{i.dN || '-'}</td><td className="px-6 py-6 text-center text-xl">{i.dE || '-'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <div className="grid grid-cols-2 mt-12 px-6">
+                            <div className="bg-slate-50 p-8 rounded-[3rem] border">
+                                <h4 className="font-prompt font-black uppercase text-sm mb-4 tracking-widest">Guidelines</h4>
+                                <ul className="text-sm font-bold text-slate-600 space-y-2"><li>✓ ดื่มน้ำวันละ 2-3 ลิตร</li><li>✓ เดินสะสม 10,000 ก้าว</li><li>✓ ทานอาหาร 2-4-6</li></ul>
+                            </div>
+                            <div className="text-right flex flex-col justify-center">
+                                <p className="text-sm font-black text-slate-400 uppercase">Net Payment</p>
+                                <p className="text-6xl font-prompt font-black">฿{totals.net.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            function handleReset() { if(confirm('Reset Data?')) { window.location.reload(); } }
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
