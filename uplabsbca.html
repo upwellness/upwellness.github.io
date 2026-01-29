@@ -342,23 +342,23 @@
                     <div class="space-y-4">
                         <div v-show="graphVisibility.weight" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                              <h3 class="text-sm font-bold text-center mb-2">น้ำหนัก (kg)</h3>
-                             <div class="relative h-96 w-full min-h-[350px]"><canvas id="weightChart"></canvas></div>
+                             <div class="relative h-84 w-full min-h-[336px]"><canvas id="weightChart"></canvas></div>
                         </div>
                         <div v-show="graphVisibility.fat" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                              <h3 class="text-sm font-bold text-center mb-2">มวลไขมัน (kg) & %ไขมัน</h3>
-                             <div class="relative h-96 w-full min-h-[350px]"><canvas id="fatChart"></canvas></div>
+                             <div class="relative h-84 w-full min-h-[336px]"><canvas id="fatChart"></canvas></div>
                         </div>
                         <div v-show="graphVisibility.muscle" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                              <h3 class="text-sm font-bold text-center mb-2">กล้ามเนื้อ (%)</h3>
-                             <div class="relative h-96 w-full min-h-[350px]"><canvas id="muscleChart"></canvas></div>
+                             <div class="relative h-84 w-full min-h-[336px]"><canvas id="muscleChart"></canvas></div>
                         </div>
                         <div v-show="graphVisibility.visceral" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                              <h3 class="text-sm font-bold text-center mb-2">ไขมันช่องท้อง (Visceral Level)</h3>
-                             <div class="relative h-96 w-full min-h-[350px]"><canvas id="visceralChart"></canvas></div>
+                             <div class="relative h-84 w-full min-h-[336px]"><canvas id="visceralChart"></canvas></div>
                         </div>
                         <div v-show="graphVisibility.bodyAge" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                              <h3 class="text-sm font-bold text-center mb-2">อายุร่างกาย (Body Age)</h3>
-                             <div class="relative h-96 w-full min-h-[350px]"><canvas id="bodyAgeChart"></canvas></div>
+                             <div class="relative h-84 w-full min-h-[336px]"><canvas id="bodyAgeChart"></canvas></div>
                         </div>
                     </div>
 
@@ -910,7 +910,32 @@
                 const generateScript = () => { /* ... */ };
                 const speak = () => { /* ... */ };
                 const copyScript = () => { /* ... */ };
-                const saveAsImage = () => { /* ... */ };
+                const saveAsImage = () => {
+                    // Show timestamps
+                    const now = new Date();
+                    captureTimestamp.value = now.toLocaleDateString('th-TH') + ' ' + now.toLocaleTimeString('th-TH');
+                    
+                    const element = document.getElementById('capture-area');
+                    
+                    // Temporarily hide elements we don't want in the screenshot
+                    const hiddenElements = document.querySelectorAll('.no-print-capture');
+                    hiddenElements.forEach(el => el.style.display = 'none');
+
+                    html2canvas(element, {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#f0fdfa'
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = `Result-${currentCustomer.value.name}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        
+                        // Restore elements
+                        hiddenElements.forEach(el => el.style.display = '');
+                        captureTimestamp.value = ''; 
+                    });
+                };
 
                 return {
                     supabaseConfigured, config, initSupabase, clearConfig, isHardcodedConfig, session, auth, handleLogin, logout, loading, userAbo, showForgotPasswordInfo,
@@ -930,7 +955,38 @@
         };
 
         const app = createApp(App);
-        app.component('analysis-card', { /* ... */ });
+        app.component('analysis-card', {
+            props: ['title', 'icon', 'titleColor', 'barClass', 'value', 'unit', 'subValue', 'subUnit', 'markers', 'status', 'statusColor', 'min', 'max', 'rangeLabels', 'rangeColors', 'valueColor'],
+            template: `
+            <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-2 relative overflow-visible">
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="font-bold text-sm flex items-center text-gray-700">
+                        <i :class="['fa-solid fa-'+icon+' mr-2', titleColor]"></i> {{title}}
+                    </h3>
+                    <div class="text-right">
+                        <span :class="['text-xl font-bold', valueColor]">{{value}} {{unit}}</span>
+                        <span v-if="subValue" class="text-xs text-gray-400 ml-1">({{subValue}} {{subUnit}})</span>
+                    </div>
+                </div>
+                <div class="relative h-3 bg-gray-200 rounded-full mt-3 mb-5">
+                    <div :class="['absolute top-0 left-0 h-full rounded-full gauge-bar', barClass]" 
+                         :style="{width: Math.min(((value - min) / (max - min)) * 100, 100) + '%'}"></div>
+                    <div v-for="m in markers" :key="m" class="absolute top-0 w-0.5 h-full bg-white z-10" 
+                         :style="{left: ((m - min) / (max - min)) * 100 + '%'}"></div>
+                    
+                    <div v-for="m in markers" :key="m+'lbl'" class="marker-label"
+                         :style="{left: ((m - min) / (max - min)) * 100 + '%'}">{{m}}</div>
+                </div>
+                
+                <div v-if="rangeLabels" class="flex justify-between text-[10px] font-bold mt-2 mb-1 px-1">
+                    <span v-for="(label, idx) in rangeLabels" :key="label" :class="rangeColors ? rangeColors[idx] : 'text-gray-400'">{{label}}</span>
+                </div>
+
+                <p :class="['text-xs font-bold text-right mt-1', statusColor]">{{status}}</p>
+            </div>
+            `
+        });
+
         app.mount('#app');
     </script>
 </body>
