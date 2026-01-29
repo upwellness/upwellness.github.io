@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP BCA Tracker v4.6</title>
+    <title>UP BCA Tracker v4.7</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue 3 -->
@@ -48,7 +48,7 @@
         <nav class="bg-teal-600 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
             <h1 class="font-bold text-lg flex items-center gap-2">
                 <i class="fa-solid fa-heart-pulse"></i>
-                <span class="hidden sm:inline">UP BCA Tracker v4.6</span>
+                <span class="hidden sm:inline">UP BCA Tracker v4.7</span>
             </h1>
             <div v-if="session" class="flex gap-2 items-center">
                 <!-- Dashboard Buttons -->
@@ -770,7 +770,7 @@
                             data: { labels: labels, datasets: datasets }, 
                             options: { 
                                 responsive: true, 
-                                maintainAspectRatio: false, // Critical for mobile
+                                maintainAspectRatio: false, // Critical for mobile: false allows custom height
                                 plugins: { legend: { display: true }, datalabels: { display: true } }, 
                                 layout: { padding: { top: 20 } } 
                             } 
@@ -924,7 +924,12 @@
                     html2canvas(element, {
                         scale: 2,
                         useCORS: true,
-                        backgroundColor: '#f0fdfa'
+                        backgroundColor: '#f0fdfa',
+                        onclone: (clonedDoc) => {
+                           // Fix for scroll issue - ensure cloned document is scrolled to top
+                           clonedDoc.documentElement.scrollTop = 0;
+                           clonedDoc.body.scrollTop = 0;
+                        }
                     }).then(canvas => {
                         const link = document.createElement('a');
                         link.download = `Result-${currentCustomer.value.name}.png`;
@@ -934,6 +939,10 @@
                         // Restore elements
                         hiddenElements.forEach(el => el.style.display = '');
                         captureTimestamp.value = ''; 
+                    }).catch(err => {
+                         console.error("Screenshot failed", err);
+                         alert("ไม่สามารถบันทึกรูปได้ในขณะนี้");
+                         hiddenElements.forEach(el => el.style.display = '');
                     });
                 };
 
