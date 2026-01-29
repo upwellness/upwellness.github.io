@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP BCA Tracker v4.2</title>
+    <title>UP BCA Tracker v4.5</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue 3 -->
@@ -48,7 +48,7 @@
         <nav class="bg-teal-600 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
             <h1 class="font-bold text-lg flex items-center gap-2">
                 <i class="fa-solid fa-heart-pulse"></i>
-                <span class="hidden sm:inline">UP BCA Tracker v4.2</span>
+                <span class="hidden sm:inline">UP BCA Tracker v4.5</span>
             </h1>
             <div v-if="session" class="flex gap-2 items-center">
                 <!-- Dashboard Buttons -->
@@ -340,11 +340,26 @@
 
                     <!-- Charts -->
                     <div class="space-y-4">
-                        <div v-if="graphVisibility.weight" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100"><h3 class="text-sm font-bold text-center mb-2">น้ำหนัก (kg)</h3><canvas id="weightChart"></canvas></div>
-                        <div v-if="graphVisibility.fat" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100"><h3 class="text-sm font-bold text-center mb-2">มวลไขมัน (kg) & %ไขมัน</h3><canvas id="fatChart"></canvas></div>
-                        <div v-if="graphVisibility.muscle" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100"><h3 class="text-sm font-bold text-center mb-2">กล้ามเนื้อ (%)</h3><canvas id="muscleChart"></canvas></div>
-                        <div v-if="graphVisibility.visceral" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100"><h3 class="text-sm font-bold text-center mb-2">ไขมันช่องท้อง (Visceral Level)</h3><canvas id="visceralChart"></canvas></div>
-                        <div v-if="graphVisibility.bodyAge" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100"><h3 class="text-sm font-bold text-center mb-2">อายุร่างกาย (Body Age)</h3><canvas id="bodyAgeChart"></canvas></div>
+                        <div v-show="graphVisibility.weight" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                             <h3 class="text-sm font-bold text-center mb-2">น้ำหนัก (kg)</h3>
+                             <div class="relative h-72 w-full"><canvas id="weightChart"></canvas></div>
+                        </div>
+                        <div v-show="graphVisibility.fat" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                             <h3 class="text-sm font-bold text-center mb-2">มวลไขมัน (kg) & %ไขมัน</h3>
+                             <div class="relative h-72 w-full"><canvas id="fatChart"></canvas></div>
+                        </div>
+                        <div v-show="graphVisibility.muscle" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                             <h3 class="text-sm font-bold text-center mb-2">กล้ามเนื้อ (%)</h3>
+                             <div class="relative h-72 w-full"><canvas id="muscleChart"></canvas></div>
+                        </div>
+                        <div v-show="graphVisibility.visceral" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                             <h3 class="text-sm font-bold text-center mb-2">ไขมันช่องท้อง (Visceral Level)</h3>
+                             <div class="relative h-72 w-full"><canvas id="visceralChart"></canvas></div>
+                        </div>
+                        <div v-show="graphVisibility.bodyAge" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                             <h3 class="text-sm font-bold text-center mb-2">อายุร่างกาย (Body Age)</h3>
+                             <div class="relative h-72 w-full"><canvas id="bodyAgeChart"></canvas></div>
+                        </div>
                     </div>
 
                     <!-- History Table -->
@@ -727,6 +742,7 @@
                         // Fix key mapping: visceralChart -> visceral, bodyAgeChart -> bodyAge
                         let visibilityKey = id.replace('Chart', '');
                         if (id === 'visceralChart') visibilityKey = 'visceral';
+                        if (id === 'bodyAgeChart') visibilityKey = 'bodyAge';
                         
                         if (!graphVisibility.value[visibilityKey]) return;
 
@@ -749,7 +765,16 @@
                         }];
                         if(trendData) datasets.push({ label: 'แนวโน้ม', data: trendData, borderColor: '#9ca3af', borderDash: [5, 5], borderWidth: 1, pointRadius: 0, tension: 0, datalabels: { display: false } });
 
-                        charts[id] = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, plugins: { legend: { display: true }, datalabels: { display: true } }, layout: { padding: { top: 20 } } } });
+                        charts[id] = new Chart(ctx, { 
+                            type: 'line', 
+                            data: { labels: labels, datasets: datasets }, 
+                            options: { 
+                                responsive: true, 
+                                maintainAspectRatio: false, // Critical for mobile
+                                plugins: { legend: { display: true }, datalabels: { display: true } }, 
+                                layout: { padding: { top: 20 } } 
+                            } 
+                        });
                      };
 
                      createChart('weightChart', 'น้ำหนัก', [{key:'weight'}], '#2563eb');
@@ -769,7 +794,12 @@
                                         { label: '% Fat', data: fatMassData.map(d=>d.fat_pct), borderColor: '#facc15', borderDash: [2,2], tension: 0.4, yAxisID: 'y1', datalabels: { display:false } }
                                     ]
                                 },
-                                options: { scales: { y: {position: 'left'}, y1: {position: 'right'} }, plugins: { datalabels: { display: true } } }
+                                options: { 
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: { y: {position: 'left'}, y1: {position: 'right'} }, 
+                                    plugins: { datalabels: { display: true } } 
+                                }
                             });
                         }
                      }
@@ -900,7 +930,38 @@
         };
 
         const app = createApp(App);
-        app.component('analysis-card', { /* ... */ });
+        app.component('analysis-card', {
+            props: ['title', 'icon', 'titleColor', 'barClass', 'value', 'unit', 'subValue', 'subUnit', 'markers', 'status', 'statusColor', 'min', 'max', 'rangeLabels', 'rangeColors', 'valueColor'],
+            template: `
+            <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-2 relative overflow-visible">
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="font-bold text-sm flex items-center text-gray-700">
+                        <i :class="['fa-solid fa-'+icon+' mr-2', titleColor]"></i> {{title}}
+                    </h3>
+                    <div class="text-right">
+                        <span :class="['text-xl font-bold', valueColor]">{{value}} {{unit}}</span>
+                        <span v-if="subValue" class="text-xs text-gray-400 ml-1">({{subValue}} {{subUnit}})</span>
+                    </div>
+                </div>
+                <div class="relative h-3 bg-gray-200 rounded-full mt-3 mb-5">
+                    <div :class="['absolute top-0 left-0 h-full rounded-full gauge-bar', barClass]" 
+                         :style="{width: Math.min(((value - min) / (max - min)) * 100, 100) + '%'}"></div>
+                    <div v-for="m in markers" :key="m" class="absolute top-0 w-0.5 h-full bg-white z-10" 
+                         :style="{left: ((m - min) / (max - min)) * 100 + '%'}"></div>
+                    
+                    <div v-for="m in markers" :key="m+'lbl'" class="marker-label"
+                         :style="{left: ((m - min) / (max - min)) * 100 + '%'}">{{m}}</div>
+                </div>
+                
+                <div v-if="rangeLabels" class="flex justify-between text-[10px] font-bold mt-2 mb-1 px-1">
+                    <span v-for="(label, idx) in rangeLabels" :key="label" :class="rangeColors ? rangeColors[idx] : 'text-gray-400'">{{label}}</span>
+                </div>
+
+                <p :class="['text-xs font-bold text-right mt-1', statusColor]">{{status}}</p>
+            </div>
+            `
+        });
+
         app.mount('#app');
     </script>
 </body>
