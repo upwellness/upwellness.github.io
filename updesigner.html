@@ -44,8 +44,8 @@
             left: 0;
             top: 0;
             width: 1200px !important;
-            min-height: 1200px !important; /* Minimum starting height */
-            height: auto !important; /* Grow with content */
+            min-height: 1200px !important;
+            height: auto !important;
             z-index: -100;
             background-color: white !important;
             overflow: visible !important;
@@ -91,6 +91,7 @@
             { id: 'p18', name: 'Ginseng', price: 1300, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
             { id: 'p19', name: 'CVF', price: 1468, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
             { id: 'p20', name: 'Calow', price: 1314, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
+            { id: 'p22', name: 'Lesterol', price: 1486, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
             { id: 'p21', name: 'แก้ว', price: 100, category: 'Etc', canDiscount: false, color: 'bg-slate-500', noPV: true },
         ];
 
@@ -170,8 +171,7 @@
                             useCORS: true,
                             backgroundColor: "#ffffff",
                             logging: false,
-                            width: 1200,
-                            windowWidth: 1200
+                            width: 1200
                         });
                         
                         const imgData = canvas.toDataURL('image/png', 1.0);
@@ -205,7 +205,7 @@
             };
 
             return (
-                <div className="min-h-screen pb-20 no-print">
+                <div className="min-h-screen pb-20 no-print font-main">
                     {/* Header */}
                     <header className="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pt-8 px-6 max-w-7xl mx-auto">
                         <div className="flex items-center gap-5">
@@ -217,12 +217,12 @@
                                 <p className="text-slate-400 font-medium mt-1 font-prompt uppercase text-xs tracking-widest leading-none">Metabolic Designer System</p>
                             </div>
                         </div>
-                        <div className="flex gap-3 w-full lg:w-auto">
-                            <button onClick={handleReset} className="flex-1 lg:flex-none px-6 py-4 bg-white border border-slate-200 text-slate-500 font-bold rounded-2xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm">Reset</button>
+                        <div className="flex gap-3 w-full lg:w-auto font-prompt uppercase text-sm font-bold">
+                            <button onClick={handleReset} className="flex-1 lg:flex-none px-6 py-4 bg-white border border-slate-200 text-slate-500 rounded-2xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm">Reset</button>
                             <button 
                                 onClick={handleSaveImage} 
                                 disabled={isSaving}
-                                className={`flex-[2] lg:flex-none px-8 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-black shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`flex-[2] lg:flex-none px-8 py-4 bg-slate-900 text-white rounded-2xl hover:bg-black shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <i data-lucide="download" className={`w-5 h-5 ${isSaving ? 'saving-pulse' : ''}`}></i>
                                 {isSaving ? 'กำลังสร้างรูป...' : 'บันทึกรูปแผนกิน'}
@@ -240,7 +240,7 @@
                                     className={`p-6 rounded-[2rem] border-2 text-left transition-all ${presetId === p.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl translate-y-[-2px]' : 'bg-white border-slate-100 hover:border-indigo-300 shadow-sm'}`}
                                 >
                                     <div className="font-prompt font-bold text-base mb-1">{p.title}</div>
-                                    <div className={`text-[13px] leading-snug opacity-80 ${presetId === p.id ? 'text-white' : 'text-slate-500'}`}>{p.desc}</div>
+                                    <div className={`text-[13px] leading-snug opacity-80 ${presetId === p.id ? 'text-white' : 'text-slate-500 font-medium'}`}>{p.desc}</div>
                                 </button>
                             ))}
                         </div>
@@ -252,13 +252,13 @@
                             <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-50/40">
                                 <div className="font-prompt font-bold text-slate-800 uppercase text-xs tracking-widest flex items-center gap-2">
                                     <i data-lucide="shopping-cart" className="w-4 h-4 text-indigo-600"></i>
-                                    Product Selection
+                                    Selection
                                 </div>
-                                <div className="relative w-full md:w-80">
+                                <div className="relative w-full md:w-80 font-main">
                                     <i data-lucide="user" className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
                                     <input 
                                         type="text" 
-                                        placeholder="ระบุชื่อลูกค้า..." 
+                                        placeholder="ชื่อลูกค้า..." 
                                         className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-medium" 
                                         value={name} 
                                         onChange={e => setName(e.target.value)} 
@@ -269,11 +269,12 @@
                                 <table className="w-full text-left border-collapse">
                                     <thead className="text-[10px] font-prompt font-black text-slate-400 uppercase tracking-widest bg-slate-50/20 border-b border-slate-50">
                                         <tr>
-                                            <th className="px-6 py-5">รายการ</th>
-                                            <th className="px-4 py-5 text-center">จำนวน</th>
-                                            <th className="px-4 py-5 text-center">มื้อ ช/ก/ย</th>
-                                            <th className="px-6 py-5">หมายเหตุ</th>
-                                            <th className="px-6 py-5 text-right font-prompt">ยอดจ่าย</th>
+                                            <th className="px-6 py-5 w-[25%]">รายการ</th>
+                                            <th className="px-4 py-5 text-center w-[12%]">จำนวน</th>
+                                            <th className="px-4 py-5 text-center w-[10%]">ลด 15%</th>
+                                            <th className="px-4 py-5 text-center w-[18%]">มื้ออาหาร</th>
+                                            <th className="px-6 py-5 w-[20%]">หมายเหตุ</th>
+                                            <th className="px-6 py-5 text-right w-[15%]">ยอดจ่าย</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
@@ -286,24 +287,33 @@
                                                         <div className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter">{i.category}</div>
                                                     </td>
                                                     <td className="px-4 py-5 text-center">
-                                                        <div className="flex items-center justify-center gap-3 bg-white border border-slate-100 p-1 rounded-xl w-fit mx-auto shadow-sm">
+                                                        <div className="flex items-center justify-center gap-3 bg-white border border-slate-200 p-1 rounded-xl w-fit mx-auto shadow-sm">
                                                             <button onClick={() => update(i.id, 'qty', Math.max(0, i.qty-1))} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-rose-50 text-slate-300 font-bold transition-all">-</button>
                                                             <span className="w-4 font-bold text-slate-700">{i.qty}</span>
                                                             <button onClick={() => update(i.id, 'qty', i.qty+1)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-emerald-50 text-slate-300 font-bold transition-all">+</button>
                                                         </div>
                                                     </td>
+                                                    <td className="px-4 py-5 text-center">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className={`w-5 h-5 rounded-lg accent-indigo-600 transition-all ${!i.canDiscount ? 'opacity-10 pointer-events-none' : 'cursor-pointer hover:scale-110'}`} 
+                                                            checked={i.disc} 
+                                                            onChange={e => update(i.id, 'disc', e.target.checked)} 
+                                                            disabled={!i.canDiscount}
+                                                        />
+                                                    </td>
                                                     <td className="px-4 py-5">
                                                         <div className="flex justify-center gap-1">
                                                             {['dM','dN','dE'].map(f => (
-                                                                <input key={f} type="text" placeholder="-" className="w-8 h-8 text-center text-[12px] font-bold border border-slate-100 rounded-lg bg-white focus:border-indigo-300 outline-none transition-all" value={i[f]} onChange={e => update(i.id, f, e.target.value)} />
+                                                                <input key={f} type="text" placeholder="-" className="w-8 h-8 text-center text-[12px] font-bold border border-slate-100 rounded-lg bg-white outline-none transition-all focus:border-indigo-300" value={i[f]} onChange={e => update(i.id, f, e.target.value)} />
                                                             ))}
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-5">
                                                         <input 
                                                             type="text" 
-                                                            placeholder="เพิ่มหมายเหตุ..." 
-                                                            className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 text-[11px] outline-none italic text-slate-500" 
+                                                            placeholder="..." 
+                                                            className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 text-[11px] outline-none italic text-slate-500 font-main" 
                                                             value={i.rmk} 
                                                             onChange={e => update(i.id, 'rmk', e.target.value)} 
                                                         />
@@ -318,7 +328,7 @@
                         </div>
 
                         {/* Sidebar Summary */}
-                        <div className="xl:col-span-4 space-y-6">
+                        <div className="xl:col-span-4 space-y-6 font-main">
                             <section className="bg-white p-9 rounded-[2.5rem] shadow-sm border border-slate-100">
                                 <h3 className="font-prompt text-xs font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2"><i data-lucide="receipt" className="w-4 h-4 text-indigo-600"></i>Summary</h3>
                                 <div className="space-y-4">
@@ -336,7 +346,7 @@
                                     </div>
                                     <div className="bg-slate-900 text-white p-9 rounded-[2.5rem] text-center shadow-2xl relative overflow-hidden group mt-4 transition-all">
                                         <p className="text-[11px] font-bold uppercase opacity-40 mb-3 tracking-[0.2em]">Net Investment</p>
-                                        <div className="text-5xl font-prompt font-black tracking-tighter">฿{Math.max(0, totals.net).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                                        <div className="text-5xl font-prompt font-black tracking-tighter shadow-sm">฿{Math.max(0, totals.net).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
                                     </div>
                                 </div>
                             </section>
@@ -344,27 +354,27 @@
                     </div>
 
                     {/* --- CAPTURE AREA (STRICT 1200px Wide - DYNAMIC HEIGHT) --- */}
-                    <div id="printable-area" className="hidden bg-white text-slate-900" style={{ padding: '60px', width: '1200px', boxSizing: 'border-box' }}>
+                    <div id="printable-area" className="hidden bg-white text-slate-900" style={{ padding: '60px', width: '1200px', boxSizing: 'border-box', overflow: 'hidden' }}>
                         <div className="flex justify-between items-start border-b-[12px] border-slate-900 pb-10 mb-12">
-                            <div className="space-y-3">
-                                <h1 className="text-[72px] font-prompt font-black text-slate-900 uppercase tracking-tighter italic leading-none">UP Wellness Course</h1>
-                                <p className="text-[30px] font-prompt font-black text-indigo-600 uppercase tracking-[0.4em] mt-2 ml-2 italic leading-none">ตารางการรับประทานคอร์ส</p>
+                            <div className="space-y-4">
+                                <h1 className="text-[82px] font-prompt font-black text-slate-900 uppercase tracking-tighter italic leading-none">UP Wellness Course</h1>
+                                <p className="text-[34px] font-prompt font-black text-indigo-600 uppercase tracking-[0.4em] mt-3 ml-2 italic leading-none text-nowrap">ตารางการรับประทานคอร์ส</p>
                             </div>
                             <div className="text-right font-prompt flex flex-col items-end pt-2">
                                 <div className="bg-slate-900 text-white px-8 py-3 text-[16px] font-black uppercase tracking-[0.3em] rounded-full mb-8 shadow-md">Personalized Plan</div>
                                 <div className="space-y-1">
                                     <p className="text-base font-black text-slate-300 uppercase tracking-widest leading-none text-right">Client Name:</p>
-                                    <p className="text-[54px] font-black text-slate-900 border-b-8 border-slate-100 px-6 py-1 min-w-[450px] leading-tight">
+                                    <p className="text-[60px] font-black text-slate-900 border-b-8 border-slate-100 px-6 py-1 min-w-[500px] leading-tight font-main">
                                         {name || '...........................................'}
                                     </p>
-                                    <p className="text-lg font-bold text-slate-400 mt-5 opacity-70 italic tracking-wide">
-                                        ข้อมูล ณ วันที่: {new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric'})}
+                                    <p className="text-xl font-bold text-slate-400 mt-5 opacity-70 italic tracking-wide">
+                                        แผนงานเมื่อวันที่: {new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric'})}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="overflow-hidden mb-12 border-4 border-slate-200 rounded-[3rem] shadow-xl bg-white">
+                        <div className="overflow-hidden mb-12 border-4 border-slate-200 rounded-[3.5rem] shadow-xl bg-white">
                             <table className="w-full text-left border-collapse table-fixed">
                                 <thead className="bg-slate-900 text-white font-prompt font-black uppercase tracking-[0.1em]">
                                     <tr>
@@ -372,30 +382,30 @@
                                         <th className="px-4 py-8 text-[28px] text-center w-[10%]">จำนวน</th>
                                         <th className="px-4 py-8 text-[28px] text-center bg-indigo-700 w-[11%]">เช้า</th>
                                         <th className="px-4 py-8 text-[28px] text-center bg-orange-600 w-[11%]">กลางวัน</th>
-                                        <th className="px-4 py-8 text-[28px] text-center bg-indigo-900 w-[11%]">เย็น</th>
+                                        <th className="px-4 py-8 text-[28px] text-center bg-indigo-900 w-[11%] text-nowrap">เย็น</th>
                                         <th className="px-10 py-8 text-[28px] text-left w-[25%]">หมายเหตุ</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {items.filter(i => i.qty > 0).map((i, idx) => (
                                         <tr key={i.id} className={`text-slate-800 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                                            <td className="px-10 py-7 border-b-2 border-slate-100">
-                                                <div className="text-[32px] font-black leading-tight">{i.name}</div>
+                                            <td className="px-10 py-8 border-b-2 border-slate-100">
+                                                <div className="text-[32px] font-black leading-tight font-main">{i.name}</div>
                                                 <div className="text-[14px] font-bold text-slate-300 uppercase tracking-widest mt-1">{i.category}</div>
                                             </td>
-                                            <td className="px-4 py-7 text-center text-slate-400 text-[32px] font-black border-b-2 border-slate-100">
+                                            <td className="px-4 py-8 text-center text-slate-400 text-[32px] font-black border-b-2 border-slate-100">
                                                 {i.qty}
                                             </td>
-                                            <td className="px-4 py-7 text-center text-indigo-700 text-[48px] font-black border-b-2 border-slate-100 bg-indigo-50/20">
+                                            <td className="px-4 py-8 text-center text-indigo-700 text-[48px] font-black border-b-2 border-slate-100 bg-indigo-50/20">
                                                 {i.dM || '-'}
                                             </td>
-                                            <td className="px-4 py-7 text-center text-orange-600 text-[48px] font-black border-b-2 border-slate-100 bg-orange-50/20">
+                                            <td className="px-4 py-8 text-center text-orange-600 text-[48px] font-black border-b-2 border-slate-100 bg-orange-50/30">
                                                 {i.dN || '-'}
                                             </td>
-                                            <td className="px-4 py-7 text-center text-indigo-900 text-[48px] font-black border-b-2 border-slate-100 bg-indigo-100/20">
+                                            <td className="px-4 py-8 text-center text-indigo-900 text-[48px] font-black border-b-2 border-slate-100 bg-indigo-100/20">
                                                 {i.dE || '-'}
                                             </td>
-                                            <td className="px-10 py-7 border-b-2 border-slate-100 text-[22px] text-slate-500 font-bold italic leading-snug">
+                                            <td className="px-10 py-8 border-b-2 border-slate-100 text-[22px] text-slate-500 font-bold italic leading-snug font-main">
                                                 {i.rmk || '-'}
                                             </td>
                                         </tr>
@@ -404,7 +414,7 @@
                             </table>
                         </div>
 
-                        <div className="bg-slate-50 p-14 rounded-[4.5rem] border-8 border-slate-100 relative mb-12 shadow-inner">
+                        <div className="bg-slate-50 p-14 rounded-[4.5rem] border-8 border-slate-100 relative mb-12 shadow-inner mt-auto">
                             <div className="absolute top-0 right-0 p-16 opacity-[0.05] rotate-12"><i data-lucide="shield-check" className="w-56 h-56"></i></div>
                             <h4 className="text-[34px] font-prompt font-black text-indigo-700 uppercase tracking-[0.3em] mb-10 flex items-center gap-8">
                                 <div className="w-5 h-14 bg-indigo-700 rounded-full shadow-md"></div>
@@ -413,19 +423,19 @@
                             <div className="grid grid-cols-2 gap-x-12 gap-y-10">
                                 <div className="flex gap-8 items-start p-6 bg-white rounded-[2.5rem] shadow-sm border border-slate-100">
                                     <div className="p-5 bg-indigo-50 rounded-3xl shrink-0"><i data-lucide="droplets" className="w-10 h-10 text-indigo-500"></i></div>
-                                    <p className="text-[24px] font-bold text-slate-700 leading-snug">ดื่มน้ำวันละ 2-3 ลิตร <br/><span className="text-base opacity-60 font-medium">(จิบระหว่างวันสม่ำเสมอ)</span></p>
+                                    <p className="text-[24px] font-bold text-slate-700 leading-snug font-main">ดื่มน้ำวันละ 2-3 ลิตร <br/><span className="text-base opacity-60 font-medium">(จิบระหว่างวันสม่ำเสมอ)</span></p>
                                 </div>
                                 <div className="flex gap-8 items-start p-6 bg-white rounded-[2.5rem] shadow-sm border border-slate-100">
-                                    <div className="p-5 bg-emerald-50 rounded-3xl shrink-0"><i data-lucide="footprints" className="w-10 h-10 text-emerald-500"></i></div>
-                                    <p className="text-[24px] font-bold text-slate-700 leading-snug">เดินวันละ 10,000 ก้าว <br/><span className="text-base opacity-60 font-medium">(เพื่อเพิ่มอัตราเผาผลาญ)</span></p>
+                                    <div className="p-5 bg-emerald-50 rounded-4xl shrink-0"><i data-lucide="footprints" className="w-10 h-10 text-emerald-500"></i></div>
+                                    <p className="text-[24px] font-bold text-slate-700 leading-snug font-main">เดินวันละ 10,000 ก้าว <br/><span className="text-base opacity-60 font-medium">(เพื่อเพิ่มอัตราเผาผลาญ)</span></p>
                                 </div>
                                 <div className="flex gap-8 items-start p-6 bg-white rounded-[2.5rem] shadow-sm border border-slate-100">
-                                    <div className="p-5 bg-amber-50 rounded-3xl shrink-0"><i data-lucide="moon" className="w-10 h-10 text-amber-500"></i></div>
-                                    <p className="text-[24px] font-bold text-slate-700 leading-snug">พักผ่อน 7-8 ชั่วโมง <br/><span className="text-base opacity-60 font-medium">(เพื่อให้ระบบร่างกายฟื้นฟู)</span></p>
+                                    <div className="p-5 bg-amber-50 rounded-3xl shrink-0"><i data-lucide="moon" className="w-12 h-12 text-amber-500"></i></div>
+                                    <p className="text-[24px] font-bold text-slate-700 leading-snug font-main">พักผ่อน 7-8 ชั่วโมง <br/><span className="text-base opacity-60 font-medium">(เพื่อให้ระบบร่างกายฟื้นฟู)</span></p>
                                 </div>
                                 <div className="flex gap-8 items-start p-6 bg-white rounded-[2.5rem] shadow-sm border border-slate-100">
-                                    <div className="p-5 bg-slate-50 rounded-3xl shrink-0"><i data-lucide="clock" className="w-10 h-10 text-slate-400"></i></div>
-                                    <p className="text-[24px] font-bold text-slate-700 leading-snug">สัดส่วนเวลา 2-4-6 <br/><span className="text-base opacity-60 font-medium">(ตามตารางเวลาที่แนะนำ)</span></p>
+                                    <div className="p-5 bg-slate-50 rounded-4xl shrink-0"><i data-lucide="clock" className="w-12 h-12 text-slate-400"></i></div>
+                                    <p className="text-[24px] font-bold text-slate-700 leading-snug font-main">สัดส่วนเวลา 2-4-6 <br/><span className="text-base opacity-60 font-medium">(ตามตารางเวลาที่แนะนำ)</span></p>
                                 </div>
                             </div>
                         </div>
