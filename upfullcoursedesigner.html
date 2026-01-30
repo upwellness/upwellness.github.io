@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UP Full Course Designer - Metabolic Optimization</title>
     
-    <!-- Fonts -->
+    <!-- Fonts (Prompt & Sarabun) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -37,13 +37,14 @@
         
         h1, h2, h3, .font-prompt { font-family: var(--font-heading); }
 
-        /* Capture Optimization */
+        /* Capture Configuration for Scale 2:3 */
         .capture-mode {
             display: block !important;
             position: absolute;
             left: 0;
             top: 0;
-            width: 1000px; /* Optimal width for mobile viewing */
+            width: 1200px; /* Base Width */
+            min-height: 1800px; /* Height for 2:3 ratio */
             z-index: -100;
             background-color: white !important;
         }
@@ -52,7 +53,6 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* Animation for saving */
         @keyframes pulse-soft {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -99,7 +99,7 @@
             { id: 'diabetes', title: 'NCDs: Diabetes', desc: 'ดูแลน้ำตาล/ความหิว', items: { 'p1': 2, 'p10': 2, 'p12': 1, 'p20': 1 } }
         ];
 
-        const INITIAL_STATE = PRODUCT_DATA.map(p => ({ ...p, qty: 0, dM: '', dN: '', dE: '', disc: p.canDiscount }));
+        const INITIAL_STATE = PRODUCT_DATA.map(p => ({ ...p, qty: 0, dM: '', dN: '', dE: '', disc: p.canDiscount, rmk: '' }));
 
         function App() {
             const [items, setItems] = useState(INITIAL_STATE);
@@ -157,7 +157,6 @@
 
                 setIsSaving(true);
                 
-                // Allow DOM to update before capture
                 setTimeout(async () => {
                     const element = document.getElementById('printable-area');
                     element.classList.remove('hidden');
@@ -165,18 +164,18 @@
 
                     try {
                         const canvas = await html2canvas(element, {
-                            scale: 2, 
+                            scale: 1, 
                             useCORS: true,
                             backgroundColor: "#ffffff",
                             logging: false,
-                            width: 1000
+                            width: 1200,
+                            height: 1800
                         });
                         
                         const imgData = canvas.toDataURL('image/png', 1.0);
                         const link = document.createElement('a');
-                        const fileName = name ? `UP-Plan-${name}.png` : 'UP-Plan-Metabolic.png';
+                        const fileName = name ? `UP-Wellness-${name}.png` : 'UP-Wellness-Course.png';
                         
-                        // Robust download trigger for mobile
                         link.setAttribute('href', imgData);
                         link.setAttribute('download', fileName);
                         document.body.appendChild(link);
@@ -185,7 +184,7 @@
 
                     } catch (error) {
                         console.error('Save failed:', error);
-                        alert('ขออภัย ไม่สามารถบันทึกรูปได้ในขณะนี้ กรุณาลองแคปหน้าจอแทน');
+                        alert('ขออภัย ไม่สามารถบันทึกรูปได้ในขณะนี้');
                     } finally {
                         element.classList.remove('capture-mode');
                         element.classList.add('hidden');
@@ -204,9 +203,9 @@
             };
 
             return (
-                <div className="min-h-screen pb-20">
+                <div className="min-h-screen pb-20 no-print">
                     {/* Header */}
-                    <header className="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 no-print pt-8 px-6 max-w-7xl mx-auto">
+                    <header className="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pt-8 px-6 max-w-7xl mx-auto">
                         <div className="flex items-center gap-5">
                             <div className="bg-indigo-600 p-4 rounded-3xl shadow-xl text-white">
                                 <i data-lucide="calculator" className="w-8 h-8"></i>
@@ -230,7 +229,7 @@
                     </header>
 
                     {/* Presets Grid */}
-                    <div className="mb-10 no-print px-6 max-w-7xl mx-auto">
+                    <div className="mb-10 px-6 max-w-7xl mx-auto">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {PRESETS.map(p => (
                                 <button 
@@ -245,7 +244,7 @@
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 no-print px-6 max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 px-6 max-w-7xl mx-auto">
                         {/* Product Table */}
                         <div className="xl:col-span-8 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
                             <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-50/40">
@@ -257,7 +256,7 @@
                                     <i data-lucide="user" className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
                                     <input 
                                         type="text" 
-                                        placeholder="ระบุชื่อลูกค้าสำหรับแผน..." 
+                                        placeholder="ระบุชื่อลูกค้า..." 
                                         className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-medium" 
                                         value={name} 
                                         onChange={e => setName(e.target.value)} 
@@ -268,11 +267,11 @@
                                 <table className="w-full text-left border-collapse">
                                     <thead className="text-[10px] font-prompt font-black text-slate-400 uppercase tracking-widest bg-slate-50/20 border-b border-slate-50">
                                         <tr>
-                                            <th className="px-8 py-5">รายการ</th>
+                                            <th className="px-6 py-5">รายการ</th>
                                             <th className="px-4 py-5 text-center">จำนวน</th>
-                                            <th className="px-4 py-5 text-center">ลด 15%</th>
                                             <th className="px-4 py-5 text-center">มื้ออาหาร</th>
-                                            <th className="px-8 py-5 text-right">ยอดจ่าย</th>
+                                            <th className="px-6 py-5">หมายเหตุ</th>
+                                            <th className="px-6 py-5 text-right">ยอดจ่าย</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
@@ -280,23 +279,32 @@
                                             const final = i.qty > 0 ? (i.disc ? (i.name === 'BodyKey' ? i.price * i.qty * 0.85 : i.price * i.qty - i.price * 0.15) : i.price * i.qty) : 0;
                                             return (
                                                 <tr key={i.id} className={`transition-all ${i.qty > 0 ? 'bg-indigo-50/15' : 'hover:bg-slate-50/50'}`}>
-                                                    <td className="px-8 py-5 font-bold text-sm">{i.name}</td>
-                                                    <td className="px-4 py-5 text-center">
-                                                        <div className="flex items-center justify-center gap-3 bg-white border border-slate-200 p-1 rounded-xl w-fit mx-auto shadow-sm">
-                                                            <button onClick={() => update(i.id, 'qty', Math.max(0, i.qty-1))} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-rose-50 text-slate-300 font-bold transition-all">-</button>
-                                                            <span className="w-4 font-bold text-slate-700">{i.qty}</span>
-                                                            <button onClick={() => update(i.id, 'qty', i.qty+1)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-emerald-50 text-slate-300 font-bold transition-all">+</button>
-                                                        </div>
+                                                    <td className="px-6 py-5">
+                                                        <div className="font-bold text-sm">{i.name}</div>
+                                                        <div className="text-[10px] text-slate-300 uppercase tracking-tighter">{i.category}</div>
                                                     </td>
                                                     <td className="px-4 py-5 text-center">
-                                                        <input type="checkbox" className="w-5 h-5 rounded-lg accent-indigo-600" checked={i.disc} onChange={e => update(i.id, 'disc', e.target.checked)} disabled={!i.canDiscount} />
+                                                        <div className="flex items-center justify-center gap-2 bg-white border border-slate-100 p-1 rounded-xl w-fit mx-auto shadow-sm">
+                                                            <button onClick={() => update(i.id, 'qty', Math.max(0, i.qty-1))} className="w-6 h-6 rounded-lg text-slate-300 hover:text-rose-500">-</button>
+                                                            <span className="w-4 font-bold text-slate-700">{i.qty}</span>
+                                                            <button onClick={() => update(i.id, 'qty', i.qty+1)} className="w-6 h-6 rounded-lg text-slate-300 hover:text-emerald-500">+</button>
+                                                        </div>
                                                     </td>
                                                     <td className="px-4 py-5 flex justify-center gap-1">
                                                         {['dM','dN','dE'].map(f => (
-                                                            <input key={f} type="text" placeholder="-" className="w-8 h-8 text-center text-[12px] font-bold border border-slate-100 rounded-lg bg-white" value={i[f]} onChange={e => update(i.id, f, e.target.value)} />
+                                                            <input key={f} type="text" placeholder="-" className="w-7 h-7 text-center text-[11px] font-bold border border-slate-100 rounded-lg bg-white" value={i[f]} onChange={e => update(i.id, f, e.target.value)} />
                                                         ))}
                                                     </td>
-                                                    <td className="px-8 py-5 text-right font-bold text-slate-700">฿{final.toLocaleString()}</td>
+                                                    <td className="px-4 py-5">
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="ระบุหมายเหตุ..." 
+                                                            className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 text-[11px] outline-none italic text-slate-500" 
+                                                            value={i.rmk} 
+                                                            onChange={e => update(i.id, 'rmk', e.target.value)} 
+                                                        />
+                                                    </td>
+                                                    <td className="px-6 py-5 text-right font-bold text-slate-700">฿{final.toLocaleString()}</td>
                                                 </tr>
                                             );
                                         })}
@@ -306,61 +314,47 @@
                         </div>
 
                         {/* Sidebar Summary */}
-                        <div className="xl:col-span-4 space-y-6 no-print">
+                        <div className="xl:col-span-4 space-y-6">
                             <section className="bg-white p-9 rounded-[2.5rem] shadow-sm border border-slate-100">
-                                <h3 className="font-prompt text-xs font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2">
-                                    <i data-lucide="receipt" className="w-4 h-4"></i>
-                                    Summary
-                                </h3>
+                                <h3 className="font-prompt text-xs font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2"><i data-lucide="receipt" className="w-4 h-4 text-indigo-600"></i>Summary</h3>
                                 <div className="space-y-4">
-                                    <div className="flex justify-between text-sm font-semibold text-slate-500 px-1"><span>ราคารวมสินค้า</span><span>฿{totals.rawTotal.toLocaleString()}</span></div>
-                                    {totals.itemDisc > 0 && <div className="flex justify-between text-sm font-bold text-emerald-600 bg-emerald-50 p-4 rounded-2xl italic border border-emerald-100"><span>ส่วนลดสินค้า 15%</span><span>- ฿{totals.itemDisc.toLocaleString()}</span></div>}
-                                    
+                                    <div className="flex justify-between text-sm font-semibold text-slate-500 px-1"><span>ราคาปลีกรวม</span><span>฿{totals.rawTotal.toLocaleString()}</span></div>
                                     <div className="py-6 border-y border-slate-50 space-y-4">
-                                        {[ 
-                                            {id:'reg', l:'ค่าสมัครสมาชิก', v:900, t:'+'}, 
-                                            {id:'estart', l:'ส่วนลด e-Starter', v:300, t:'-'}, 
-                                            {id:'ajoy', l:'ส่วนลด A-Joy', v:500, t:'-'} 
-                                        ].map(f => (
+                                        {[ {id:'reg', l:'ค่าสมัครสมาชิก', v:900, t:'+'}, {id:'estart', l:'ส่วนลด e-Starter', v:300, t:'-'}, {id:'ajoy', l:'ส่วนลด A-Joy', v:500, t:'-'} ].map(f => (
                                             <div key={f.id} className="flex justify-between items-center group cursor-pointer" onClick={() => setFees(p => ({...p, [f.id]: !p[f.id]}))}>
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${fees[f.id] ? 'bg-slate-900 border-slate-900 shadow-md' : 'border-slate-200 group-hover:border-indigo-300'}`}>
-                                                        {fees[f.id] && <i data-lucide="check" className="w-3.5 h-3.5 text-white"></i>}
-                                                    </div>
+                                                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${fees[f.id] ? 'bg-slate-900 border-slate-900 shadow-md' : 'border-slate-200 group-hover:border-indigo-300'}`}>{fees[f.id] && <i data-lucide="check" className="w-3.5 h-3.5 text-white"></i>}</div>
                                                     <span className="text-[13px] font-semibold text-slate-600 group-hover:text-slate-900">{f.l}</span>
                                                 </div>
                                                 <span className={`text-[13px] font-bold ${f.t === '-' ? 'text-rose-500' : 'text-slate-800'}`}>{f.t} ฿{f.v}</span>
                                             </div>
                                         ))}
                                     </div>
-                                    
                                     <div className="bg-slate-900 text-white p-9 rounded-[2.5rem] text-center shadow-2xl relative overflow-hidden group mt-4 transition-all">
-                                        <div className="relative z-10">
-                                            <p className="text-[11px] font-bold uppercase opacity-40 mb-3 tracking-[0.2em]">Net Investment</p>
-                                            <div className="text-5xl font-prompt font-black tracking-tighter">฿{Math.max(0, totals.net).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                                        </div>
+                                        <p className="text-[11px] font-bold uppercase opacity-40 mb-3 tracking-[0.2em]">Net Investment</p>
+                                        <div className="text-5xl font-prompt font-black tracking-tighter">฿{Math.max(0, totals.net).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
                                     </div>
                                 </div>
                             </section>
                         </div>
                     </div>
 
-                    {/* --- CAPTURE AREA (Optimized for Mobile/A4) --- */}
-                    <div id="printable-area" className="hidden bg-white text-slate-900" style={{ padding: '80px' }}>
+                    {/* --- CAPTURE AREA (Optimized for 2:3 Ratio) --- */}
+                    <div id="printable-area" className="hidden bg-white text-slate-900" style={{ padding: '80px', width: '1200px', minHeight: '1800px' }}>
                         <div className="flex justify-between items-start border-b-[15px] border-slate-900 pb-14 mb-16">
                             <div className="space-y-4">
-                                <h1 className="text-[90px] font-prompt font-black text-slate-900 uppercase tracking-tighter italic leading-none">UP Labs</h1>
-                                <p className="text-[40px] font-prompt font-black text-indigo-600 uppercase tracking-[0.4em] mt-2 ml-2 italic">ตารางการรับประทานคอร์ส</p>
+                                <h1 className="text-[100px] font-prompt font-black text-slate-900 uppercase tracking-tighter italic leading-none">UP Wellness</h1>
+                                <p className="text-[44px] font-prompt font-black text-indigo-600 uppercase tracking-[0.4em] mt-2 ml-2 italic">ตารางการรับประทานคอร์ส</p>
                             </div>
                             <div className="text-right font-prompt flex flex-col items-end pt-4">
-                                <div className="bg-slate-900 text-white px-10 py-4 text-[20px] font-black uppercase tracking-[0.3em] rounded-full mb-10 shadow-lg">Metabolic Reset Plan</div>
+                                <div className="bg-slate-900 text-white px-10 py-4 text-[22px] font-black uppercase tracking-[0.3em] rounded-full mb-10 shadow-lg">Wellness Optimization Plan</div>
                                 <div className="space-y-3">
-                                    <p className="text-xl font-black text-slate-300 uppercase tracking-widest leading-none">Client Name:</p>
-                                    <p className="text-[64px] font-black text-slate-900 border-b-8 border-slate-100 px-6 py-2 min-w-[500px]">
+                                    <p className="text-xl font-black text-slate-300 uppercase tracking-widest leading-none text-right">Client Profile:</p>
+                                    <p className="text-[72px] font-black text-slate-900 border-b-8 border-slate-100 px-6 py-2 min-w-[500px]">
                                         {name || '...........................................'}
                                     </p>
                                     <p className="text-2xl font-bold text-slate-400 mt-8 opacity-70 italic tracking-wide">
-                                        แผนงาน ณ วันที่: {new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric'})}
+                                        ข้อมูล ณ วันที่: {new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric'})}
                                     </p>
                                 </div>
                             </div>
@@ -368,9 +362,9 @@
 
                         <div className="overflow-hidden mb-24 border-4 border-slate-200 rounded-[4rem] shadow-xl">
                             <table className="w-full text-left border-collapse">
-                                <thead className="bg-slate-900 text-white text-[32px] font-prompt font-black uppercase tracking-[0.4em]">
+                                <thead className="bg-slate-900 text-white text-[38px] font-prompt font-black uppercase tracking-[0.4em]">
                                     <tr>
-                                        <th className="px-14 py-12 text-left">รายการ</th>
+                                        <th className="px-14 py-12 text-left">รายการสารอาหาร</th>
                                         <th className="px-10 py-12 text-center">จำนวน</th>
                                         <th className="px-10 py-12 text-center bg-indigo-700">เช้า</th>
                                         <th className="px-10 py-12 text-center bg-orange-600">กลางวัน</th>
@@ -379,13 +373,22 @@
                                 </thead>
                                 <tbody>
                                     {items.filter(i => i.qty > 0).map((i, idx) => (
-                                        <tr key={i.id} className={`text-slate-800 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                                            <td className="px-14 py-12 text-[48px] font-black leading-tight border-b-2 border-slate-100">{i.name}</td>
-                                            <td className="px-10 py-12 text-center text-slate-400 text-[48px] font-black border-b-2 border-slate-100">{i.qty}</td>
-                                            <td className="px-10 py-12 text-center text-indigo-700 text-[72px] font-black border-b-2 border-slate-100">{i.dM || '-'}</td>
-                                            <td className="px-10 py-12 text-center text-orange-600 text-[72px] font-black border-b-2 border-slate-100">{i.dN || '-'}</td>
-                                            <td className="px-10 py-12 text-center text-indigo-900 text-[72px] font-black border-b-2 border-slate-100">{i.dE || '-'}</td>
-                                        </tr>
+                                        <React.Fragment key={i.id}>
+                                            <tr className={`text-slate-800 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                                                <td className="px-14 py-12 text-[48px] font-black leading-tight border-b-2 border-slate-100">{i.name}</td>
+                                                <td className="px-10 py-12 text-center text-slate-400 text-[48px] font-black border-b-2 border-slate-100">{i.qty}</td>
+                                                <td className="px-10 py-12 text-center text-indigo-700 text-[72px] font-black border-b-2 border-slate-100">{i.dM || '-'}</td>
+                                                <td className="px-10 py-12 text-center text-orange-600 text-[72px] font-black border-b-2 border-slate-100">{i.dN || '-'}</td>
+                                                <td className="px-10 py-12 text-center text-indigo-900 text-[72px] font-black border-b-2 border-slate-100">{i.dE || '-'}</td>
+                                            </tr>
+                                            {i.rmk && (
+                                                <tr className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                                                    <td colSpan="5" className="px-14 py-6 border-b-4 border-slate-100 text-[28px] text-slate-500 italic font-bold">
+                                                        <span className="text-indigo-600 font-black not-italic mr-4">หมายเหตุ:</span> {i.rmk}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
                                     ))}
                                 </tbody>
                             </table>
@@ -417,7 +420,7 @@
                         </div>
 
                         <div className="text-center opacity-30 mt-16">
-                            <p className="text-2xl font-black text-slate-900 uppercase tracking-[0.8em] italic">UP Labs Professional precision nutrition</p>
+                            <p className="text-[28px] font-black text-slate-900 uppercase tracking-[0.8em] italic">UP Labs Wellness Professional Course</p>
                         </div>
                     </div>
                 </div>
