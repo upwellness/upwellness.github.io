@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="th">
+<!-- 
+  UP Full Course Designer - Baseline 2.8.1 (GitHub Pages Optimized)
+  - Fixed Firestore Permissions
+  - Updated Standard 60D Specs (Green Tea Plus x3, No Calow)
+  - Start with empty selection
+-->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP Full Course Designer - Metabolic Optimization</title>
+    <title>UP Designer - Cloud Powered</title>
     
-    <!-- Fonts (Prompt & Sarabun) -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,9 +19,25 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- html2canvas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- html2canvas Dynamic Loader Script -->
+    <script>
+        window.loadHtml2Canvas = function() {
+            return new Promise((resolve, reject) => {
+                if (window.html2canvas) return resolve(window.html2canvas);
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+                script.onload = () => resolve(window.html2canvas);
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+    </script>
     
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+
     <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -29,32 +51,21 @@
             --font-main: 'Sarabun', sans-serif;
             --font-heading: 'Prompt', sans-serif;
         }
-
-        body { 
-            font-family: var(--font-main); 
-            -webkit-print-color-adjust: exact; 
-        }
-        
+        body { font-family: var(--font-main); -webkit-print-color-adjust: exact; background-color: #F8FAFC; }
         h1, h2, h3, .font-prompt { font-family: var(--font-heading); }
-
-        /* Capture Configuration - Fixed width with Dynamic Height */
         .capture-mode {
             display: block !important;
             position: absolute;
             left: 0;
             top: 0;
             width: 1200px !important;
-            min-height: 1200px !important;
-            height: auto !important;
+            height: auto !important; 
             z-index: -100;
             background-color: white !important;
             overflow: visible !important;
         }
-
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-
         @keyframes pulse-soft {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -62,392 +73,473 @@
         .saving-pulse { animation: pulse-soft 2s infinite; }
     </style>
 </head>
-<body class="bg-[#F1F5F9] antialiased text-slate-800">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
+        // --- Configuration ---
         const PV_RATE = 3.23;
-
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : "up-wellness-v28"; 
+        
+        // Product Catalog
         const PRODUCT_DATA = [
-            { id: 'p1', name: 'BodyKey', price: 1700, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500' },
-            { id: 'p2', name: 'All Plant 900', price: 2300, category: 'Calories Restriction', canDiscount: false, color: 'bg-orange-500' },
-            { id: 'p3', name: 'All Plant 450', price: 1209, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500' },
-            { id: 'p4', name: 'GT/Choc/Plus Protein', price: 1500, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500' },
-            { id: 'p5', name: 'Green Tea Plus', price: 1732, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500' },
-            { id: 'p6', name: 'DoubleX', price: 2364, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
-            { id: 'p7', name: 'DoubleX Refill', price: 4486, category: 'Nutrients', canDiscount: false, color: 'bg-emerald-500' },
-            { id: 'p8', name: 'LecithinE', price: 659, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
-            { id: 'p9', name: 'Triple Omega', price: 975, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
-            { id: 'p10', name: 'Vitamin B Plus', price: 527, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
-            { id: 'p11', name: 'BioC', price: 990, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500' },
-            { id: 'p12', name: 'Fiber Blend', price: 1168, category: 'Hormone Balance', canDiscount: false, color: 'bg-indigo-500' },
-            { id: 'p13', name: 'PostB', price: 1650, category: 'Hormone Balance', canDiscount: false, color: 'bg-indigo-500' },
-            { id: 'p14', name: 'Fiber Powder', price: 1627, category: 'Hormone Balance', canDiscount: true, color: 'bg-indigo-500' },
-            { id: 'p15', name: 'Probiotics', price: 1650, category: 'Hormone Balance', canDiscount: true, color: 'bg-indigo-500' },
-            { id: 'p16', name: 'Garlic', price: 1195, category: 'NCDs', canDiscount: true, color: 'bg-rose-500' },
-            { id: 'p17', name: 'CoQ10', price: 2209, category: 'NCDs', canDiscount: true, color: 'bg-rose-500' },
-            { id: 'p18', name: 'Ginseng', price: 1300, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
-            { id: 'p19', name: 'CVF', price: 1468, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
-            { id: 'p20', name: 'Calow', price: 1314, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
-            { id: 'p22', name: 'Lesterol', price: 1486, category: 'NCDs', canDiscount: false, color: 'bg-rose-500' },
-            { id: 'p21', name: 'แก้ว', price: 100, category: 'Etc', canDiscount: false, color: 'bg-slate-500', noPV: true },
+            { id: 'p1', name: 'BodyKey', price: 1700, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500', packSize: 14 },
+            { id: 'p2', name: 'All Plant 900', price: 2300, category: 'Calories Restriction', canDiscount: false, color: 'bg-orange-500', packSize: 53 },
+            { id: 'p3', name: 'All Plant 450', price: 1209, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500', packSize: 26 },
+            { id: 'p4', name: 'GT/Choc/Plus Protein', price: 1500, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500', packSize: 26 },
+            { id: 'p5', name: 'Green Tea Plus', price: 1732, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500', packSize: 60 },
+            { id: 'p6', name: 'DoubleX', price: 2364, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500', packSize: 31 },
+            { id: 'p7', name: 'DoubleX Refill', price: 4486, category: 'Nutrients', canDiscount: false, color: 'bg-emerald-500', packSize: 62 },
+            { id: 'p8', name: 'LecithinE', price: 659, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500', packSize: 270 },
+            { id: 'p9', name: 'Triple Omega', price: 975, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500', packSize: 60 },
+            { id: 'p10', name: 'Vitamin B Plus', price: 527, category: 'Nutrients', canDiscount: false, color: 'bg-emerald-500', packSize: 60 },
+            { id: 'p11', name: 'BioC', price: 990, category: 'Nutrients', canDiscount: true, color: 'bg-emerald-500', packSize: 60 },
+            { id: 'p12', name: 'Fiber Blend', price: 1168, category: 'Hormone Balance', canDiscount: false, color: 'bg-indigo-500', packSize: 60 },
+            { id: 'p13', name: 'PostB', price: 1650, category: 'Hormone Balance', canDiscount: false, color: 'bg-indigo-500', packSize: 60 },
+            { id: 'p14', name: 'Fiber Powder', price: 1627, category: 'Hormone Balance', canDiscount: true, color: 'bg-indigo-500', packSize: 30 },
+            { id: 'p15', name: 'Probiotics', price: 1650, category: 'Hormone Balance', canDiscount: true, color: 'bg-indigo-500', packSize: 30 },
+            { id: 'p16', name: 'Garlic', price: 1195, category: 'NCDs', canDiscount: true, color: 'bg-rose-500', packSize: 150 },
+            { id: 'p17', name: 'CoQ10', price: 2209, category: 'NCDs', canDiscount: true, color: 'bg-rose-500', packSize: 60 },
+            { id: 'p18', name: 'Ginseng', price: 1300, category: 'NCDs', canDiscount: false, color: 'bg-rose-500', packSize: 60 },
+            { id: 'p19', name: 'CVF', price: 1468, category: 'NCDs', canDiscount: false, color: 'bg-rose-500', packSize: 60 },
+            { id: 'p20', name: 'Calow', price: 1314, category: 'NCDs', canDiscount: false, color: 'bg-rose-500', packSize: 90 },
+            { id: 'p22', name: 'Lesterol', price: 1486, category: 'NCDs', canDiscount: false, color: 'bg-rose-500', packSize: 60 },
+            { id: 'p21', name: 'แก้ว', price: 100, category: 'Etc', canDiscount: false, color: 'bg-slate-500', noPV: true, packSize: 1 },
         ];
 
-        const PRESETS = [
-            { id: 'std', title: 'Standard Course', desc: 'คอร์สพื้นฐานปรับสมดุล', items: { 'p1': 2, 'p2': 1, 'p6': 1, 'p11': 1, 'p12': 1 } },
-            { id: 'plateau', title: 'Weight Reset', desc: 'สำหรับผู้ที่น้ำหนักนิ่ง', items: { 'p1': 2, 'p2': 1, 'p6': 1, 'p10': 1, 'p15': 1 } },
-            { id: 'hypertension', title: 'NCDs: Hyper', desc: 'ดูแลความดัน/หลอดเลือด', items: { 'p1': 2, 'p6': 1, 'p16': 1, 'p17': 1, 'p9': 1 } },
-            { id: 'diabetes', title: 'NCDs: Diabetes', desc: 'ดูแลน้ำตาล/ความหิว', items: { 'p1': 2, 'p10': 2, 'p12': 1, 'p20': 1 } }
+        // Built-in Add-on Configurations
+        const BASE_ADDONS = [
+            { 
+                id: 'std', 
+                name: 'Standard Full Course', 
+                items: {
+                    'p1': { qty: 6, dM: '1', dE: '1', rmk: 'ทาน 14 วัน สลับ 14 วัน (ช่วงสลับทานมื้อเย็นพร้อม All Plant)' },
+                    'p2': { qty: 1, dM: '1', dE: '1.5', rmk: 'ทาน 14 วัน สลับ 14 วัน' },
+                    'p4': { qty: 1, dM: '1' },
+                    'p5': { qty: 3, dM: '1', dE: '1' },
+                    'p7': { qty: 1, dM: '1', dE: '1' },
+                    'p12': { qty: 1, dN: '2', rmk: 'ทาน 2 เม็ด + น้ำ 300cc บางมื้อ ช่วยถ่าย ช่วยอิ่ม' },
+                    'p9': { dM: '1', dE: '1' },
+                    'p10': { dM: '1', dE: '1' },
+                    'p11': { dM: '1', dE: '1' },
+                    'p14': { dM: '1' },
+                    'p15': { dM: '1' },
+                    'p21': { qty: 1 }
+                }
+            },
+            { id: 'hyper', name: 'มีความดัน', items: { 'p16': { dM: '1', dN: '1', dE: '1' } } },
+            { id: 'chol', name: 'มีคอเลสเตอรอล', items: { 'p22': { dN: '2' } } },
+            { id: 'heart', name: 'มีปัญหาหัวใจ', items: { 'p17': { dM: '1', dE: '1' } } },
+            { id: 'plateau', name: 'เคยลดนน./ลงยาก', items: { 'p18': { dM: '1', dN: '1', dE: '1' } } },
+            { id: 'cancer', name: 'มะเร็ง / ภูมิคุ้มกัน', items: { 'p19': { dM: '1', dN: '1', dE: '1' } } },
+            { id: 'hunger', name: 'เน้นคุมหิว (Calow)', items: { 'p20': { dM: '1', dN: '1', dE: '1', rmk: 'ทาน 2 เม็ด ก่อนมื้อหนัก 20 นาที' } } },
         ];
 
-        const INITIAL_STATE = PRODUCT_DATA.map(p => ({ ...p, qty: 0, dM: '', dN: '', dE: '', disc: p.canDiscount, rmk: '' }));
-
-        function App() {
-            const [items, setItems] = useState(INITIAL_STATE);
+        const App = () => {
+            const [db, setDb] = useState(null);
+            const [user, setUser] = useState(null);
+            const [items, setItems] = useState(PRODUCT_DATA.map(p => ({ ...p, qty: 0, dM: '', dN: '', dE: '', disc: p.canDiscount, rmk: '', isManualQty: false })));
             const [name, setName] = useState('');
-            const [presetId, setPresetId] = useState(null);
+            const [duration, setDuration] = useState(60);
+            const [activeAddons, setActiveAddons] = useState([]); // Start empty
+            const [presets, setPresets] = useState([]);
             const [fees, setFees] = useState({ reg: false, estart: false, ajoy: false });
             const [isSaving, setIsSaving] = useState(false);
+            const [saveModal, setSaveModal] = useState(false);
+            const [newPresetName, setNewPresetName] = useState('');
 
-            useEffect(() => { 
-                lucide.createIcons(); 
-            }, [items, presetId, fees, isSaving]);
+            // --- Database & Auth Initialization ---
+            useEffect(() => {
+                const initFirebase = async () => {
+                    const config = JSON.parse(__firebase_config);
+                    if (!firebase.apps.length) firebase.initializeApp(config);
+                    
+                    const firestore = firebase.firestore();
+                    setDb(firestore);
+
+                    // Auth first to avoid permission errors
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await firebase.auth().signInWithCustomToken(__initial_auth_token);
+                        } else {
+                            await firebase.auth().signInAnonymously();
+                        }
+                    } catch (e) {
+                        console.error("Auth error:", e);
+                    }
+
+                    firebase.auth().onAuthStateChanged((u) => {
+                        setUser(u);
+                    });
+                };
+                initFirebase();
+            }, []);
+
+            // --- Fetch Cloud Presets (Strict Path Rule 1) ---
+            useEffect(() => {
+                if (!db || !user) return;
+                
+                const presetsCol = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('presets');
+                
+                const unsubscribe = presetsCol.onSnapshot(
+                    (snapshot) => {
+                        setPresets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                    },
+                    (error) => {
+                        console.error("Snapshot error (Permission?):", error);
+                    }
+                );
+                return () => unsubscribe();
+            }, [db, user]);
+
+            useEffect(() => { lucide.createIcons(); }, [items, duration, activeAddons, presets, isSaving, fees]);
+
+            // --- Calculation Engine ---
+            const itemsWithLogic = useMemo(() => {
+                return items.map(item => {
+                    const morning = parseFloat(item.dM) || 0;
+                    const noon = parseFloat(item.dN) || 0;
+                    const evening = parseFloat(item.dE) || 0;
+                    const dailyTotal = morning + noon + evening;
+
+                    if (dailyTotal === 0 && !item.rmk && item.id !== 'p21' && item.qty === 0) return { ...item, qty: 0 };
+                    if (item.id === 'p21') return item;
+
+                    let multiplier = duration;
+                    const isStandardActive = activeAddons.includes('std');
+                    if (isStandardActive && (item.id === 'p1' || item.id === 'p2')) {
+                        // Cycle 14/14: approx 42 days per 60 days
+                        multiplier = (duration / 60) * 42; 
+                    }
+
+                    const exactNeed = dailyTotal * multiplier;
+                    const rawQty = exactNeed / item.packSize;
+                    
+                    let suggested = Math.floor(rawQty);
+                    if (rawQty - suggested > 0.15) suggested = Math.ceil(rawQty);
+                    if (suggested === 0 && (dailyTotal > 0 || item.rmk)) suggested = 1;
+
+                    return { ...item, suggestedQty: suggested, qty: item.isManualQty ? item.qty : suggested };
+                });
+            }, [items, duration, activeAddons]);
 
             const totals = useMemo(() => {
-                const active = items.filter(i => i.qty > 0);
+                const active = itemsWithLogic.filter(i => i.qty > 0);
                 const rawTotal = active.reduce((s, i) => s + (i.price * i.qty), 0);
-                const itemDisc = active.reduce((s, i) => i.disc ? s + (i.name === 'BodyKey' ? i.price * i.qty * 0.15 : i.price * 0.15) : s, 0);
-                
-                let net = rawTotal - itemDisc;
-                const regFee = fees.reg ? 900 : 0;
-                net += regFee;
-                if (fees.estart) net -= 300;
-                if (fees.ajoy) net -= 500;
-
-                const nonPVPaid = active.reduce((s, i) => i.noPV ? s + (i.price * i.qty - (i.disc ? (i.name === 'BodyKey' ? i.price * i.qty * 0.15 : i.price * 0.15) : 0)) : s, 0);
-                const pvBasis = Math.max(0, net - regFee - nonPVPaid);
+                const itemDisc = active.reduce((s, i) => {
+                    if (!i.disc) return s;
+                    const limit = i.name === 'BodyKey' ? 3 : 1;
+                    return s + (i.price * Math.min(i.qty, limit) * 0.15);
+                }, 0);
+                let net = rawTotal - itemDisc + (fees.reg ? 900 : 0) - (fees.estart ? 300 : 0) - (fees.ajoy ? 500 : 0);
+                const pvBasis = Math.max(0, net - (fees.reg ? 900 : 0));
                 const pv = pvBasis / PV_RATE;
-
                 let rate = 0;
-                if (pv >= 150000) rate = 21;
-                else if (pv >= 90000) rate = 18;
-                else if (pv >= 55000) rate = 15;
-                else if (pv >= 30000) rate = 12;
-                else if (pv >= 15000) rate = 9;
-                else if (pv >= 5000) rate = 6;
-                else if (pv >= 2500) rate = 3;
+                if (pv >= 150000) rate = 21; else if (pv >= 30000) rate = 12; else if (pv >= 15000) rate = 9; else if (pv >= 5000) rate = 6; else if (pv >= 2500) rate = 3;
+                return { rawTotal, itemDisc, net, pv, rate, cb: pv * (rate / 100) * PV_RATE };
+            }, [itemsWithLogic, fees]);
 
-                return { rawTotal, itemDisc, net, pv, rate, cb: pv * (rate / 100) * PV_RATE, pvBasis };
-            }, [items, fees]);
+            // --- Handlers ---
+            const handleToggleAddon = (addonId) => {
+                const nextAddons = activeAddons.includes(addonId) 
+                  ? activeAddons.filter(a => a !== addonId) 
+                  : [...activeAddons, addonId];
+                setActiveAddons(nextAddons);
 
-            const applyPreset = (p) => {
-                setItems(INITIAL_STATE.map(item => p.items[item.id] ? { ...item, qty: p.items[item.id] } : item));
-                setPresetId(p.id);
+                setItems(prev => prev.map(item => {
+                    let dM = '', dN = '', dE = '', rmk = '', isFound = false, qty = 0;
+                    BASE_ADDONS.filter(a => nextAddons.includes(a.id)).forEach(addon => {
+                        const cfg = addon.items[item.id];
+                        if (cfg) {
+                            if (cfg.dM !== undefined) dM = cfg.dM; 
+                            if (cfg.dN !== undefined) dN = cfg.dN; 
+                            if (cfg.dE !== undefined) dE = cfg.dE; 
+                            if (cfg.rmk !== undefined) rmk = cfg.rmk; 
+                            if (cfg.qty !== undefined) qty = cfg.qty;
+                            isFound = true;
+                        }
+                    });
+                    presets.filter(p => nextAddons.includes(p.id)).forEach(p => {
+                        const cfg = p.config[item.id];
+                        if (cfg) {
+                            if (cfg.dM) dM = cfg.dM; if (cfg.dN) dN = cfg.dN; if (cfg.dE) dE = cfg.dE; if (cfg.rmk) rmk = cfg.rmk;
+                            isFound = true;
+                        }
+                    });
+                    if (isFound) {
+                        let finalQty = qty;
+                        if (qty > 0 && duration === 30) {
+                            finalQty = Math.ceil(qty / 2);
+                            if (item.id === 'p2' || item.id === 'p7') finalQty = qty; 
+                        }
+                        return { ...item, dM, dN, dE, rmk, qty: finalQty || item.qty, isManualQty: finalQty > 0 };
+                    }
+                    return { ...item, dM: '', dN: '', dE: '', rmk: (item.id === 'p20' ? 'ทาน 2 เม็ด ก่อนมื้อหนัก 20 นาที' : ''), qty: 0, isManualQty: false };
+                }));
             };
 
-            const update = (id, field, val) => {
-                setItems(prev => prev.map(i => i.id === id ? { ...i, [field]: val } : i));
-                setPresetId(null);
+            const updateItem = (id, field, val) => {
+                setItems(prev => prev.map(i => i.id === id ? { ...i, [field]: val, isManualQty: field === 'qty' ? true : i.isManualQty } : i));
+            };
+
+            const handleSavePreset = async () => {
+                if (!newPresetName || !db || !user) return;
+                const config = {};
+                itemsWithLogic.filter(i => i.qty > 0 || i.dM || i.dN || i.dE || i.rmk).forEach(i => {
+                    config[i.id] = { dM: i.dM, dN: i.dN, dE: i.dE, rmk: i.rmk };
+                });
+                try {
+                    await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('presets').add({ name: newPresetName, config, createdAt: Date.now() });
+                    setNewPresetName(''); setSaveModal(false);
+                } catch(e) { console.error("Save error:", e); }
             };
 
             const handleSaveImage = async () => {
-                if (items.filter(i => i.qty > 0).length === 0) {
-                    alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการก่อนบันทึกรูปภาพ');
-                    return;
-                }
-
+                const html2canvas = await window.loadHtml2Canvas();
                 setIsSaving(true);
-                
                 setTimeout(async () => {
-                    const element = document.getElementById('printable-area');
-                    element.classList.remove('hidden');
-                    element.classList.add('capture-mode');
-
+                    const el = document.getElementById('printable-area');
+                    el.classList.remove('hidden'); el.classList.add('capture-mode');
                     try {
-                        const canvas = await html2canvas(element, {
-                            scale: 2, 
-                            useCORS: true,
-                            backgroundColor: "#ffffff",
-                            logging: false,
-                            width: 1200
-                        });
-                        
-                        const imgData = canvas.toDataURL('image/png', 1.0);
+                        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: 1200 });
                         const link = document.createElement('a');
-                        const fileName = name ? `UP-Wellness-${name}.png` : 'UP-Wellness-Course.png';
-                        
-                        link.setAttribute('href', imgData);
-                        link.setAttribute('download', fileName);
-                        document.body.appendChild(link);
+                        link.href = canvas.toDataURL('image/png');
+                        link.download = `Program-${name || 'Wellness'}.png`;
                         link.click();
-                        document.body.removeChild(link);
-
-                    } catch (error) {
-                        console.error('Save failed:', error);
-                        alert('ขออภัย ไม่สามารถบันทึกรูปได้ในขณะนี้');
-                    } finally {
-                        element.classList.remove('capture-mode');
-                        element.classList.add('hidden');
-                        setIsSaving(false);
-                    }
-                }, 300);
-            };
-
-            const handleReset = () => {
-                if(confirm('ต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?')) {
-                    setItems(INITIAL_STATE);
-                    setFees({ reg: false, estart: false, ajoy: false });
-                    setName('');
-                    setPresetId(null);
-                }
+                    } catch (e) { alert('บันทึกรูปภาพล้มเหลว'); }
+                    finally { el.classList.remove('capture-mode'); el.classList.add('hidden'); setIsSaving(false); }
+                }, 200);
             };
 
             return (
                 <div className="min-h-screen pb-20 no-print font-main">
-                    {/* Header */}
-                    <header className="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pt-8 px-6 max-w-7xl mx-auto">
-                        <div className="flex items-center gap-5">
-                            <div className="bg-indigo-600 p-4 rounded-3xl shadow-xl text-white">
-                                <i data-lucide="calculator" className="w-8 h-8"></i>
+                    <header className="bg-white border-b border-slate-100 sticky top-0 z-50 px-6 py-4 no-print shadow-sm">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-indigo-600 p-3 rounded-2xl text-white shadow-lg"><i data-lucide="zap"></i></div>
+                                <div>
+                                    <h1 className="text-2xl font-prompt font-black text-slate-900 leading-none">UP Full Course</h1>
+                                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-1">Wellness Architect 2.8.1</p>
+                                </div>
                             </div>
-                            <div>
-                                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight uppercase leading-none">UP Full Course</h1>
-                                <p className="text-slate-400 font-medium mt-1 font-prompt uppercase text-xs tracking-widest leading-none">Metabolic Designer System</p>
+                            <div className="flex items-center gap-3 font-prompt font-bold">
+                                <div className="flex bg-slate-100 rounded-xl p-1 text-xs mr-2 shadow-inner">
+                                    <button onClick={()=>setDuration(30)} className={`px-4 py-2 rounded-lg transition-all ${duration === 30 ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>30 วัน</button>
+                                    <button onClick={()=>setDuration(60)} className={`px-4 py-2 rounded-lg transition-all ${duration === 60 ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>60 วัน</button>
+                                </div>
+                                <button onClick={()=>setSaveModal(true)} className="px-5 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-xs flex items-center gap-2 hover:bg-indigo-100 transition-all"><i data-lucide="save"></i> บันทึก Preset</button>
+                                <button onClick={handleSaveImage} disabled={isSaving} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs shadow-xl flex items-center gap-2 hover:bg-black transition-all active:scale-95">{isSaving ? '...' : <><i data-lucide="download"></i> บันทึกรูปแผนงาน</>}</button>
                             </div>
-                        </div>
-                        <div className="flex gap-3 w-full lg:w-auto font-prompt uppercase text-sm font-bold">
-                            <button onClick={handleReset} className="flex-1 lg:flex-none px-6 py-4 bg-white border border-slate-200 text-slate-500 rounded-2xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm">Reset</button>
-                            <button 
-                                onClick={handleSaveImage} 
-                                disabled={isSaving}
-                                className={`flex-[2] lg:flex-none px-8 py-4 bg-slate-900 text-white rounded-2xl hover:bg-black shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <i data-lucide="download" className={`w-5 h-5 ${isSaving ? 'saving-pulse' : ''}`}></i>
-                                {isSaving ? 'กำลังสร้างรูป...' : 'บันทึกรูปแผนกิน'}
-                            </button>
                         </div>
                     </header>
 
-                    {/* Presets Grid */}
-                    <div className="mb-10 px-6 max-w-7xl mx-auto">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {PRESETS.map(p => (
-                                <button 
-                                    key={p.id} 
-                                    onClick={() => applyPreset(p)} 
-                                    className={`p-6 rounded-[2rem] border-2 text-left transition-all ${presetId === p.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl translate-y-[-2px]' : 'bg-white border-slate-100 hover:border-indigo-300 shadow-sm'}`}
-                                >
-                                    <div className="font-prompt font-bold text-base mb-1">{p.title}</div>
-                                    <div className={`text-[13px] leading-snug opacity-80 ${presetId === p.id ? 'text-white' : 'text-slate-500 font-medium'}`}>{p.desc}</div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 px-6 max-w-7xl mx-auto">
-                        {/* Product Table */}
-                        <div className="xl:col-span-8 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-                            <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-50/40">
-                                <div className="font-prompt font-bold text-slate-800 uppercase text-xs tracking-widest flex items-center gap-2">
-                                    <i data-lucide="shopping-cart" className="w-4 h-4 text-indigo-600"></i>
-                                    Selection
-                                </div>
-                                <div className="relative w-full md:w-80 font-main">
-                                    <i data-lucide="user" className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-                                    <input 
-                                        type="text" 
-                                        placeholder="ชื่อลูกค้า..." 
-                                        className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-medium" 
-                                        value={name} 
-                                        onChange={e => setName(e.target.value)} 
-                                    />
-                                </div>
+                    <main className="max-w-7xl mx-auto p-6 space-y-8 no-print">
+                        {/* Course Combination (Add-ons) */}
+                        <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+                            <h2 className="font-prompt font-bold text-slate-400 uppercase text-[10px] tracking-widest mb-6 flex items-center gap-2"><i data-lucide="clipboard-list"></i> เลือกคอร์สผสมผสาน (Combination Mix)</h2>
+                            <div className="flex flex-wrap gap-3">
+                                {BASE_ADDONS.map(addon => (
+                                    <label key={addon.id} className={`flex items-center gap-3 px-5 py-4 rounded-2xl border-2 transition-all cursor-pointer select-none ${activeAddons.includes(addon.id) ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-300'}`}>
+                                        <input type="checkbox" className="hidden" checked={activeAddons.includes(addon.id)} onChange={()=>handleToggleAddon(addon.id)} />
+                                        <span className="font-prompt font-bold text-xs uppercase">{addon.name}</span>
+                                        {activeAddons.includes(addon.id) && <i data-lucide="check-circle-2" className="w-4 h-4"></i>}
+                                    </label>
+                                ))}
                             </div>
-                            <div className="overflow-x-auto custom-scrollbar">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="text-[10px] font-prompt font-black text-slate-400 uppercase tracking-widest bg-slate-50/20 border-b border-slate-50">
-                                        <tr>
-                                            <th className="px-6 py-5 w-[25%]">รายการ</th>
-                                            <th className="px-4 py-5 text-center w-[12%]">จำนวน</th>
-                                            <th className="px-4 py-5 text-center w-[10%]">ลด 15%</th>
-                                            <th className="px-4 py-5 text-center w-[18%]">มื้ออาหาร</th>
-                                            <th className="px-6 py-5 w-[20%]">หมายเหตุ</th>
-                                            <th className="px-6 py-5 text-right w-[15%]">ยอดจ่าย</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {items.map(i => {
-                                            const final = i.qty > 0 ? (i.disc ? (i.name === 'BodyKey' ? i.price * i.qty * 0.85 : i.price * i.qty - i.price * 0.15) : i.price * i.qty) : 0;
-                                            return (
-                                                <tr key={i.id} className={`transition-all duration-300 ${i.qty > 0 ? 'bg-indigo-50/15' : 'hover:bg-slate-50/50'}`}>
-                                                    <td className="px-6 py-5">
-                                                        <div className={`font-bold text-sm leading-tight ${i.qty > 0 ? 'text-indigo-900' : 'text-slate-600'}`}>{i.name}</div>
-                                                        <div className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter">{i.category}</div>
-                                                    </td>
-                                                    <td className="px-4 py-5 text-center">
-                                                        <div className="flex items-center justify-center gap-3 bg-white border border-slate-200 p-1 rounded-xl w-fit mx-auto shadow-sm">
-                                                            <button onClick={() => update(i.id, 'qty', Math.max(0, i.qty-1))} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-rose-50 text-slate-300 font-bold transition-all">-</button>
-                                                            <span className="w-4 font-bold text-slate-700">{i.qty}</span>
-                                                            <button onClick={() => update(i.id, 'qty', i.qty+1)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-emerald-50 text-slate-300 font-bold transition-all">+</button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-5 text-center">
-                                                        <input 
-                                                            type="checkbox" 
-                                                            className={`w-5 h-5 rounded-lg accent-indigo-600 transition-all ${!i.canDiscount ? 'opacity-10 pointer-events-none' : 'cursor-pointer hover:scale-110'}`} 
-                                                            checked={i.disc} 
-                                                            onChange={e => update(i.id, 'disc', e.target.checked)} 
-                                                            disabled={!i.canDiscount}
-                                                        />
-                                                    </td>
-                                                    <td className="px-4 py-5">
-                                                        <div className="flex justify-center gap-1">
-                                                            {['dM','dN','dE'].map(f => (
-                                                                <input key={f} type="text" placeholder="-" className="w-8 h-8 text-center text-[12px] font-bold border border-slate-100 rounded-lg bg-white outline-none transition-all focus:border-indigo-300" value={i[f]} onChange={e => update(i.id, f, e.target.value)} />
-                                                            ))}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-5">
-                                                        <input 
-                                                            type="text" 
-                                                            placeholder="..." 
-                                                            className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 text-[11px] outline-none italic text-slate-500 font-main" 
-                                                            value={i.rmk} 
-                                                            onChange={e => update(i.id, 'rmk', e.target.value)} 
-                                                        />
-                                                    </td>
-                                                    <td className="px-6 py-5 text-right font-bold text-slate-700">฿{final.toLocaleString()}</td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Sidebar Summary */}
-                        <div className="xl:col-span-4 space-y-6 font-main">
-                            <section className="bg-white p-9 rounded-[2.5rem] shadow-sm border border-slate-100">
-                                <h3 className="font-prompt text-xs font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2"><i data-lucide="receipt" className="w-4 h-4 text-indigo-600"></i>Summary</h3>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between text-sm font-semibold text-slate-500 px-1"><span>ราคาปลีกรวม</span><span>฿{totals.rawTotal.toLocaleString()}</span></div>
-                                    <div className="py-6 border-y border-slate-50 space-y-4">
-                                        {[ {id:'reg', l:'ค่าสมัครสมาชิก', v:900, t:'+'}, {id:'estart', l:'ส่วนลด e-Starter', v:300, t:'-'}, {id:'ajoy', l:'ส่วนลด A-Joy', v:500, t:'-'} ].map(f => (
-                                            <div key={f.id} className="flex justify-between items-center group cursor-pointer" onClick={() => setFees(p => ({...p, [f.id]: !p[f.id]}))}>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${fees[f.id] ? 'bg-slate-900 border-slate-900 shadow-md' : 'border-slate-200 group-hover:border-indigo-300'}`}>{fees[f.id] && <i data-lucide="check" className="w-3.5 h-3.5 text-white"></i>}</div>
-                                                    <span className="text-[13px] font-semibold text-slate-600 group-hover:text-slate-900">{f.l}</span>
-                                                </div>
-                                                <span className={`text-[13px] font-bold ${f.t === '-' ? 'text-rose-500' : 'text-slate-800'}`}>{f.t} ฿{f.v}</span>
+                            {presets.length > 0 && (
+                                <div className="mt-8 pt-8 border-t border-slate-50">
+                                    <h3 className="font-prompt text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 italic">คลังข้อมูลจาก Cloud</h3>
+                                    <div className="flex flex-wrap gap-3">
+                                        {presets.map(p => (
+                                            <div key={p.id} className="relative group">
+                                                <button onClick={()=>handleToggleAddon(p.id)} className={`px-5 py-3 rounded-xl border-2 font-prompt text-xs font-bold transition-all ${activeAddons.includes(p.id) ? 'bg-emerald-600 border-emerald-600 text-white shadow-md' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>{p.name}</button>
+                                                <button onClick={async ()=>{ if(confirm('ลบ Preset นี้?')) await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('presets').doc(p.id).delete(); }} className="absolute -top-2 -right-2 bg-rose-500 text-white w-5 h-5 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-md"><i data-lucide="x"></i></button>
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="bg-slate-900 text-white p-9 rounded-[2.5rem] text-center shadow-2xl relative overflow-hidden group mt-4 transition-all">
-                                        <p className="text-[11px] font-bold uppercase opacity-40 mb-3 tracking-[0.2em]">Net Investment</p>
-                                        <div className="text-5xl font-prompt font-black tracking-tighter shadow-sm">฿{Math.max(0, totals.net).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                                    </div>
                                 </div>
-                            </section>
-                        </div>
-                    </div>
+                            )}
+                        </section>
 
-                    {/* --- CAPTURE AREA (STRICT 1200px Wide - DYNAMIC HEIGHT) --- */}
-                    <div id="printable-area" className="hidden bg-white text-slate-900" style={{ padding: '60px', width: '1200px', boxSizing: 'border-box', overflow: 'hidden' }}>
-                        <div className="flex justify-between items-start border-b-[12px] border-slate-900 pb-10 mb-12">
+                        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+                            <div className="xl:col-span-8 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+                                <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                                    <div className="font-prompt font-black text-slate-800 uppercase text-xs tracking-widest flex items-center gap-2"><i data-lucide="user" className="text-indigo-600"></i> Client Profile</div>
+                                    <input type="text" placeholder="ชื่อลูกค้า..." className="bg-white border border-slate-200 rounded-2xl px-6 py-3 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none w-full max-w-sm font-medium" value={name} onChange={e => setName(e.target.value)} />
+                                </div>
+                                <div className="overflow-x-auto custom-scrollbar font-prompt">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/20 border-b border-slate-50">
+                                            <tr>
+                                                <th className="px-8 py-5 w-[25%]">รายการ</th>
+                                                <th className="px-4 py-5 text-center w-[15%]">โดส ช/ก/ย</th>
+                                                <th className="px-4 py-5 text-center w-[12%]">จำนวนที่ใช้</th>
+                                                <th className="px-4 py-5 text-center w-[10%]">ลด 15%</th>
+                                                <th className="px-6 py-5 w-[23%]">หมายเหตุ</th>
+                                                <th className="px-6 py-5 text-right">ยอดจ่าย</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50 text-sm font-main">
+                                            {itemsWithLogic.map(i => {
+                                                const discLimit = i.name === 'BodyKey' ? 3 : 1;
+                                                const final = i.qty > 0 ? (i.disc ? (i.price * i.qty) - (i.price * Math.min(i.qty, discLimit) * 0.15) : i.price * i.qty) : 0;
+                                                return (
+                                                    <tr key={i.id} className={`transition-all ${i.qty > 0 ? 'bg-indigo-50/15' : 'hover:bg-slate-50/30'}`}>
+                                                        <td className="px-8 py-5 font-bold leading-tight">{i.name}<br/><span className="text-[9px] text-slate-300 font-prompt uppercase">{i.category}</span></td>
+                                                        <td className="px-4 py-5">
+                                                            <div className="flex justify-center gap-1">
+                                                                {['dM','dN','dE'].map(f => <input key={f} type="text" placeholder="-" className="w-8 h-8 text-center text-xs font-bold border border-slate-100 rounded-lg bg-white focus:border-indigo-300 outline-none" value={i[f]} onChange={e => updateItem(i.id, f, e.target.value)} />)}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-5 text-center">
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button onClick={()=>updateItem(i.id, 'qty', Math.max(0, i.qty-1))} className="w-6 h-6 rounded-lg bg-white border border-slate-100 text-slate-300 hover:text-rose-500 shadow-sm flex items-center justify-center"><i data-lucide="minus" className="w-3 h-3"></i></button>
+                                                                <span className={`w-4 font-bold ${i.isManualQty ? 'text-amber-500' : 'text-indigo-600'}`}>{i.qty}</span>
+                                                                <button onClick={()=>updateItem(i.id, 'qty', i.qty+1)} className="w-6 h-6 rounded-lg bg-white border border-slate-100 text-slate-300 hover:text-emerald-500 shadow-sm flex items-center justify-center"><i data-lucide="plus" className="w-3 h-3"></i></button>
+                                                            </div>
+                                                            {i.qty > 0 && !i.isManualQty && <p className="text-[8px] font-black text-indigo-300 uppercase mt-1 italic">Auto</p>}
+                                                        </td>
+                                                        <td className="px-4 py-5 text-center">
+                                                            <input type="checkbox" className="w-5 h-5 accent-indigo-600 cursor-pointer rounded" checked={i.disc} onChange={e => updateItem(i.id, 'disc', e.target.checked)} disabled={!i.canDiscount} />
+                                                        </td>
+                                                        <td className="px-4 py-5"><input type="text" placeholder="..." className="w-full bg-slate-50 border-none rounded-lg px-2 py-1.5 text-xs outline-none italic font-medium text-slate-500" value={i.rmk} onChange={e => updateItem(i.id, 'rmk', e.target.value)} /></td>
+                                                        <td className="px-6 py-5 text-right font-bold text-slate-700 font-prompt">฿{final.toLocaleString()}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Totals Section */}
+                            <div className="xl:col-span-4 space-y-6">
+                                <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 font-prompt">
+                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2"><i data-lucide="receipt"></i> Financials</h3>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between text-sm font-semibold text-slate-500 px-1"><span>ราคาปลีกรวม</span><span>฿{totals.rawTotal.toLocaleString()}</span></div>
+                                        {totals.itemDisc > 0 && <div className="flex justify-between text-sm font-bold text-emerald-600 bg-emerald-50 p-5 rounded-2xl italic border border-emerald-100 font-main"><span>ส่วนลดสิทธิ์ 15%</span><span>- ฿{totals.itemDisc.toLocaleString()}</span></div>}
+                                        <div className="py-6 border-y border-slate-50 space-y-4">
+                                            {[ {id:'reg', l:'ค่าสมัครสมาชิก', v:900, t:'+'}, {id:'estart', l:'ส่วนลด e-Starter', v:300, t:'-'}, {id:'ajoy', l:'ส่วนลด A-Joy', v:500, t:'-'} ].map(f => (
+                                                <div key={f.id} className="flex justify-between items-center group cursor-pointer" onClick={() => setFees(p => ({...p, [f.id]: !p[f.id]}))}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${fees[f.id] ? 'bg-slate-900 border-slate-900' : 'border-slate-200'}`}>{fees[f.id] && <i data-lucide="check" className="w-3.5 h-3.5 text-white"></i>}</div>
+                                                        <span className="text-sm font-semibold text-slate-600">{f.l}</span>
+                                                    </div>
+                                                    <span className={`text-sm font-bold ${f.t === '-' ? 'text-rose-500' : 'text-slate-800'}`}>{f.t} ฿{f.v}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner">
+                                            <div className="flex justify-between items-end">
+                                                <div><p className="text-[10px] font-bold text-slate-400 uppercase mb-1">PV สะสม</p><p className="text-3xl font-black text-indigo-600 leading-none">{totals.pv.toLocaleString(undefined, {maximumFractionDigits:0})} <span className="text-xs">PV</span></p></div>
+                                                <div className="text-right"><p className="text-[10px] font-bold text-slate-400 uppercase mb-1">เงินคืน ({totals.rate}%)</p><p className="text-xl font-bold text-emerald-600 leading-none">฿{totals.cb.toLocaleString(undefined, {maximumFractionDigits:0})}</p></div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-900 text-white p-9 rounded-[3rem] text-center shadow-2xl relative overflow-hidden group transition-all hover:scale-[1.02]">
+                                            <p className="text-[10px] font-bold uppercase opacity-40 mb-2 tracking-[0.3em]">ยอดจ่ายสุทธิ</p>
+                                            <div className="text-6xl font-black tracking-tighter italic">฿{Math.max(0, totals.net).toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Save Modal */}
+                    {saveModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6 no-print font-prompt">
+                            <div className="bg-white rounded-[3rem] p-10 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
+                                <h3 className="text-2xl font-black text-slate-900 mb-2 flex items-center gap-3"><i data-lucide="cloud" className="text-indigo-600"></i> บันทึก Preset</h3>
+                                <p className="text-slate-400 text-sm mb-8">บันทึกแผนงานนี้เก็บลง Cloud เพื่อเรียกใช้ภายหลัง</p>
+                                <input type="text" placeholder="ระบุชื่อ Preset (เช่น 'คุณสมชาย-สูตร 60 วัน')" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:border-indigo-500 font-medium mb-8" value={newPresetName} onChange={e=>setNewPresetName(e.target.value)} />
+                                <div className="flex gap-4 font-bold">
+                                    <button onClick={()=>setSaveModal(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-colors">ยกเลิก</button>
+                                    <button onClick={handleSavePreset} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl transition-transform active:scale-95">บันทึกข้อมูล</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- PRINTABLE AREA --- */}
+                    <div id="printable-area" className="hidden bg-white text-slate-900 font-prompt" style={{ padding: '80px', width: '1200px', boxSizing: 'border-box', overflow: 'hidden' }}>
+                        <div className="flex justify-between items-start border-b-[15px] border-slate-900 pb-12 mb-16">
                             <div className="space-y-4">
-                                <h1 className="text-[82px] font-prompt font-black text-slate-900 uppercase tracking-tighter italic leading-none">UP Wellness Course</h1>
-                                <p className="text-[34px] font-prompt font-black text-indigo-600 uppercase tracking-[0.4em] mt-3 ml-2 italic leading-none text-nowrap">ตารางการรับประทานคอร์ส</p>
+                                <h1 className="text-[90px] font-black text-slate-900 uppercase tracking-tighter italic leading-none">UP Wellness Course</h1>
+                                <p className="text-[40px] font-black text-indigo-600 uppercase tracking-[0.4em] mt-3 ml-2 italic leading-none text-nowrap">ตารางการรับประทานคอร์ส ({duration} วัน)</p>
                             </div>
                             <div className="text-right font-prompt flex flex-col items-end pt-2">
-                                <div className="bg-slate-900 text-white px-8 py-3 text-[16px] font-black uppercase tracking-[0.3em] rounded-full mb-8 shadow-md">Personalized Plan</div>
-                                <div className="space-y-1">
-                                    <p className="text-base font-black text-slate-300 uppercase tracking-widest leading-none text-right">Client Name:</p>
-                                    <p className="text-[60px] font-black text-slate-900 border-b-8 border-slate-100 px-6 py-1 min-w-[500px] leading-tight font-main">
-                                        {name || '...........................................'}
-                                    </p>
-                                    <p className="text-xl font-bold text-slate-400 mt-5 opacity-70 italic tracking-wide">
-                                        แผนงานเมื่อวันที่: {new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric'})}
-                                    </p>
+                                <div className="bg-slate-900 text-white px-10 py-4 text-[22px] font-black uppercase tracking-[0.3em] rounded-full mb-10 shadow-lg">Wellness Optimized Plan</div>
+                                <div className="space-y-2">
+                                    <p className="text-xl font-black text-slate-300 uppercase tracking-widest leading-none text-right">Client Name:</p>
+                                    <p className="text-[64px] font-black text-slate-900 border-b-8 border-slate-100 px-6 py-1 min-w-[500px] leading-tight italic uppercase font-main">{name || '...........................................'}</p>
+                                    <p className="text-2xl font-bold text-slate-400 mt-6 opacity-70 italic font-main">Date: {new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric'})}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="overflow-hidden mb-12 border-4 border-slate-200 rounded-[3.5rem] shadow-xl bg-white">
+                        <div className="overflow-hidden mb-24 border-4 border-slate-200 rounded-[4.5rem] shadow-xl bg-white">
                             <table className="w-full text-left border-collapse table-fixed">
-                                <thead className="bg-slate-900 text-white font-prompt font-black uppercase tracking-[0.1em]">
+                                <thead className="bg-slate-900 text-white font-black uppercase tracking-[0.1em]">
                                     <tr>
-                                        <th className="px-10 py-8 text-[28px] text-left w-[32%]">รายการ</th>
-                                        <th className="px-4 py-8 text-[28px] text-center w-[10%]">จำนวน</th>
-                                        <th className="px-4 py-8 text-[28px] text-center bg-indigo-700 w-[11%]">เช้า</th>
-                                        <th className="px-4 py-8 text-[28px] text-center bg-orange-600 w-[11%]">กลางวัน</th>
-                                        <th className="px-4 py-8 text-[28px] text-center bg-indigo-900 w-[11%] text-nowrap">เย็น</th>
-                                        <th className="px-10 py-8 text-[28px] text-left w-[25%]">หมายเหตุ</th>
+                                        <th className="px-12 py-12 text-[36px] text-left w-[32%]">รายการสารอาหาร</th>
+                                        <th className="px-4 py-12 text-[36px] text-center w-[12%]">จำนวน</th>
+                                        <th className="px-4 py-12 text-[36px] text-center bg-indigo-700 w-[14%]">เช้า</th>
+                                        <th className="px-4 py-12 text-[36px] text-center bg-orange-600 w-[14%]">กลางวัน</th>
+                                        <th className="px-4 py-12 text-[36px] text-center bg-indigo-900 w-[14%] text-nowrap text-nowrap">เย็น</th>
+                                        <th className="px-10 py-12 text-[36px] text-left w-[24%] text-nowrap">หมายเหตุ</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {items.filter(i => i.qty > 0).map((i, idx) => (
+                                    {itemsWithLogic.filter(i => i.qty > 0).map((i, idx) => (
                                         <tr key={i.id} className={`text-slate-800 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                                            <td className="px-10 py-8 border-b-2 border-slate-100">
-                                                <div className="text-[32px] font-black leading-tight font-main">{i.name}</div>
-                                                <div className="text-[14px] font-bold text-slate-300 uppercase tracking-widest mt-1">{i.category}</div>
+                                            <td className="px-12 py-10 border-b-2 border-slate-100">
+                                                <div className="text-[38px] font-black leading-tight font-main">{i.name}</div>
+                                                <div className="text-[16px] font-bold text-slate-300 uppercase tracking-widest mt-1">{i.category}</div>
                                             </td>
-                                            <td className="px-4 py-8 text-center text-slate-400 text-[32px] font-black border-b-2 border-slate-100">
-                                                {i.qty}
-                                            </td>
-                                            <td className="px-4 py-8 text-center text-indigo-700 text-[48px] font-black border-b-2 border-slate-100 bg-indigo-50/20">
-                                                {i.dM || '-'}
-                                            </td>
-                                            <td className="px-4 py-8 text-center text-orange-600 text-[48px] font-black border-b-2 border-slate-100 bg-orange-50/30">
-                                                {i.dN || '-'}
-                                            </td>
-                                            <td className="px-4 py-8 text-center text-indigo-900 text-[48px] font-black border-b-2 border-slate-100 bg-indigo-100/20">
-                                                {i.dE || '-'}
-                                            </td>
-                                            <td className="px-10 py-8 border-b-2 border-slate-100 text-[22px] text-slate-500 font-bold italic leading-snug font-main">
-                                                {i.rmk || '-'}
-                                            </td>
+                                            <td className="px-4 py-10 text-center text-slate-400 text-[42px] font-black border-b-2 border-slate-100 font-main">{i.qty}</td>
+                                            <td className="px-4 py-10 text-center text-indigo-700 text-[64px] font-black border-b-2 border-slate-100 bg-indigo-50/20 font-main">{i.dM || '-'}</td>
+                                            <td className="px-4 py-10 text-center text-orange-600 text-[64px] font-black border-b-2 border-slate-100 bg-orange-50/30 font-main">{i.dN || '-'}</td>
+                                            <td className="px-4 py-10 text-center text-indigo-900 text-[64px] font-black border-b-2 border-slate-100 bg-indigo-100/30 font-main">{i.dE || '-'}</td>
+                                            <td className="px-10 py-10 border-b-2 border-slate-100 text-[26px] text-slate-500 font-bold italic leading-snug font-main">{i.rmk || '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
 
-                        <div className="bg-slate-50 p-14 rounded-[4.5rem] border-8 border-slate-100 relative mb-12 shadow-inner mt-auto">
-                            <div className="absolute top-0 right-0 p-16 opacity-[0.05] rotate-12"><i data-lucide="shield-check" className="w-56 h-56"></i></div>
-                            <h4 className="text-[34px] font-prompt font-black text-indigo-700 uppercase tracking-[0.3em] mb-10 flex items-center gap-8">
-                                <div className="w-5 h-14 bg-indigo-700 rounded-full shadow-md"></div>
-                                แนวทางปฏิบัติเพื่อสุขภาพ (GUIDELINES)
+                        <div className="bg-slate-50 p-20 rounded-[6rem] border-8 border-slate-100 relative mb-12 shadow-inner mt-auto font-prompt">
+                            <h4 className="text-[44px] font-black text-indigo-700 uppercase tracking-[0.3em] mb-14 flex items-center gap-10">
+                                <div className="w-6 h-18 bg-indigo-700 rounded-full shadow-md"></div>
+                                คำแนะนำในการดูแลสุขภาพ (GUIDELINES)
                             </h4>
-                            <div className="grid grid-cols-2 gap-x-12 gap-y-10">
-                                <div className="flex gap-8 items-start p-6 bg-white rounded-[2.5rem] shadow-sm border border-slate-100">
-                                    <div className="p-5 bg-indigo-50 rounded-3xl shrink-0"><i data-lucide="droplets" className="w-10 h-10 text-indigo-500"></i></div>
-                                    <p className="text-[24px] font-bold text-slate-700 leading-snug font-main">ดื่มน้ำวันละ 2-3 ลิตร <br/><span className="text-base opacity-60 font-medium">(จิบระหว่างวันสม่ำเสมอ)</span></p>
-                                </div>
-                                <div className="flex gap-8 items-start p-6 bg-white rounded-[2.5rem] shadow-sm border border-slate-100">
-                                    <div className="p-5 bg-emerald-50 rounded-4xl shrink-0"><i data-lucide="footprints" className="w-10 h-10 text-emerald-500"></i></div>
-                                    <p className="text-[24px] font-bold text-slate-700 leading-snug font-main">เดินวันละ 10,000 ก้าว <br/><span className="text-base opacity-60 font-medium">(เพื่อเพิ่มอัตราเผาผลาญ)</span></p>
-                                </div>
-                                <div className="flex gap-8 items-start p-6 bg-white rounded-[2.5rem] shadow-sm border border-slate-100">
-                                    <div className="p-5 bg-amber-50 rounded-3xl shrink-0"><i data-lucide="moon" className="w-12 h-12 text-amber-500"></i></div>
-                                    <p className="text-[24px] font-bold text-slate-700 leading-snug font-main">พักผ่อน 7-8 ชั่วโมง <br/><span className="text-base opacity-60 font-medium">(เพื่อให้ระบบร่างกายฟื้นฟู)</span></p>
-                                </div>
-                                <div className="flex gap-8 items-start p-6 bg-white rounded-[2.5rem] shadow-sm border border-slate-100">
-                                    <div className="p-5 bg-slate-50 rounded-4xl shrink-0"><i data-lucide="clock" className="w-12 h-12 text-slate-400"></i></div>
-                                    <p className="text-[24px] font-bold text-slate-700 leading-snug font-main">สัดส่วนเวลา 2-4-6 <br/><span className="text-base opacity-60 font-medium">(ตามตารางเวลาที่แนะนำ)</span></p>
-                                </div>
+                            <div className="grid grid-cols-2 gap-x-20 gap-y-16">
+                                {[ 
+                                    { icon: 'droplets', t: "ดื่มน้ำวันละ 2-3 ลิตร", st: "(จิบระหว่างวันสม่ำเสมอ)" },
+                                    { icon: 'footprints', t: "เดินวันละ 10,000 ก้าว", st: "(เพื่อกระตุ้นการเผาผลาญ)" },
+                                    { icon: 'moon', t: "พักผ่อน 7-8 ชั่วโมง", st: "(เพื่อให้ร่างกายฟื้นฟูระบบ)" },
+                                    { icon: 'clock', t: "สัดส่วนเวลา 2-4-6", st: "(ตามตารางเวลาที่แนะนำ)" }
+                                ].map((item, idx) => (
+                                    <div key={idx} className="flex gap-10 items-start p-10 bg-white rounded-[4rem] shadow-sm border border-slate-100 font-main">
+                                        <div className="p-7 bg-indigo-50 rounded-4xl shrink-0 text-indigo-500 font-bold">
+                                            <i data-lucide={item.icon} style={{width: 60, height: 60}}></i>
+                                        </div>
+                                        <p className="text-[36px] font-bold text-slate-700 leading-snug">{item.t} <br/><span className="text-2xl opacity-60 font-medium">{item.st}</span></p>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        <div className="pt-10 border-t-4 border-slate-100 opacity-30 flex justify-between items-center">
-                             <p className="text-[22px] font-black text-slate-900 uppercase tracking-[0.8em] italic leading-none">UP Labs Wellness</p>
-                             <p className="text-[16px] font-bold text-slate-500 tracking-widest uppercase leading-none">Precision Nutrition Designer System</p>
+                        <div className="pt-16 border-t-4 border-slate-100 opacity-30 flex justify-between items-center uppercase">
+                                <p className="text-[26px] font-black text-slate-900 uppercase tracking-[0.8em] italic leading-none italic font-prompt">UP Labs Wellness</p>
+                                <p className="text-[20px] font-bold text-slate-500 tracking-widest leading-none font-prompt">Cloud Designer System System</p>
                         </div>
                     </div>
                 </div>
             );
-        }
+        };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
