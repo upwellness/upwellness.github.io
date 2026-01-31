@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="th">
 <!-- 
-  UP Full Course Designer - Baseline 2.8.1 (GitHub Pages Optimized)
-  - Fixed Firestore Permissions
-  - Updated Standard 60D Specs (Green Tea Plus x3, No Calow)
+  UP Full Course Designer - Baseline 2.9.2
+  - Fixed 30D/60D Reactive Auto-scaling for presets
+  - Expanded report width to 1800px (HD Layout)
+  - Updated Standard 60D Specs: BK x6, GT Plus x3, Fiber Powder x2, Probiotic x2, No Calow
   - Start with empty selection
 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP Designer - Cloud Powered</title>
+    <title>UP Full Course Designer - Baseline 2.9.2</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,21 +20,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- html2canvas Dynamic Loader Script -->
-    <script>
-        window.loadHtml2Canvas = function() {
-            return new Promise((resolve, reject) => {
-                if (window.html2canvas) return resolve(window.html2canvas);
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-                script.onload = () => resolve(window.html2canvas);
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
-    </script>
-    
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
@@ -43,8 +30,8 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         :root {
@@ -58,7 +45,7 @@
             position: absolute;
             left: 0;
             top: 0;
-            width: 1200px !important;
+            width: 1800px !important;
             height: auto !important; 
             z-index: -100;
             background-color: white !important;
@@ -77,13 +64,38 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+        const { useState, useMemo, useEffect, useRef } = React;
 
-        // --- Configuration ---
+        // --- Icon Components ---
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const icons = {
+                zap: <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />,
+                cloud: <path d="M17.5 19c2.5 0 4.5-2 4.5-4.5 0-2.3-1.7-4.2-4-4.5C17.4 6.1 14.1 3 10 3 6.6 3 3.8 5.2 3.1 8.3 1.2 9.2 0 11.2 0 13.5 0 16.5 2.5 19 5.5 19h12z" />,
+                save: <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8" />,
+                download: <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />,
+                user: <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 7a4 4 0 100-8 4 4 0 000 8z" />,
+                list: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />,
+                check: <path d="M20 6L9 17l-5-5" />,
+                trash: <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />,
+                plus: <path d="M12 5v14M5 12h14" />,
+                minus: <path d="M5 12h14" />,
+                receipt: <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1zM16 8H8m8 4H8" />,
+                droplets: <path d="M7 16.3c2.2 0 4-1.8 4-4 0-3.3-4-8-4-8s-4 4.7-4 8c0 2.2 1.8 4 4 4z" />,
+                clock: <React.Fragment><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" /></React.Fragment>,
+                moon: <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />,
+                steps: <path d="M4 16v4h4m0-4l4-4m0 4l4-4m0 4h4v-4" />
+            };
+            return (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        // --- Data Configuration ---
         const PV_RATE = 3.23;
-        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : "up-wellness-v28"; 
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : "up-wellness-v292"; 
         
-        // Product Catalog
         const PRODUCT_DATA = [
             { id: 'p1', name: 'BodyKey', price: 1700, category: 'Calories Restriction', canDiscount: true, color: 'bg-orange-500', packSize: 14 },
             { id: 'p2', name: 'All Plant 900', price: 2300, category: 'Calories Restriction', canDiscount: false, color: 'bg-orange-500', packSize: 53 },
@@ -109,24 +121,24 @@
             { id: 'p21', name: 'แก้ว', price: 100, category: 'Etc', canDiscount: false, color: 'bg-slate-500', noPV: true, packSize: 1 },
         ];
 
-        // Built-in Add-on Configurations
+        // Built-in Mixable Add-ons
         const BASE_ADDONS = [
             { 
                 id: 'std', 
                 name: 'Standard Full Course', 
                 items: {
-                    'p1': { qty: 6, dM: '1', dE: '1', rmk: 'ทาน 14 วัน สลับ 14 วัน (ช่วงสลับทานมื้อเย็นพร้อม All Plant)' },
-                    'p2': { qty: 1, dM: '1', dE: '1.5', rmk: 'ทาน 14 วัน สลับ 14 วัน' },
-                    'p4': { qty: 1, dM: '1' },
-                    'p5': { qty: 3, dM: '1', dE: '1' },
-                    'p7': { qty: 1, dM: '1', dE: '1' },
-                    'p12': { qty: 1, dN: '2', rmk: 'ทาน 2 เม็ด + น้ำ 300cc บางมื้อ ช่วยถ่าย ช่วยอิ่ม' },
+                    'p1': { qty60: 6, dM: '1', dE: '1', rmk: 'ทาน 14 วัน สลับ 14 วัน (ช่วงสลับทานมื้อเย็นพร้อม All Plant)' },
+                    'p2': { qty60: 1, dM: '1', dE: '1.5', rmk: 'ทาน 14 วัน สลับ 14 วัน' },
+                    'p4': { qty60: 1, dM: '1' },
+                    'p5': { qty60: 3, dM: '1', dE: '1' },
+                    'p7': { qty60: 1, dM: '1', dE: '1' },
+                    'p12': { qty60: 1, dN: '2', rmk: 'ทาน 2 เม็ด + น้ำ 300cc บางมื้อ ช่วยถ่าย ช่วยอิ่ม' },
+                    'p14': { qty60: 2, dM: '1' },
+                    'p15': { qty60: 2, dM: '1' },
                     'p9': { dM: '1', dE: '1' },
                     'p10': { dM: '1', dE: '1' },
                     'p11': { dM: '1', dE: '1' },
-                    'p14': { dM: '1' },
-                    'p15': { dM: '1' },
-                    'p21': { qty: 1 }
+                    'p21': { qty60: 1 }
                 }
             },
             { id: 'hyper', name: 'มีความดัน', items: { 'p16': { dM: '1', dN: '1', dE: '1' } } },
@@ -143,58 +155,45 @@
             const [items, setItems] = useState(PRODUCT_DATA.map(p => ({ ...p, qty: 0, dM: '', dN: '', dE: '', disc: p.canDiscount, rmk: '', isManualQty: false })));
             const [name, setName] = useState('');
             const [duration, setDuration] = useState(60);
-            const [activeAddons, setActiveAddons] = useState([]); // Start empty
+            const [activeAddons, setActiveAddons] = useState([]);
             const [presets, setPresets] = useState([]);
             const [fees, setFees] = useState({ reg: false, estart: false, ajoy: false });
             const [isSaving, setIsSaving] = useState(false);
             const [saveModal, setSaveModal] = useState(false);
             const [newPresetName, setNewPresetName] = useState('');
+            const printableRef = useRef(null);
 
-            // --- Database & Auth Initialization ---
+            // --- Database Initialization ---
             useEffect(() => {
-                const initFirebase = async () => {
-                    const config = JSON.parse(__firebase_config);
-                    if (!firebase.apps.length) firebase.initializeApp(config);
-                    
-                    const firestore = firebase.firestore();
-                    setDb(firestore);
+                const config = JSON.parse(__firebase_config);
+                if (!firebase.apps.length) firebase.initializeApp(config);
+                const firestore = firebase.firestore();
+                setDb(firestore);
 
-                    // Auth first to avoid permission errors
+                const initAuth = async () => {
                     try {
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                             await firebase.auth().signInWithCustomToken(__initial_auth_token);
                         } else {
                             await firebase.auth().signInAnonymously();
                         }
-                    } catch (e) {
-                        console.error("Auth error:", e);
-                    }
-
-                    firebase.auth().onAuthStateChanged((u) => {
-                        setUser(u);
-                    });
+                    } catch (e) { console.error("Auth error:", e); }
                 };
-                initFirebase();
+                initAuth();
+                const unsubscribe = firebase.auth().onAuthStateChanged(setUser);
+                return unsubscribe;
             }, []);
 
-            // --- Fetch Cloud Presets (Strict Path Rule 1) ---
+            // --- Sync Cloud Presets ---
             useEffect(() => {
                 if (!db || !user) return;
-                
-                const presetsCol = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('presets');
-                
-                const unsubscribe = presetsCol.onSnapshot(
-                    (snapshot) => {
-                        setPresets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                    },
-                    (error) => {
-                        console.error("Snapshot error (Permission?):", error);
-                    }
+                const col = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('presets');
+                const unsubscribe = col.onSnapshot(
+                    (snap) => setPresets(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+                    (err) => console.error("Firestore Error:", err)
                 );
                 return () => unsubscribe();
             }, [db, user]);
-
-            useEffect(() => { lucide.createIcons(); }, [items, duration, activeAddons, presets, isSaving, fees]);
 
             // --- Calculation Engine ---
             const itemsWithLogic = useMemo(() => {
@@ -207,19 +206,30 @@
                     if (dailyTotal === 0 && !item.rmk && item.id !== 'p21' && item.qty === 0) return { ...item, qty: 0 };
                     if (item.id === 'p21') return item;
 
-                    let multiplier = duration;
-                    const isStandardActive = activeAddons.includes('std');
-                    if (isStandardActive && (item.id === 'p1' || item.id === 'p2')) {
-                        // Cycle 14/14: approx 42 days per 60 days
-                        multiplier = (duration / 60) * 42; 
+                    let suggested = 0;
+                    const isStdActive = activeAddons.includes('std');
+                    
+                    // Logic: If Standard Add-on is active, use the specific Qty mapping
+                    if (isStdActive) {
+                        const stdConfig = BASE_ADDONS.find(a => a.id === 'std').items[item.id];
+                        if (stdConfig && stdConfig.qty60 !== undefined) {
+                            suggested = duration === 60 ? stdConfig.qty60 : Math.ceil(stdConfig.qty60 / 2);
+                        }
                     }
 
-                    const exactNeed = dailyTotal * multiplier;
-                    const rawQty = exactNeed / item.packSize;
-                    
-                    let suggested = Math.floor(rawQty);
-                    if (rawQty - suggested > 0.15) suggested = Math.ceil(rawQty);
-                    if (suggested === 0 && (dailyTotal > 0 || item.rmk)) suggested = 1;
+                    // Fallback to calculation from doses if no preset qty or other addons are active
+                    if (suggested === 0) {
+                        let multiplier = duration;
+                        // Still check for BK/Plant cycle if Std is part of the mix
+                        if (isStdActive && (item.id === 'p1' || item.id === 'p2')) {
+                            multiplier = (duration / 60) * 42; 
+                        }
+                        const exactNeed = dailyTotal * multiplier;
+                        const rawPacks = exactNeed / item.packSize;
+                        suggested = Math.floor(rawPacks);
+                        if (rawPacks - suggested > 0.15) suggested = Math.ceil(rawPacks);
+                        if (suggested === 0 && (dailyTotal > 0 || item.rmk)) suggested = 1;
+                    }
 
                     return { ...item, suggestedQty: suggested, qty: item.isManualQty ? item.qty : suggested };
                 });
@@ -244,20 +254,16 @@
             // --- Handlers ---
             const handleToggleAddon = (addonId) => {
                 const nextAddons = activeAddons.includes(addonId) 
-                  ? activeAddons.filter(a => a !== addonId) 
-                  : [...activeAddons, addonId];
+                    ? activeAddons.filter(a => a !== addonId) 
+                    : [...activeAddons, addonId];
                 setActiveAddons(nextAddons);
 
                 setItems(prev => prev.map(item => {
-                    let dM = '', dN = '', dE = '', rmk = '', isFound = false, qty = 0;
+                    let dM = '', dN = '', dE = '', rmk = '', isFound = false;
                     BASE_ADDONS.filter(a => nextAddons.includes(a.id)).forEach(addon => {
                         const cfg = addon.items[item.id];
                         if (cfg) {
-                            if (cfg.dM !== undefined) dM = cfg.dM; 
-                            if (cfg.dN !== undefined) dN = cfg.dN; 
-                            if (cfg.dE !== undefined) dE = cfg.dE; 
-                            if (cfg.rmk !== undefined) rmk = cfg.rmk; 
-                            if (cfg.qty !== undefined) qty = cfg.qty;
+                            if (cfg.dM) dM = cfg.dM; if (cfg.dN) dN = cfg.dN; if (cfg.dE) dE = cfg.dE; if (cfg.rmk) rmk = cfg.rmk;
                             isFound = true;
                         }
                     });
@@ -268,14 +274,7 @@
                             isFound = true;
                         }
                     });
-                    if (isFound) {
-                        let finalQty = qty;
-                        if (qty > 0 && duration === 30) {
-                            finalQty = Math.ceil(qty / 2);
-                            if (item.id === 'p2' || item.id === 'p7') finalQty = qty; 
-                        }
-                        return { ...item, dM, dN, dE, rmk, qty: finalQty || item.qty, isManualQty: finalQty > 0 };
-                    }
+                    if (isFound) return { ...item, dM, dN, dE, rmk, isManualQty: false };
                     return { ...item, dM: '', dN: '', dE: '', rmk: (item.id === 'p20' ? 'ทาน 2 เม็ด ก่อนมื้อหนัก 20 นาที' : ''), qty: 0, isManualQty: false };
                 }));
             };
@@ -290,121 +289,108 @@
                 itemsWithLogic.filter(i => i.qty > 0 || i.dM || i.dN || i.dE || i.rmk).forEach(i => {
                     config[i.id] = { dM: i.dM, dN: i.dN, dE: i.dE, rmk: i.rmk };
                 });
-                try {
-                    await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('presets').add({ name: newPresetName, config, createdAt: Date.now() });
-                    setNewPresetName(''); setSaveModal(false);
-                } catch(e) { console.error("Save error:", e); }
+                await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('presets').add({ name: newPresetName, config, createdAt: Date.now() });
+                setNewPresetName(''); setSaveModal(false);
             };
 
             const handleSaveImage = async () => {
-                const html2canvas = await window.loadHtml2Canvas();
+                if (!window.html2canvas) return alert('โปรดรอไลบรารีโหลดสักครู่...');
                 setIsSaving(true);
+                const el = printableRef.current;
+                el.classList.remove('hidden'); el.classList.add('capture-mode');
                 setTimeout(async () => {
-                    const el = document.getElementById('printable-area');
-                    el.classList.remove('hidden'); el.classList.add('capture-mode');
                     try {
-                        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: 1200 });
+                        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: 1800 });
                         const link = document.createElement('a');
                         link.href = canvas.toDataURL('image/png');
-                        link.download = `Program-${name || 'Wellness'}.png`;
+                        link.download = `Wellness-HD-${name || 'Report'}.png`;
                         link.click();
                     } catch (e) { alert('บันทึกรูปภาพล้มเหลว'); }
                     finally { el.classList.remove('capture-mode'); el.classList.add('hidden'); setIsSaving(false); }
-                }, 200);
+                }, 100);
             };
 
             return (
                 <div className="min-h-screen pb-20 no-print font-main">
-                    <header className="bg-white border-b border-slate-100 sticky top-0 z-50 px-6 py-4 no-print shadow-sm">
+                    <header className="bg-white border-b border-slate-100 sticky top-0 z-50 px-6 py-4 shadow-sm">
                         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-indigo-600 p-3 rounded-2xl text-white shadow-lg"><i data-lucide="zap"></i></div>
+                            <div className="flex items-center gap-4 font-prompt">
+                                <div className="bg-indigo-600 p-3 rounded-2xl text-white shadow-lg font-bold"><Icon name="zap" size={24} /></div>
                                 <div>
-                                    <h1 className="text-2xl font-prompt font-black text-slate-900 leading-none">UP Full Course</h1>
-                                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-1">Wellness Architect 2.8.1</p>
+                                    <h1 className="text-2xl font-black text-slate-900 leading-none">UP Full Course</h1>
+                                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-1 uppercase">Baseline 2.9.2 Optimizer</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 font-prompt font-bold">
                                 <div className="flex bg-slate-100 rounded-xl p-1 text-xs mr-2 shadow-inner">
-                                    <button onClick={()=>setDuration(30)} className={`px-4 py-2 rounded-lg transition-all ${duration === 30 ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>30 วัน</button>
-                                    <button onClick={()=>setDuration(60)} className={`px-4 py-2 rounded-lg transition-all ${duration === 60 ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>60 วัน</button>
+                                    <button onClick={()=>setDuration(30)} className={`px-5 py-2 rounded-lg transition-all ${duration === 30 ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>30 วัน</button>
+                                    <button onClick={()=>setDuration(60)} className={`px-5 py-2 rounded-lg transition-all ${duration === 60 ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>60 วัน</button>
                                 </div>
-                                <button onClick={()=>setSaveModal(true)} className="px-5 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-xs flex items-center gap-2 hover:bg-indigo-100 transition-all"><i data-lucide="save"></i> บันทึก Preset</button>
-                                <button onClick={handleSaveImage} disabled={isSaving} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs shadow-xl flex items-center gap-2 hover:bg-black transition-all active:scale-95">{isSaving ? '...' : <><i data-lucide="download"></i> บันทึกรูปแผนงาน</>}</button>
+                                <button onClick={()=>setSaveModal(true)} className="px-5 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-xs flex items-center gap-2 hover:bg-indigo-100 transition-all active:scale-95"><Icon name="save" size={14} /> Save Preset</button>
+                                <button onClick={handleSaveImage} disabled={isSaving} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs shadow-xl flex items-center gap-2 hover:bg-black transition-all active:scale-95">{isSaving ? '...' : <><Icon name="download" size={14}/> บันทึกรูปแผนงาน</>}</button>
                             </div>
                         </div>
                     </header>
 
-                    <main className="max-w-7xl mx-auto p-6 space-y-8 no-print">
-                        {/* Course Combination (Add-ons) */}
-                        <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                            <h2 className="font-prompt font-bold text-slate-400 uppercase text-[10px] tracking-widest mb-6 flex items-center gap-2"><i data-lucide="clipboard-list"></i> เลือกคอร์สผสมผสาน (Combination Mix)</h2>
+                    <main className="max-w-7xl mx-auto p-6 space-y-8 no-print font-prompt font-bold">
+                        <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 font-prompt">
+                            <h2 className="font-bold text-slate-400 uppercase text-[10px] tracking-widest mb-6 flex items-center gap-2 font-prompt"><Icon name="list" size={14} /> ผสมผสานคอร์สรายบุคคล</h2>
                             <div className="flex flex-wrap gap-3">
                                 {BASE_ADDONS.map(addon => (
-                                    <label key={addon.id} className={`flex items-center gap-3 px-5 py-4 rounded-2xl border-2 transition-all cursor-pointer select-none ${activeAddons.includes(addon.id) ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-300'}`}>
+                                    <label key={addon.id} className={`flex items-center gap-3 px-5 py-4 rounded-2xl border-2 transition-all cursor-pointer select-none ${activeAddons.includes(addon.id) ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg translate-y-[-2px]' : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-300'}`}>
                                         <input type="checkbox" className="hidden" checked={activeAddons.includes(addon.id)} onChange={()=>handleToggleAddon(addon.id)} />
                                         <span className="font-prompt font-bold text-xs uppercase">{addon.name}</span>
-                                        {activeAddons.includes(addon.id) && <i data-lucide="check-circle-2" className="w-4 h-4"></i>}
+                                        {activeAddons.includes(addon.id) && <Icon name="check" size={14} />}
                                     </label>
                                 ))}
                             </div>
-                            {presets.length > 0 && (
-                                <div className="mt-8 pt-8 border-t border-slate-50">
-                                    <h3 className="font-prompt text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 italic">คลังข้อมูลจาก Cloud</h3>
-                                    <div className="flex flex-wrap gap-3">
-                                        {presets.map(p => (
-                                            <div key={p.id} className="relative group">
-                                                <button onClick={()=>handleToggleAddon(p.id)} className={`px-5 py-3 rounded-xl border-2 font-prompt text-xs font-bold transition-all ${activeAddons.includes(p.id) ? 'bg-emerald-600 border-emerald-600 text-white shadow-md' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>{p.name}</button>
-                                                <button onClick={async ()=>{ if(confirm('ลบ Preset นี้?')) await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('presets').doc(p.id).delete(); }} className="absolute -top-2 -right-2 bg-rose-500 text-white w-5 h-5 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-md"><i data-lucide="x"></i></button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </section>
 
-                        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+                        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 font-prompt">
                             <div className="xl:col-span-8 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
                                 <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                                    <div className="font-prompt font-black text-slate-800 uppercase text-xs tracking-widest flex items-center gap-2"><i data-lucide="user" className="text-indigo-600"></i> Client Profile</div>
-                                    <input type="text" placeholder="ชื่อลูกค้า..." className="bg-white border border-slate-200 rounded-2xl px-6 py-3 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none w-full max-w-sm font-medium" value={name} onChange={e => setName(e.target.value)} />
+                                    <div className="font-black text-slate-800 uppercase text-xs tracking-widest flex items-center gap-2 uppercase font-bold"><Icon name="user" size={16} className="text-indigo-600" /> Patient Info</div>
+                                    <input type="text" placeholder="ชื่อลูกค้าสำหรับระบุในใบแผนงาน..." className="bg-white border border-slate-200 rounded-2xl px-6 py-3 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none w-full max-w-sm font-medium font-prompt" value={name} onChange={e => setName(e.target.value)} />
                                 </div>
                                 <div className="overflow-x-auto custom-scrollbar font-prompt">
                                     <table className="w-full text-left border-collapse">
-                                        <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/20 border-b border-slate-50">
+                                        <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/20 border-b border-slate-50 font-bold">
                                             <tr>
                                                 <th className="px-8 py-5 w-[25%]">รายการ</th>
                                                 <th className="px-4 py-5 text-center w-[15%]">โดส ช/ก/ย</th>
-                                                <th className="px-4 py-5 text-center w-[12%]">จำนวนที่ใช้</th>
+                                                <th className="px-4 py-5 text-center w-[12%] font-bold">จำนวนขวด</th>
                                                 <th className="px-4 py-5 text-center w-[10%]">ลด 15%</th>
                                                 <th className="px-6 py-5 w-[23%]">หมายเหตุ</th>
                                                 <th className="px-6 py-5 text-right">ยอดจ่าย</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-50 text-sm font-main">
+                                        <tbody className="divide-y divide-slate-50 text-sm font-main font-bold text-slate-700">
                                             {itemsWithLogic.map(i => {
                                                 const discLimit = i.name === 'BodyKey' ? 3 : 1;
                                                 const final = i.qty > 0 ? (i.disc ? (i.price * i.qty) - (i.price * Math.min(i.qty, discLimit) * 0.15) : i.price * i.qty) : 0;
                                                 return (
                                                     <tr key={i.id} className={`transition-all ${i.qty > 0 ? 'bg-indigo-50/15' : 'hover:bg-slate-50/30'}`}>
-                                                        <td className="px-8 py-5 font-bold leading-tight">{i.name}<br/><span className="text-[9px] text-slate-300 font-prompt uppercase">{i.category}</span></td>
-                                                        <td className="px-4 py-5">
-                                                            <div className="flex justify-center gap-1">
-                                                                {['dM','dN','dE'].map(f => <input key={f} type="text" placeholder="-" className="w-8 h-8 text-center text-xs font-bold border border-slate-100 rounded-lg bg-white focus:border-indigo-300 outline-none" value={i[f]} onChange={e => updateItem(i.id, f, e.target.value)} />)}
+                                                        <td className="px-8 py-5">
+                                                            <div className="font-bold text-slate-900 font-prompt leading-tight">{i.name}</div>
+                                                            <div className="text-[9px] font-bold text-slate-300 font-prompt uppercase tracking-widest">{i.category}</div>
+                                                        </td>
+                                                        <td className="px-4 py-5 font-prompt">
+                                                            <div className="flex justify-center gap-1 font-bold">
+                                                                {['dM','dN','dE'].map(f => <input key={f} type="text" placeholder="-" className="w-8 h-8 text-center text-[12px] font-bold border border-slate-100 rounded-lg bg-white outline-none focus:border-indigo-300 transition-all font-main" value={i[f]} onChange={e => updateItem(i.id, f, e.target.value)} />)}
                                                             </div>
                                                         </td>
-                                                        <td className="px-4 py-5 text-center">
+                                                        <td className="px-4 py-5 text-center font-prompt">
                                                             <div className="flex items-center justify-center gap-2">
-                                                                <button onClick={()=>updateItem(i.id, 'qty', Math.max(0, i.qty-1))} className="w-6 h-6 rounded-lg bg-white border border-slate-100 text-slate-300 hover:text-rose-500 shadow-sm flex items-center justify-center"><i data-lucide="minus" className="w-3 h-3"></i></button>
-                                                                <span className={`w-4 font-bold ${i.isManualQty ? 'text-amber-500' : 'text-indigo-600'}`}>{i.qty}</span>
-                                                                <button onClick={()=>updateItem(i.id, 'qty', i.qty+1)} className="w-6 h-6 rounded-lg bg-white border border-slate-100 text-slate-300 hover:text-emerald-500 shadow-sm flex items-center justify-center"><i data-lucide="plus" className="w-3 h-3"></i></button>
+                                                                <button onClick={()=>updateItem(i.id, 'qty', Math.max(0, i.qty-1))} className="w-7 h-7 rounded-lg bg-white border border-slate-100 text-slate-300 shadow-sm flex items-center justify-center hover:text-rose-500 hover:border-rose-100 font-bold transition-all"><Icon name="minus" size={12} /></button>
+                                                                <span className={`w-4 font-bold ${i.isManualQty ? 'text-amber-600' : 'text-indigo-600'}`}>{i.qty}</span>
+                                                                <button onClick={()=>updateItem(i.id, 'qty', i.qty+1)} className="w-7 h-7 rounded-lg bg-white border border-slate-100 text-slate-300 shadow-sm flex items-center justify-center hover:text-emerald-500 hover:border-emerald-100 font-bold transition-all"><Icon name="plus" size={12} /></button>
                                                             </div>
-                                                            {i.qty > 0 && !i.isManualQty && <p className="text-[8px] font-black text-indigo-300 uppercase mt-1 italic">Auto</p>}
+                                                            {i.qty > 0 && !i.isManualQty && <p className="text-[8px] font-black text-indigo-300 uppercase mt-1 leading-none tracking-tighter font-prompt italic">Auto-Calc</p>}
                                                         </td>
-                                                        <td className="px-4 py-5 text-center">
-                                                            <input type="checkbox" className="w-5 h-5 accent-indigo-600 cursor-pointer rounded" checked={i.disc} onChange={e => updateItem(i.id, 'disc', e.target.checked)} disabled={!i.canDiscount} />
+                                                        <td className="px-4 py-5 text-center font-prompt">
+                                                            <input type="checkbox" className="w-5 h-5 accent-indigo-600 cursor-pointer rounded transition-transform active:scale-110" checked={i.disc} onChange={e => updateItem(i.id, 'disc', e.target.checked)} disabled={!i.canDiscount} />
                                                         </td>
-                                                        <td className="px-4 py-5"><input type="text" placeholder="..." className="w-full bg-slate-50 border-none rounded-lg px-2 py-1.5 text-xs outline-none italic font-medium text-slate-500" value={i.rmk} onChange={e => updateItem(i.id, 'rmk', e.target.value)} /></td>
+                                                        <td className="px-4 py-5 font-main font-medium italic text-slate-400"><input type="text" placeholder="..." className="w-full bg-slate-50 border-none rounded-lg px-2 py-1.5 text-xs outline-none font-bold" value={i.rmk} onChange={e => updateItem(i.id, 'rmk', e.target.value)} /></td>
                                                         <td className="px-6 py-5 text-right font-bold text-slate-700 font-prompt">฿{final.toLocaleString()}</td>
                                                     </tr>
                                                 );
@@ -414,33 +400,32 @@
                                 </div>
                             </div>
 
-                            {/* Totals Section */}
                             <div className="xl:col-span-4 space-y-6">
                                 <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 font-prompt">
-                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2"><i data-lucide="receipt"></i> Financials</h3>
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between text-sm font-semibold text-slate-500 px-1"><span>ราคาปลีกรวม</span><span>฿{totals.rawTotal.toLocaleString()}</span></div>
+                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2 font-prompt uppercase font-bold"><Icon name="receipt" size={16} /> Course Financials</h3>
+                                    <div className="space-y-4 font-bold font-prompt">
+                                        <div className="flex justify-between text-sm font-semibold text-slate-500 px-1 font-prompt uppercase font-bold tracking-widest"><span>ราคาปลีกรวม</span><span>฿{totals.rawTotal.toLocaleString()}</span></div>
                                         {totals.itemDisc > 0 && <div className="flex justify-between text-sm font-bold text-emerald-600 bg-emerald-50 p-5 rounded-2xl italic border border-emerald-100 font-main"><span>ส่วนลดสิทธิ์ 15%</span><span>- ฿{totals.itemDisc.toLocaleString()}</span></div>}
                                         <div className="py-6 border-y border-slate-50 space-y-4">
                                             {[ {id:'reg', l:'ค่าสมัครสมาชิก', v:900, t:'+'}, {id:'estart', l:'ส่วนลด e-Starter', v:300, t:'-'}, {id:'ajoy', l:'ส่วนลด A-Joy', v:500, t:'-'} ].map(f => (
-                                                <div key={f.id} className="flex justify-between items-center group cursor-pointer" onClick={() => setFees(p => ({...p, [f.id]: !p[f.id]}))}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${fees[f.id] ? 'bg-slate-900 border-slate-900' : 'border-slate-200'}`}>{fees[f.id] && <i data-lucide="check" className="w-3.5 h-3.5 text-white"></i>}</div>
-                                                        <span className="text-sm font-semibold text-slate-600">{f.l}</span>
+                                                <div key={f.id} className="flex justify-between items-center group cursor-pointer font-bold font-prompt font-bold" onClick={() => setFees(p => ({...p, [f.id]: !p[f.id]}))}>
+                                                    <div className="flex items-center gap-3 font-prompt">
+                                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${fees[f.id] ? 'bg-slate-900 border-slate-900 shadow-md' : 'border-slate-200'}`}>{fees[f.id] && <Icon name="check" size={12} className="text-white" />}</div>
+                                                        <span className="text-sm font-semibold text-slate-600 group-hover:text-slate-900 transition-colors uppercase font-bold">{f.l}</span>
                                                     </div>
                                                     <span className={`text-sm font-bold ${f.t === '-' ? 'text-rose-500' : 'text-slate-800'}`}>{f.t} ฿{f.v}</span>
                                                 </div>
                                             ))}
                                         </div>
                                         <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner">
-                                            <div className="flex justify-between items-end">
-                                                <div><p className="text-[10px] font-bold text-slate-400 uppercase mb-1">PV สะสม</p><p className="text-3xl font-black text-indigo-600 leading-none">{totals.pv.toLocaleString(undefined, {maximumFractionDigits:0})} <span className="text-xs">PV</span></p></div>
-                                                <div className="text-right"><p className="text-[10px] font-bold text-slate-400 uppercase mb-1">เงินคืน ({totals.rate}%)</p><p className="text-xl font-bold text-emerald-600 leading-none">฿{totals.cb.toLocaleString(undefined, {maximumFractionDigits:0})}</p></div>
+                                            <div className="flex justify-between items-end font-prompt uppercase">
+                                                <div><p className="text-[10px] font-bold text-slate-400 uppercase mb-1 font-bold">PV Earned</p><p className="text-3xl font-black text-indigo-600 leading-none italic font-bold">{totals.pv.toLocaleString(undefined, {maximumFractionDigits:0})} <span className="text-xs">PV</span></p></div>
+                                                <div className="text-right font-prompt"><p className="text-[10px] font-bold text-slate-400 uppercase mb-1 font-bold">Return ({totals.rate}%)</p><p className="text-xl font-bold text-emerald-600 leading-none font-bold">฿{totals.cb.toLocaleString(undefined, {maximumFractionDigits:0})}</p></div>
                                             </div>
                                         </div>
-                                        <div className="bg-slate-900 text-white p-9 rounded-[3rem] text-center shadow-2xl relative overflow-hidden group transition-all hover:scale-[1.02]">
-                                            <p className="text-[10px] font-bold uppercase opacity-40 mb-2 tracking-[0.3em]">ยอดจ่ายสุทธิ</p>
-                                            <div className="text-6xl font-black tracking-tighter italic">฿{Math.max(0, totals.net).toLocaleString()}</div>
+                                        <div className="bg-slate-900 text-white p-9 rounded-[3rem] text-center shadow-2xl relative overflow-hidden group transition-all hover:scale-[1.02] font-prompt uppercase">
+                                            <p className="text-[10px] font-bold uppercase opacity-40 mb-2 tracking-[0.3em] font-bold">ยอดจ่ายสุทธิ</p>
+                                            <div className="text-6xl font-black tracking-tighter italic font-prompt">฿{Math.max(0, totals.net).toLocaleString()}</div>
                                         </div>
                                     </div>
                                 </section>
@@ -448,95 +433,98 @@
                         </div>
                     </main>
 
-                    {/* Save Modal */}
-                    {saveModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6 no-print font-prompt">
-                            <div className="bg-white rounded-[3rem] p-10 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
-                                <h3 className="text-2xl font-black text-slate-900 mb-2 flex items-center gap-3"><i data-lucide="cloud" className="text-indigo-600"></i> บันทึก Preset</h3>
-                                <p className="text-slate-400 text-sm mb-8">บันทึกแผนงานนี้เก็บลง Cloud เพื่อเรียกใช้ภายหลัง</p>
-                                <input type="text" placeholder="ระบุชื่อ Preset (เช่น 'คุณสมชาย-สูตร 60 วัน')" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:border-indigo-500 font-medium mb-8" value={newPresetName} onChange={e=>setNewPresetName(e.target.value)} />
-                                <div className="flex gap-4 font-bold">
-                                    <button onClick={()=>setSaveModal(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-colors">ยกเลิก</button>
-                                    <button onClick={handleSavePreset} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl transition-transform active:scale-95">บันทึกข้อมูล</button>
-                                </div>
+                    {/* --- HD REPORT AREA --- */}
+                    <div ref={printableRef} id="printable-area" className="hidden bg-white text-slate-900 font-prompt" style={{ padding: '120px', width: '1800px', boxSizing: 'border-box', overflow: 'hidden' }}>
+                        <div className="flex justify-between items-start border-b-[20px] border-slate-900 pb-16 mb-24 font-prompt">
+                            <div className="space-y-6">
+                                <h1 className="text-[135px] font-black text-slate-900 uppercase tracking-tighter italic leading-none font-prompt">UP Wellness Course</h1>
+                                <p className="text-[60px] font-black text-indigo-600 uppercase tracking-[0.4em] mt-4 ml-3 italic leading-none text-nowrap font-prompt uppercase italic tracking-widest font-bold">ตารางการรับประทานคอร์ส ({duration} วัน)</p>
                             </div>
-                        </div>
-                    )}
-
-                    {/* --- PRINTABLE AREA --- */}
-                    <div id="printable-area" className="hidden bg-white text-slate-900 font-prompt" style={{ padding: '80px', width: '1200px', boxSizing: 'border-box', overflow: 'hidden' }}>
-                        <div className="flex justify-between items-start border-b-[15px] border-slate-900 pb-12 mb-16">
-                            <div className="space-y-4">
-                                <h1 className="text-[90px] font-black text-slate-900 uppercase tracking-tighter italic leading-none">UP Wellness Course</h1>
-                                <p className="text-[40px] font-black text-indigo-600 uppercase tracking-[0.4em] mt-3 ml-2 italic leading-none text-nowrap">ตารางการรับประทานคอร์ส ({duration} วัน)</p>
-                            </div>
-                            <div className="text-right font-prompt flex flex-col items-end pt-2">
-                                <div className="bg-slate-900 text-white px-10 py-4 text-[22px] font-black uppercase tracking-[0.3em] rounded-full mb-10 shadow-lg">Wellness Optimized Plan</div>
-                                <div className="space-y-2">
-                                    <p className="text-xl font-black text-slate-300 uppercase tracking-widest leading-none text-right">Client Name:</p>
-                                    <p className="text-[64px] font-black text-slate-900 border-b-8 border-slate-100 px-6 py-1 min-w-[500px] leading-tight italic uppercase font-main">{name || '...........................................'}</p>
-                                    <p className="text-2xl font-bold text-slate-400 mt-6 opacity-70 italic font-main">Date: {new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric'})}</p>
+                            <div className="text-right font-prompt flex flex-col items-end pt-3 uppercase">
+                                <div className="bg-slate-900 text-white px-14 py-6 text-[32px] font-black uppercase tracking-[0.3em] rounded-full mb-14 shadow-lg font-prompt italic">Metabolic Architect Plan</div>
+                                <div className="space-y-4 font-prompt">
+                                    <p className="text-[32px] font-black text-slate-300 uppercase tracking-widest leading-none text-right font-prompt uppercase font-black">Client Name:</p>
+                                    <p className="text-[100px] font-black text-slate-900 border-b-[12px] border-slate-100 px-10 py-3 min-w-[700px] leading-tight italic uppercase font-main italic uppercase font-main">{name || '...........................................'}</p>
+                                    <p className="text-[34px] font-bold text-slate-400 mt-12 opacity-80 italic font-main tracking-widest uppercase">Date: {new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric'})}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="overflow-hidden mb-24 border-4 border-slate-200 rounded-[4.5rem] shadow-xl bg-white">
+                        <div className="overflow-hidden mb-32 border-[8px] border-slate-200 rounded-[7rem] shadow-2xl bg-white font-prompt font-bold">
                             <table className="w-full text-left border-collapse table-fixed">
-                                <thead className="bg-slate-900 text-white font-black uppercase tracking-[0.1em]">
+                                <thead className="bg-slate-900 text-white font-black uppercase tracking-[0.1em] font-prompt uppercase font-bold">
                                     <tr>
-                                        <th className="px-12 py-12 text-[36px] text-left w-[32%]">รายการสารอาหาร</th>
-                                        <th className="px-4 py-12 text-[36px] text-center w-[12%]">จำนวน</th>
-                                        <th className="px-4 py-12 text-[36px] text-center bg-indigo-700 w-[14%]">เช้า</th>
-                                        <th className="px-4 py-12 text-[36px] text-center bg-orange-600 w-[14%]">กลางวัน</th>
-                                        <th className="px-4 py-12 text-[36px] text-center bg-indigo-900 w-[14%] text-nowrap text-nowrap">เย็น</th>
-                                        <th className="px-10 py-12 text-[36px] text-left w-[24%] text-nowrap">หมายเหตุ</th>
+                                        <th className="px-20 py-18 text-[58px] text-left w-[32%] font-prompt italic uppercase">รายการสารอาหาร</th>
+                                        <th className="px-6 py-18 text-[58px] text-center w-[12%] font-prompt uppercase font-bold">จำนวน</th>
+                                        <th className="px-6 py-18 text-[58px] text-center bg-indigo-700 w-[14%] font-prompt italic uppercase font-bold">เช้า</th>
+                                        <th className="px-6 py-18 text-[58px] text-center bg-orange-600 w-[14%] font-prompt italic uppercase text-nowrap font-bold">กลางวัน</th>
+                                        <th className="px-6 py-18 text-[58px] text-center bg-indigo-900 w-[14%] text-nowrap font-prompt italic uppercase font-bold">เย็น</th>
+                                        <th className="px-16 py-18 text-[58px] text-left w-[24%] font-prompt uppercase tracking-widest font-bold">หมายเหตุ</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {itemsWithLogic.filter(i => i.qty > 0).map((i, idx) => (
                                         <tr key={i.id} className={`text-slate-800 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                                            <td className="px-12 py-10 border-b-2 border-slate-100">
-                                                <div className="text-[38px] font-black leading-tight font-main">{i.name}</div>
-                                                <div className="text-[16px] font-bold text-slate-300 uppercase tracking-widest mt-1">{i.category}</div>
+                                            <td className="px-20 py-16 border-b-[4px] border-slate-100">
+                                                <div className="text-[58px] font-black leading-tight font-prompt italic font-main uppercase">{i.name}</div>
+                                                <div className="text-[26px] font-bold text-slate-300 uppercase tracking-widest mt-2 font-prompt uppercase italic font-prompt font-bold">{i.category}</div>
                                             </td>
-                                            <td className="px-4 py-10 text-center text-slate-400 text-[42px] font-black border-b-2 border-slate-100 font-main">{i.qty}</td>
-                                            <td className="px-4 py-10 text-center text-indigo-700 text-[64px] font-black border-b-2 border-slate-100 bg-indigo-50/20 font-main">{i.dM || '-'}</td>
-                                            <td className="px-4 py-10 text-center text-orange-600 text-[64px] font-black border-b-2 border-slate-100 bg-orange-50/30 font-main">{i.dN || '-'}</td>
-                                            <td className="px-4 py-10 text-center text-indigo-900 text-[64px] font-black border-b-2 border-slate-100 bg-indigo-100/30 font-main">{i.dE || '-'}</td>
-                                            <td className="px-10 py-10 border-b-2 border-slate-100 text-[26px] text-slate-500 font-bold italic leading-snug font-main">{i.rmk || '-'}</td>
+                                            <td className="px-6 py-16 text-center text-slate-400 text-[64px] font-black border-b-[4px] border-slate-100 font-prompt font-bold">{i.qty}</td>
+                                            <td className="px-6 py-16 text-center text-indigo-700 text-[96px] font-black border-b-[4px] border-slate-100 bg-indigo-50/20 font-prompt italic font-bold">{i.dM || '-'}</td>
+                                            <td className="px-6 py-16 text-center text-orange-600 text-[96px] font-black border-b-[4px] border-slate-100 bg-orange-50/30 font-prompt italic font-bold">{i.dN || '-'}</td>
+                                            <td className="px-6 py-16 text-center text-indigo-900 text-[96px] font-black border-b-[4px] border-slate-100 bg-indigo-100/30 font-prompt italic font-bold">{i.dE || '-'}</td>
+                                            <td className="px-16 py-16 border-b-[4px] border-slate-100 text-[38px] text-slate-500 font-bold italic leading-snug font-main font-bold">{i.rmk || '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
 
-                        <div className="bg-slate-50 p-20 rounded-[6rem] border-8 border-slate-100 relative mb-12 shadow-inner mt-auto font-prompt">
-                            <h4 className="text-[44px] font-black text-indigo-700 uppercase tracking-[0.3em] mb-14 flex items-center gap-10">
-                                <div className="w-6 h-18 bg-indigo-700 rounded-full shadow-md"></div>
-                                คำแนะนำในการดูแลสุขภาพ (GUIDELINES)
+                        <div className="bg-slate-50 p-24 rounded-[9rem] border-[12px] border-slate-100 relative mb-24 shadow-inner mt-auto font-prompt uppercase font-bold">
+                            <h4 className="text-[72px] font-black text-indigo-700 uppercase tracking-[0.3em] mb-20 flex items-center gap-16 font-prompt italic font-bold">
+                                <div className="w-10 h-28 bg-indigo-700 rounded-full shadow-md font-bold"></div>
+                                แนวทางปฏิบัติเพื่อสุขภาพ (METABOLIC GUIDELINES)
                             </h4>
-                            <div className="grid grid-cols-2 gap-x-20 gap-y-16">
+                            <div className="grid grid-cols-2 gap-x-32 gap-y-24 font-main font-black">
                                 {[ 
                                     { icon: 'droplets', t: "ดื่มน้ำวันละ 2-3 ลิตร", st: "(จิบระหว่างวันสม่ำเสมอ)" },
-                                    { icon: 'footprints', t: "เดินวันละ 10,000 ก้าว", st: "(เพื่อกระตุ้นการเผาผลาญ)" },
+                                    { icon: 'steps', t: "เดินวันละ 10,000 ก้าว", st: "(เพื่อกระตุ้นการเผาผลาญ)" },
                                     { icon: 'moon', t: "พักผ่อน 7-8 ชั่วโมง", st: "(เพื่อให้ร่างกายฟื้นฟูระบบ)" },
                                     { icon: 'clock', t: "สัดส่วนเวลา 2-4-6", st: "(ตามตารางเวลาที่แนะนำ)" }
                                 ].map((item, idx) => (
-                                    <div key={idx} className="flex gap-10 items-start p-10 bg-white rounded-[4rem] shadow-sm border border-slate-100 font-main">
-                                        <div className="p-7 bg-indigo-50 rounded-4xl shrink-0 text-indigo-500 font-bold">
-                                            <i data-lucide={item.icon} style={{width: 60, height: 60}}></i>
+                                    <div key={idx} className="flex gap-16 items-start p-18 bg-white rounded-[6rem] shadow-sm border border-slate-100 font-main">
+                                        <div className="p-12 bg-indigo-50 rounded-[4rem] shrink-0 text-indigo-500 font-bold shadow-md">
+                                            <Icon name={item.icon} size={110} />
                                         </div>
-                                        <p className="text-[36px] font-bold text-slate-700 leading-snug">{item.t} <br/><span className="text-2xl opacity-60 font-medium">{item.st}</span></p>
+                                        <div className="space-y-6 pt-4 font-main font-bold">
+                                            <p className="text-[64px] font-black text-slate-800 leading-none italic font-prompt uppercase font-bold">{item.t}</p>
+                                            <p className="text-[44px] opacity-60 font-medium font-prompt uppercase italic leading-none font-bold">{item.st}</p>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="pt-16 border-t-4 border-slate-100 opacity-30 flex justify-between items-center uppercase">
-                                <p className="text-[26px] font-black text-slate-900 uppercase tracking-[0.8em] italic leading-none italic font-prompt">UP Labs Wellness</p>
-                                <p className="text-[20px] font-bold text-slate-500 tracking-widest leading-none font-prompt">Cloud Designer System System</p>
+                        <div className="pt-28 border-t-[8px] border-slate-100 opacity-40 flex justify-between items-center uppercase font-prompt italic tracking-[0.2em] font-black text-slate-300">
+                                <p className="text-[48px] font-black text-slate-900 uppercase tracking-[0.8em] italic font-prompt font-bold">UP Labs Wellness</p>
+                                <p className="text-[38px] font-bold text-slate-500 tracking-widest leading-none uppercase font-bold">Precision Health Architecture</p>
                         </div>
                     </div>
+
+                    {/* Modal for Save Preset */}
+                    {saveModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6 no-print font-prompt">
+                            <div className="bg-white rounded-[3rem] p-10 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
+                                <h3 className="text-2xl font-black text-slate-900 mb-2 flex items-center gap-3 italic uppercase"><Icon name="cloud" size={24} className="text-indigo-600" /> บันทึก Preset</h3>
+                                <p className="text-slate-400 text-sm mb-8">บันทึกแผนงานนี้เก็บลง Cloud เพื่อเรียกใช้ภายหลัง</p>
+                                <input type="text" placeholder="ระบุชื่อ Preset..." className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:border-indigo-500 font-medium mb-8 font-main text-slate-600 font-bold" value={newPresetName} onChange={e=>setNewPresetName(e.target.value)} />
+                                <div className="flex gap-4 font-bold uppercase font-bold">
+                                    <button onClick={()=>setSaveModal(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-colors">ยกเลิก</button>
+                                    <button onClick={handleSavePreset} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl transition-transform active:scale-95">บันทึก</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
