@@ -59,8 +59,8 @@
         import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 
         // --- Configuration ---
-        // TODO: ใส่ Gemini API Key ของคุณที่นี่
-        const apiKey = "AIzaSyBgJ1CBxIllIuB_9Rbcra8Dghnn6N5836E"; 
+        // TODO: สำคัญมาก! ใส่ Gemini API Key ของคุณในเครื่องหมายคำพูดด้านล่างนี้
+        const apiKey = "AIzaSyDwUmmpkYxM1DpAF5iFNVOu_l_4tsdVmX8"; 
 
         // TODO: ใส่ Firebase Config ของคุณที่นี่ (เอามาจาก Firebase Console > Project Settings)
         const firebaseConfig = {
@@ -172,8 +172,9 @@
 
             // --- AI Analysis Logic ---
             const analyzeImage = async (file) => {
+                // Check Global API Key
                 if (!apiKey) {
-                    setStatusMsg("กรุณาใส่ API Key ในโค้ดก่อนใช้งาน");
+                    setStatusMsg("กรุณาใส่ API Key ในโค้ดก่อนใช้งาน (บรรทัดที่ 76)");
                     return;
                 }
                 setIsScanning(true);
@@ -211,7 +212,7 @@
                     });
                     const result = await response.json();
                     
-                    if (!result.candidates) throw new Error("API Error");
+                    if (!result.candidates) throw new Error("API Error: ตรวจสอบ API Key หรือโควต้า");
 
                     const data = JSON.parse(result.candidates[0].content.parts[0].text);
                     
@@ -237,7 +238,7 @@
                     setScanResult(normalizedData);
                     setStatusMsg(null);
                 } catch (error) {
-                    setStatusMsg("เกิดข้อผิดพลาดในการวิเคราะห์ โปรดลองใหม่");
+                    setStatusMsg("เกิดข้อผิดพลาด: " + error.message);
                     console.error(error);
                 } finally {
                     setIsScanning(false);
@@ -336,146 +337,176 @@
                 img.crossOrigin = "anonymous";
                 img.src = scanResult.image;
 
-                img.onload = () => {
-                    const width = 1200; 
-                    const scale = width / img.width;
-                    const imgHeight = img.height * scale;
-                    
-                    const padding = 60;
-                    const headerHeight = 160; 
-                    const contentStart = headerHeight + imgHeight + padding;
-                    const rowHeight = 80;
-                    const componentsCount = scanResult.components.length;
-                    const componentsSectionHeight = (componentsCount * rowHeight) + 150; 
-                    const totalHeight = contentStart + 400 + componentsSectionHeight + 150;
+                // Load font before drawing
+                document.fonts.load('bold 34px "Noto Sans Thai"').then(() => {
+                    img.onload = () => {
+                        const width = 1200; 
+                        const scale = width / img.width;
+                        const imgHeight = img.height * scale;
+                        
+                        const padding = 60;
+                        const headerHeight = 160; 
+                        const contentStart = headerHeight + imgHeight + padding;
+                        
+                        // Layout Config for breakdown table
+                        const rowHeight = 140; // Increased height for 2 lines + padding
+                        const componentsCount = scanResult.components.length;
+                        const componentsSectionHeight = (componentsCount * rowHeight) + 180; // Extra for table header
+                        const totalHeight = contentStart + 450 + componentsSectionHeight + 150;
 
-                    canvas.width = width;
-                    canvas.height = totalHeight;
+                        canvas.width = width;
+                        canvas.height = totalHeight;
 
-                    // 1. Background
-                    const grd = ctx.createLinearGradient(0, 0, 0, totalHeight);
-                    grd.addColorStop(0, '#f8fafc'); 
-                    grd.addColorStop(1, '#e2e8f0'); 
-                    ctx.fillStyle = grd;
-                    ctx.fillRect(0, 0, width, totalHeight);
+                        // 1. Background
+                        const grd = ctx.createLinearGradient(0, 0, 0, totalHeight);
+                        grd.addColorStop(0, '#f8fafc'); 
+                        grd.addColorStop(1, '#e2e8f0'); 
+                        ctx.fillStyle = grd;
+                        ctx.fillRect(0, 0, width, totalHeight);
 
-                    // 2. Header
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, width, headerHeight);
-                    
-                    ctx.fillStyle = '#0d9488';
-                    ctx.font = 'bold 50px sans-serif';
-                    ctx.fillText("UP NutriScan", padding, 100);
-                    
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.font = '36px sans-serif';
-                    ctx.textAlign = 'right';
-                    ctx.fillText("AI Food Analysis", width - padding, 100);
-                    ctx.textAlign = 'left';
-                    
-                    // 3. Image
-                    ctx.drawImage(img, 0, headerHeight, width, imgHeight);
-
-                    // 4. Food Title
-                    let currentY = contentStart;
-                    ctx.fillStyle = '#1e293b'; 
-                    ctx.font = 'bold 80px sans-serif';
-                    ctx.fillText(scanResult.foodName, padding, currentY);
-                    
-                    // 5. Macro Summary Cards
-                    currentY += 100;
-                    const cardWidth = (width - (padding * 2) - 60) / 4; 
-                    
-                    const drawStatCard = (label, val, unit, color, x) => {
-                        ctx.fillStyle = 'rgba(0,0,0,0.05)';
-                        ctx.fillRect(x+10, currentY+10, cardWidth, 200);
-
+                        // 2. Header
                         ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(x, currentY, cardWidth, 200);
+                        ctx.fillRect(0, 0, width, headerHeight);
                         
-                        ctx.fillStyle = color;
-                        ctx.fillRect(x, currentY, cardWidth, 12);
-
-                        ctx.fillStyle = '#64748b';
-                        ctx.font = 'bold 28px sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(label, x + cardWidth/2, currentY + 60);
-
-                        ctx.fillStyle = '#0f172a';
-                        ctx.font = 'bold 64px sans-serif';
-                        ctx.fillText(val, x + cardWidth/2, currentY + 130);
+                        ctx.fillStyle = '#0d9488';
+                        ctx.font = 'bold 50px "Noto Sans Thai", sans-serif';
+                        ctx.fillText("UP NutriScan", padding, 100);
                         
-                        ctx.font = '24px sans-serif';
                         ctx.fillStyle = '#94a3b8';
-                        ctx.fillText(unit, x + cardWidth/2, currentY + 170);
-                        
-                        ctx.textAlign = 'left';
-                    };
-
-                    drawStatCard("CALORIES", scanResult.calories, "kcal", '#0d9488', padding);
-                    drawStatCard("PROTEIN", scanResult.protein_g, "g", '#f43f5e', padding + cardWidth + 20); 
-                    drawStatCard("CARBS", scanResult.carbs_g, "g", '#f97316', padding + (cardWidth + 20)*2); 
-                    drawStatCard("FAT", scanResult.fat_g, "g", '#f59e0b', padding + (cardWidth + 20)*3); 
-
-                    // 6. Components Table
-                    currentY += 300;
-                    ctx.fillStyle = '#334155';
-                    ctx.font = 'bold 44px sans-serif';
-                    ctx.fillText("Detailed Breakdown (แจกแจงส่วนประกอบ)", padding, currentY);
-                    
-                    currentY += 60;
-                    ctx.fillStyle = '#cbd5e1';
-                    ctx.fillRect(padding, currentY, width - padding*2, 70);
-                    ctx.fillStyle = '#475569';
-                    ctx.font = 'bold 30px sans-serif';
-                    ctx.fillText("ITEM / วัตถุดิบ", padding + 30, currentY + 45);
-                    ctx.textAlign = 'right';
-                    ctx.fillText("WEIGHT", width - padding - 350, currentY + 45);
-                    ctx.fillText("CALORIES", width - padding - 30, currentY + 45);
-                    ctx.textAlign = 'left';
-
-                    currentY += 70;
-                    
-                    scanResult.components.forEach((comp, i) => {
-                        ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#f1f5f9';
-                        ctx.fillRect(padding, currentY, width - padding*2, rowHeight);
-
-                        ctx.fillStyle = '#1e293b';
-                        ctx.font = '34px sans-serif';
-                        ctx.fillText(comp.name, padding + 30, currentY + 50);
-                        
+                        ctx.font = '36px "Noto Sans Thai", sans-serif';
                         ctx.textAlign = 'right';
-                        ctx.fillStyle = '#64748b';
-                        ctx.fillText(`${comp.weight_g} g`, width - padding - 350, currentY + 50);
-                        
-                        ctx.fillStyle = '#0f172a';
-                        ctx.font = 'bold 34px sans-serif';
-                        ctx.fillText(`${comp.calories}`, width - padding - 30, currentY + 50);
-
+                        ctx.fillText("AI Food Analysis", width - padding, 100);
                         ctx.textAlign = 'left';
-                        currentY += rowHeight;
-                    });
+                        
+                        // 3. Image
+                        ctx.drawImage(img, 0, headerHeight, width, imgHeight);
 
-                    // 7. Footer
-                    const footerY = totalHeight - 120;
-                    ctx.fillStyle = '#cbd5e1';
-                    ctx.fillRect(padding + 100, footerY, width - (padding*2 + 200), 2); 
-                    
-                    ctx.fillStyle = '#64748b';
-                    ctx.font = '32px sans-serif';
-                    ctx.textAlign = 'center';
-                    const dateStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit'});
-                    ctx.fillText(`Scanned on ${dateStr}`, width/2, footerY + 60);
-                    
-                    ctx.fillStyle = '#0d9488';
-                    ctx.font = 'bold 32px sans-serif';
-                    ctx.fillText("Generated by UP NutriScan App", width/2, footerY + 110);
+                        // 4. Food Title
+                        let currentY = contentStart;
+                        ctx.fillStyle = '#1e293b'; 
+                        ctx.font = 'bold 80px "Noto Sans Thai", sans-serif';
+                        ctx.fillText(scanResult.foodName, padding, currentY);
+                        
+                        // 5. Macro Summary Cards
+                        currentY += 120;
+                        const cardWidth = (width - (padding * 2) - 60) / 4; 
+                        
+                        const drawStatCard = (label, val, unit, color, x) => {
+                            // Shadow
+                            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+                            ctx.fillRect(x+10, currentY+10, cardWidth, 220);
 
-                    const link = document.createElement('a');
-                    link.download = `UP-NutriScan-${Date.now()}.jpg`;
-                    link.href = canvas.toDataURL('image/jpeg', 0.95);
-                    link.click();
-                };
+                            // Box
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(x, currentY, cardWidth, 220);
+                            
+                            // Top Bar
+                            ctx.fillStyle = color;
+                            ctx.fillRect(x, currentY, cardWidth, 12);
+
+                            // Label
+                            ctx.fillStyle = '#64748b';
+                            ctx.font = 'bold 28px "Noto Sans Thai", sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(label, x + cardWidth/2, currentY + 60);
+
+                            // Value
+                            ctx.fillStyle = '#0f172a';
+                            ctx.font = 'bold 64px "Noto Sans Thai", sans-serif';
+                            ctx.fillText(val, x + cardWidth/2, currentY + 140);
+                            
+                            // Unit
+                            ctx.font = '24px "Noto Sans Thai", sans-serif';
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.fillText(unit, x + cardWidth/2, currentY + 180);
+                            
+                            ctx.textAlign = 'left';
+                        };
+
+                        drawStatCard("CALORIES", scanResult.calories, "kcal", '#0d9488', padding);
+                        drawStatCard("PROTEIN", scanResult.protein_g, "g", '#f43f5e', padding + cardWidth + 20); 
+                        drawStatCard("CARBS", scanResult.carbs_g, "g", '#f97316', padding + (cardWidth + 20)*2); 
+                        drawStatCard("FAT", scanResult.fat_g, "g", '#f59e0b', padding + (cardWidth + 20)*3); 
+
+                        // 6. Components Table
+                        currentY += 320;
+                        ctx.fillStyle = '#334155';
+                        ctx.font = 'bold 44px "Noto Sans Thai", sans-serif';
+                        ctx.fillText("Detailed Breakdown (แยกองค์ประกอบ)", padding, currentY);
+                        
+                        currentY += 60;
+                        // Table Header
+                        ctx.fillStyle = '#cbd5e1';
+                        ctx.fillRect(padding, currentY, width - padding*2, 80);
+                        ctx.fillStyle = '#475569';
+                        ctx.font = 'bold 30px "Noto Sans Thai", sans-serif';
+                        ctx.fillText("ITEM / รายการ", padding + 30, currentY + 50);
+                        ctx.textAlign = 'right';
+                        ctx.fillText("WEIGHT / น้ำหนัก", width - padding - 30, currentY + 50);
+                        ctx.textAlign = 'left';
+
+                        currentY += 80;
+                        
+                        scanResult.components.forEach((comp, i) => {
+                            // Row Background
+                            ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#f1f5f9';
+                            ctx.fillRect(padding, currentY, width - padding*2, rowHeight);
+
+                            // LINE 1: Name & Weight
+                            ctx.fillStyle = '#1e293b';
+                            ctx.font = 'bold 36px "Noto Sans Thai", sans-serif';
+                            ctx.fillText(comp.name, padding + 30, currentY + 55);
+                            
+                            ctx.textAlign = 'right';
+                            ctx.fillStyle = '#64748b';
+                            ctx.font = '36px "Noto Sans Thai", sans-serif';
+                            ctx.fillText(`${comp.weight_g} g`, width - padding - 30, currentY + 55);
+                            ctx.textAlign = 'left';
+
+                            // LINE 2: Detailed Macros (C P F)
+                            ctx.font = '28px "Noto Sans Thai", sans-serif';
+                            
+                            // Helper to draw pill text
+                            const drawMacroText = (text, x, color) => {
+                                ctx.fillStyle = color;
+                                ctx.fillText(text, x, currentY + 105);
+                            };
+
+                            let startX = padding + 30;
+                            drawMacroText(`🔥 ${comp.calories} kcal`, startX, '#64748b'); // Cal
+                            startX += 220;
+                            drawMacroText(`🥩 P: ${comp.protein_g}g`, startX, '#be123c'); // Rose 700
+                            startX += 180;
+                            drawMacroText(`🍚 C: ${comp.carbs_g}g`, startX, '#c2410c'); // Orange 700
+                            startX += 180;
+                            drawMacroText(`🥑 F: ${comp.fat_g}g`, startX, '#b45309'); // Amber 700
+
+                            currentY += rowHeight;
+                        });
+
+                        // 7. Footer
+                        const footerY = totalHeight - 120;
+                        ctx.fillStyle = '#cbd5e1';
+                        ctx.fillRect(padding + 100, footerY, width - (padding*2 + 200), 2); 
+                        
+                        ctx.fillStyle = '#64748b';
+                        ctx.font = '32px "Noto Sans Thai", sans-serif';
+                        ctx.textAlign = 'center';
+                        const dateStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                        ctx.fillText(`Scanned on ${dateStr}`, width/2, footerY + 60);
+                        
+                        ctx.fillStyle = '#0d9488';
+                        ctx.font = 'bold 32px "Noto Sans Thai", sans-serif';
+                        ctx.fillText("Generated by UP NutriScan App", width/2, footerY + 110);
+
+                        const link = document.createElement('a');
+                        link.download = `UP-NutriScan-${Date.now()}.jpg`;
+                        link.href = canvas.toDataURL('image/jpeg', 0.95);
+                        link.click();
+                    };
+                    // Manually trigger image load if already cached
+                    if (img.complete && img.naturalHeight !== 0) img.onload();
+                });
             };
 
             // --- Smart Advice ---
@@ -577,7 +608,7 @@
                                     <Camera size={48} className="text-teal-600" />
                                 </div>
                                 <h3 className="text-lg font-bold text-slate-700">Scan Meal</h3>
-                                <p className="text-xs text-slate-400 px-8">ถ่ายภาพ หรือ เลือกรูปจากอัลบั้ม</p>
+                                <p className="text-xs text-slate-400 px-8">แตะเพื่อเลือกรูปภาพ หรือถ่ายภาพใหม่</p>
                                 </>
                             )}
                             </div>
