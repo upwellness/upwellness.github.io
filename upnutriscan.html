@@ -52,7 +52,7 @@
             Camera, Trash2, Target, Coffee, Sun, Moon, Zap, Info, 
             UtensilsCrossed, Sparkles, Search, PlusCircle, BookOpen, 
             CheckCircle2, Edit2, Save, Download, X, Settings, Flame, 
-            ArrowRight
+            ArrowRight, Image as ImageIcon
         } from 'lucide-react';
         import { initializeApp } from 'firebase/app';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
@@ -60,7 +60,7 @@
 
         // --- Configuration ---
         // TODO: ใส่ Gemini API Key ของคุณที่นี่
-        const apiKey = ""; 
+        const apiKey = "AIzaSyBgJ1CBxIllIuB_9Rbcra8Dghnn6N5836E"; 
 
         // TODO: ใส่ Firebase Config ของคุณที่นี่ (เอามาจาก Firebase Console > Project Settings)
         const firebaseConfig = {
@@ -577,7 +577,7 @@
                                     <Camera size={48} className="text-teal-600" />
                                 </div>
                                 <h3 className="text-lg font-bold text-slate-700">Scan Meal</h3>
-                                <p className="text-xs text-slate-400 px-8">วิเคราะห์และปรับปริมาณสารอาหารได้เอง</p>
+                                <p className="text-xs text-slate-400 px-8">ถ่ายภาพ หรือ เลือกรูปจากอัลบั้ม</p>
                                 </>
                             )}
                             </div>
@@ -585,7 +585,7 @@
                             type="file" 
                             ref={fileInputRef}
                             accept="image/*" 
-                            capture="environment"
+                            /* capture="environment" removed to allow gallery selection */
                             className="hidden" 
                             onChange={(e) => e.target.files[0] && analyzeImage(e.target.files[0])}
                             />
