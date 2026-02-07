@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UP BCA Tracker v5.4</title>
+    <title>UP BCA Tracker v5.5</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue 3 -->
@@ -44,7 +44,7 @@
         .report-mode .no-print-capture { display: none !important; }
         .report-mode .overflow-x-auto { overflow-x: visible !important; }
         .report-mode .overflow-y-auto { overflow-y: visible !important; height: auto !important; }
-        .report-mode .bg-gray-50 { background-color: white !important; } /* Cleaner background */
+        .report-mode .bg-gray-50 { background-color: white !important; } 
     </style>
 </head>
 <body class="text-gray-700">
@@ -54,7 +54,7 @@
         <nav class="bg-teal-600 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center no-print-capture">
             <h1 class="font-bold text-lg flex items-center gap-2">
                 <i class="fa-solid fa-heart-pulse"></i>
-                <span class="hidden sm:inline">UP BCA Tracker v5.4</span>
+                <span class="hidden sm:inline">UP BCA Tracker v5.5</span>
             </h1>
             <div v-if="session" class="flex gap-2 items-center">
                 <!-- Dashboard Buttons -->
@@ -189,7 +189,6 @@
 
         <!-- 3. Customer Detail View -->
         <div v-else-if="view === 'customer_detail' && currentCustomer" key="view-customer-detail" class="container mx-auto max-w-2xl p-4">
-            <!-- Capture Area: This wrapper is captured by html2canvas -->
             <div id="capture-area" :class="['p-2 bg-[#f0fdfa] min-h-screen', isGeneratingReport ? 'report-mode' : '']"> 
                 
                 <!-- Header Info -->
@@ -692,7 +691,8 @@
                 const addCustomer = async () => {
                     const d = customerForm.value.dob_day; const m = customerForm.value.dob_month; let y = parseInt(customerForm.value.dob_year);
                     if (!d || !m || !y) return alert("กรุณากรอกวันเดือนปีเกิดให้ครบ");
-                    if (customerForm.value.is_be) y = y - 543;
+                    
+                    if (customerForm.value.is_be) y = y - 543; // Convert BE to AD
                     
                     // Validate Date
                     const testDate = new Date(y, m - 1, d);
@@ -710,7 +710,10 @@
                         birth_date: dob 
                     });
                     if(error) alert("บันทึกไม่สำเร็จ: " + error.message + "\n(หาก Error เกี่ยวกับ birth_date แสดงว่ายังไม่ได้อัปเดต Database)");
-                    else { showAddCustomerModal.value = false; fetchCustomers(); }
+                    else {
+                        showAddCustomerModal.value = false;
+                        fetchCustomers();
+                    }
                 };
                 const selectCustomer = (c) => { 
                     currentCustomer.value = c; 
@@ -740,9 +743,12 @@
                         let dateRowIdx = -1, weightRowIdx = -1, fatRowIdx = -1, visRowIdx = -1, musRowIdx = -1, ageRowIdx = -1, bmrRowIdx = -1;
                         lines.forEach((l, idx) => {
                             const lower = l.toLowerCase();
+                            // Find Date Row: either "Date" or "วันที่" or "รายการ"
                             if (lower.includes('date') || l.includes('วันที่') || l.includes('รายการ') || l.includes('Latest')) {
-                                if(l.includes('รายการ') || l.includes('Latest')) dateRowIdx = idx + 1; else dateRowIdx = idx;
+                                if(l.includes('รายการ') || l.includes('Latest')) dateRowIdx = idx + 1; // Date usually follows header
+                                else dateRowIdx = idx; // This row IS date row
                             }
+                            
                             if(l.includes('น้ำหนัก') || l.includes('Weight')) weightRowIdx = idx;
                             else if(l.includes('Fat-%') || l.includes('ไขมัน') || l.includes('Body Fat') || l.includes('%Fat')) fatRowIdx = idx;
                             else if(l.includes('Visceral') || l.includes('ช่องท้อง') || l.includes('V.Fat')) visRowIdx = idx;
@@ -1022,9 +1028,81 @@
                 const targetLoss = computed(() => 0);
                 const recommendKcal = computed(() => 0);
 
-                const generateScript = () => { /* ... */ };
-                const speak = () => { /* ... */ };
-                const copyScript = () => { /* ... */ };
+                const generateScript = () => {
+                    const weight = newMeasure.value.weight || 0;
+                    const fatPct = newMeasure.value.fat_pct || 0;
+                    const visceral = newMeasure.value.visceral || 0;
+                    const musclePct = newMeasure.value.muscle_pct || 0;
+                    const bodyAge = newMeasure.value.body_age || 0;
+                    const bmr = newMeasure.value.bmr || 0;
+                    const realAge = calculateAgeFromDate(currentCustomer.value);
+                    const ageDiff = bodyAge - realAge;
+                    
+                    let weightStatus = "อยู่ในเกณฑ์";
+                    // Simplified logic for weight status
+                    const h_m = currentCustomer.value.height / 100;
+                    const bmi = weight / (h_m * h_m);
+                    if(bmi > 22.9) weightStatus = "เกินเกณฑ์";
+                    else if(bmi < 18.5) weightStatus = "ตกเกณฑ์ นิดหน่อย";
+                    
+                    scriptContent.value = `
+                    <div class="space-y-4 font-sarabun text-gray-700 text-sm leading-relaxed">
+                        <div class="p-3 bg-teal-50 rounded-lg border border-teal-100">
+                            <h4 class="font-bold text-teal-800 mb-2">👋 บทนำ</h4>
+                            <p>เคยชั่งค่าวัดผล ? เคยวัดร่างกายไหม ? เราวัดให้จ้า ลองดูๆ ค่ะ</p>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-gray-800 border-b pb-1">📊 ผลวิเคราะห์</h4>
+                            <p>⚖️ <b>น้ำหนัก:</b> ${weight} kg ... <span class="${weightStatus==='เกินเกณฑ์'?'text-red-500':'text-green-600'}">${weightStatus}</span></p>
+                            <p>🧀 <b>ไขมัน:</b> ${fatPct}% ... <span class="${getFatResult.value.textClass}">${getFatResult.value.status}</span></p>
+                            <p>🫀 <b>ไขมันช่องท้อง:</b> ${visceral} ... <span class="${getVisResult.value.textClass}">${getVisResult.value.status}</span> <br><span class="text-xs text-gray-500 pl-6">ไขมันตัวนี้อันตราย เกาะตับ หัวใจ มีมากความดันเบาหวานก็ตามมา แม้น้ำหนักไม่เยอะเลย</span></p>
+                            <p>💪 <b>กล้ามเนื้อ:</b> ${musclePct}% ... <span class="${getMuscleResult.value.textClass}">${getMuscleResult.value.status}</span> <br><span class="text-xs text-gray-500 pl-6">กล้ามเนื้อยิ่งแก่ยิ่งลด ภูมิตก อ้วนง่าย คนแก่กล้ามเนื้อน้อยมาก กระดูกหักง่าย</span></p>
+                            <p>⏳ <b>อายุร่างกาย:</b> ${bodyAge} ปี ... <br><span class="text-xs text-gray-500 pl-6">อันนี้เราวัดรวมๆ นะ ใน Longevity ที่เซเลป ดาราไปวัดกันแพงๆ เค้าวัดกันแต่ละอวัยวะเลย เพราะอยากมีอายุยืนแบบแข็งแรง มีคุณภาพชีวิตที่ดี จะได้ดูแลถูก</span></p>
+                            <p>🔥 <b>BMR:</b> ${bmr} kcal ... <br><span class="text-xs text-gray-500 pl-6">อันนี้ง่ายๆ กล้ามเนื้อเยอะ อายุน้อยเผาผลาญดี อายุมาก กล้ามเนื้อน้อย นั่งหายใจก็อ้วนได้ 555+ เท่านี้แหละจ้า</span></p>
+                        </div>
+
+                        <div class="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <h4 class="font-bold text-blue-800 mb-2">🗣️ ถามลูกค้า</h4>
+                            <p>ลูกค้า: (เค้าก็อาจจะถามว่าแล้วต้องทำยังไง หรือ ขอบคุณแล้วไม่พูดอะไร)</p>
+                            <p class="mt-2 font-semibold">เราถามต่อว่า:</p>
+                            <p>"มีแผนอยากดูแลตัวเองยังไง อยากลดน้ำหนักไหม หรือ ดูแล้วยังไม่หนักหนานะ ดูแลตัวเองแบบชิลๆ เดือนละ 1000-3000 ก็หลับดีขึ้น เผาผลาญดีขึ้นแบบยาวๆ แล้วจ้า"</p>
+                        </div>
+
+                        <div class="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                            <h4 class="font-bold text-purple-800 mb-2">💎 นำเสนอ Solution</h4>
+                            <p>ลูกค้า: "เหรอ ยังไงอ่ะ/ อืม ยังอ่ะ/ เราดูแลตัวเองด้วย....."</p>
+                            <p class="mt-2 font-semibold">เรา: "เรามีโปรแกรม UP Labs กับ Full Course"</p>
+                            <ul class="list-disc pl-5 mt-1 space-y-2">
+                                <li><b>ถ้าเน้นชิล (Budget 1000-3000):</b> ชอบแบบสั้น เร็ว ถูก ทำได้ยาวๆ สุขภาพดียั่งยืน <b class="text-purple-600">UP Labs</b> ตอบโจทย์สุด 14 วันรู้เรื่องจ้า ได้ทั้ง Fat adaptation, Autophagy, ฝึก IF หลับดี สบายตัว</li>
+                                <li><b>ถ้าข้อจำกัดเยอะ (ต้องลด 20-30kg / มีโรค):</b> เป็นแนวไม่อยากปรับตัวมาก กินยากไม่ได้ <b class="text-purple-600">Full Course</b> เลย เดือนละ 20,000 เยอะแต่จบ เราประทับใจมากกกกกก</li>
+                            </ul>
+                        </div>
+
+                        <div class="p-3 bg-green-50 rounded-lg border border-green-100 text-center">
+                            <h4 class="font-bold text-green-800 mb-2">🚀 CTA (ปิดการขาย)</h4>
+                            <p>"เริ่มกันเลยนร้า / เริ่มวันไหนดี เรา order ของมาให้จ้า / เริ่มอาทิตย์หน้าไหมพร้อมเรา มีเพื่อนจ้า / เชียร์"</p>
+                        </div>
+                    </div>`;
+
+                    // Simple plain text for speaking
+                    scriptPlainText.value = `สวัสดีครับ วันนี้มาดูผลร่างกายกัน น้ำหนัก ${weight} กิโลกรัม ไขมัน ${fatPct} เปอร์เซ็นต์ อยู่ในเกณฑ์ ${getFatResult.value.status} ไขมันช่องท้องระดับ ${visceral} กล้ามเนื้อ ${musclePct} เปอร์เซ็นต์ อายุร่างกาย ${bodyAge} ปี อัตราการเผาผลาญ ${bmr} แคลอรี่ครับ`;
+
+                    showScriptModal.value = true;
+                };
+
+                const speak = () => {
+                    const u = new SpeechSynthesisUtterance(scriptPlainText.value);
+                    u.lang = 'th-TH';
+                    window.speechSynthesis.speak(u);
+                };
+
+                const copyScript = () => {
+                    navigator.clipboard.writeText(scriptPlainText.value).then(() => {
+                        alert("คัดลอกสคริปต์เรียบร้อย!");
+                    });
+                };
+                
                 const saveImage = (section) => {
                     // Hide menu first
                     showSaveMenu.value = false;
