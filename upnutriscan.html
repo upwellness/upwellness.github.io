@@ -21,11 +21,9 @@
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes pulse-ring { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(13, 148, 136, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); } }
         
         .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
         .animate-slideUp { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        .animate-pulse-ring { animation: pulse-ring 2s infinite; }
     </style>
 
     <!-- Import Map for React & Firebase -->
@@ -42,13 +40,12 @@
     }
     </script>
 
-    <!-- Babel for JSX (Fixed Version) -->
+    <!-- Babel for JSX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
 
-    <!-- Fixed: Removed 'env' from data-presets to prevent require() transpilation -->
     <script type="text/babel" data-type="module" data-presets="react">
         import React, { useState, useEffect, useRef } from 'react';
         import { createRoot } from 'react-dom/client';
@@ -56,14 +53,14 @@
             Camera, Trash2, Target, Coffee, Sun, Moon, Zap, Info, 
             UtensilsCrossed, Sparkles, Search, PlusCircle, BookOpen, 
             CheckCircle2, Edit2, Save, Download, X, Settings, Flame, 
-            ArrowRight, Image as ImageIcon, Scale, Crown, AlertTriangle, Star, Key
+            ArrowRight, Image as ImageIcon, Scale, Crown, AlertTriangle, Star, Key, 
+            PieChart as PieChartIcon, Keyboard, Type
         } from 'lucide-react';
         import { initializeApp } from 'firebase/app';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
         import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 
         // --- Configuration ---
-        // ไม่มีการฝัง API Key ในโค้ดอีกต่อไป
         const defaultApiKey = ""; 
 
         const firebaseConfig = {
@@ -102,9 +99,12 @@
             const [isScanning, setIsScanning] = useState(false);
             const [statusMsg, setStatusMsg] = useState(null);
             const [showPresetModal, setShowPresetModal] = useState(false);
+            const [showManualInputModal, setShowManualInputModal] = useState(false);
+            const [manualInputText, setManualInputText] = useState('');
+            const [manualInputTargetMeal, setManualInputTargetMeal] = useState(null);
             
             // API Key State
-            const [apiKey, setApiKey] = useState('');
+            const [apiKey, setApiKey] = useState(defaultApiKey);
             const [showKeyModal, setShowKeyModal] = useState(false);
             const [tempKey, setTempKey] = useState('');
 
@@ -128,8 +128,7 @@
                 const storedKey = localStorage.getItem('gemini_api_key');
                 if (storedKey) {
                     setApiKey(storedKey);
-                } else {
-                    // ถ้ายังไม่มี Key ให้แสดง Modal ทันที หรือรอให้ผู้ใช้กดใช้งานฟีเจอร์ AI
+                } else if (!defaultApiKey) {
                     setShowKeyModal(true);
                 }
             }, []);
@@ -205,6 +204,34 @@
                 });
             };
 
+            // --- Helper: Create Placeholder Image for Text Input ---
+            const createPlaceholderImage = (text) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 800;
+                canvas.height = 600;
+                const ctx = canvas.getContext('2d');
+
+                // Background gradient
+                const grd = ctx.createLinearGradient(0, 0, 800, 600);
+                grd.addColorStop(0, '#ccfbf1'); // teal-100
+                grd.addColorStop(1, '#f0fdfa'); // teal-50
+                ctx.fillStyle = grd;
+                ctx.fillRect(0, 0, 800, 600);
+
+                // Text
+                ctx.fillStyle = '#0f766e'; // teal-700
+                ctx.font = 'bold 80px "Noto Sans Thai", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text.substring(0, 20), 400, 300);
+                
+                ctx.font = '40px "Noto Sans Thai", sans-serif';
+                ctx.fillStyle = '#99f6e4';
+                ctx.fillText("AI Generated Estimate", 400, 380);
+
+                return canvas.toDataURL('image/jpeg', 0.7);
+            };
+
             // --- AI Analysis Logic ---
             const analyzeImage = async (file) => {
                 if (!apiKey) {
@@ -230,7 +257,7 @@
                         ]
                     }`;
 
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -246,43 +273,125 @@
                     });
                     
                     if (!response.ok) {
-                        if (response.status === 400 || response.status === 403) {
-                            setShowKeyModal(true);
-                            throw new Error("API Key ไม่ถูกต้อง กรุณาตรวจสอบ");
+                        let errorMsg = await response.text();
+                        try {
+                            const errorObj = JSON.parse(errorMsg);
+                            errorMsg = errorObj.error?.message || errorMsg;
+                        } catch(e) {}
+                        
+                        if (errorMsg.includes("blocked") || errorMsg.includes("referer")) {
+                             throw new Error("API Key ถูกบล็อก (Referer Blocked) กรุณาใช้ Key แบบไม่จำกัดสิทธิ์");
                         }
-                        throw new Error("API Error");
+                        throw new Error(`API Error: ${errorMsg}`);
                     }
 
                     const result = await response.json();
+                    if (!result.candidates || !result.candidates[0].content) {
+                         throw new Error("AI did not return any content.");
+                    }
                     const data = JSON.parse(result.candidates[0].content.parts[0].text);
                     
-                    const componentsWithRatios = (data.components || []).map(c => ({
-                        ...c,
-                        ratio_c: c.carbs_g / c.weight_g,
-                        ratio_p: c.protein_g / c.weight_g,
-                        ratio_f: c.fat_g / c.weight_g,
-                        ratio_kcal: c.calories / c.weight_g
-                    }));
-
-                    const normalizedData = {
-                        foodName: data.foodName,
-                        carbs_g: data.total_carbs_g,
-                        protein_g: data.total_protein_g,
-                        fat_g: data.total_fat_g,
-                        calories: data.total_calories,
-                        components: componentsWithRatios,
-                        image: base64Image,
-                        timestamp: Date.now()
-                    };
-
-                    setScanResult(normalizedData);
-                    setStatusMsg(null);
+                    processAndSetScanResult(data, base64Image);
                 } catch (error) {
-                    setStatusMsg("เกิดข้อผิดพลาด: " + error.message);
-                    setIsScanning(false);
+                    setStatusMsg(error.message);
+                    if (error.message.includes("API Key") || error.message.includes("403") || error.message.includes("blocked")) {
+                        setShowKeyModal(true);
+                    }
                 } finally {
                     setIsScanning(false);
                 }
+            };
+
+            const analyzeTextMenu = async () => {
+                if (!apiKey) {
+                    setShowKeyModal(true);
+                    return;
+                }
+                if (!manualInputText.trim()) return;
+
+                setIsScanning(true);
+                setStatusMsg(`UP AI กำลังคำนวณสารอาหารของ "${manualInputText}"...`);
+                setShowManualInputModal(false); // Close modal
+
+                try {
+                    const prompt = `
+                    ประเมินสารอาหารของเมนู: "${manualInputText}" โดยละเอียด (ปริมาณ 1 จานปกติ)
+                    ให้ผลลัพธ์เป็น JSON เท่านั้น:
+                    {
+                        "foodName": "${manualInputText}",
+                        "total_calories": number,
+                        "total_carbs_g": number,
+                        "total_protein_g": number,
+                        "total_fat_g": number,
+                        "components": [
+                        { "name": "ชื่อวัตถุดิบ (เช่น ข้าวสวย, เนื้อสัตว์)", "weight_g": number, "carbs_g": number, "protein_g": number, "fat_g": number, "calories": number }
+                        ]
+                    }`;
+
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        let errorMsg = await response.text();
+                         try {
+                            const errorObj = JSON.parse(errorMsg);
+                            errorMsg = errorObj.error?.message || errorMsg;
+                        } catch(e) {}
+                        throw new Error(`API Error: ${errorMsg}`);
+                    }
+
+                    const result = await response.json();
+                    if (!result.candidates || !result.candidates[0].content) {
+                         throw new Error("AI did not return any content.");
+                    }
+                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    
+                    // Generate placeholder image
+                    const placeholderImg = createPlaceholderImage(manualInputText);
+                    
+                    // Set result and redirect to scan tab (which acts as result view)
+                    processAndSetScanResult(data, placeholderImg);
+                    setActiveTab('scan'); 
+
+                } catch (error) {
+                    setStatusMsg("ไม่สามารถวิเคราะห์เมนูนี้ได้: " + error.message);
+                    if (error.message.includes("API Key") || error.message.includes("blocked")) {
+                        setShowKeyModal(true);
+                    }
+                } finally {
+                    setIsScanning(false);
+                    setManualInputText('');
+                }
+            };
+
+            const processAndSetScanResult = (data, imageSrc) => {
+                const componentsWithRatios = (data.components || []).map(c => ({
+                    ...c,
+                    ratio_c: c.weight_g ? c.carbs_g / c.weight_g : 0,
+                    ratio_p: c.weight_g ? c.protein_g / c.weight_g : 0,
+                    ratio_f: c.weight_g ? c.fat_g / c.weight_g : 0,
+                    ratio_kcal: c.weight_g ? c.calories / c.weight_g : 0
+                }));
+
+                const normalizedData = {
+                    foodName: data.foodName,
+                    carbs_g: data.total_carbs_g,
+                    protein_g: data.total_protein_g,
+                    fat_g: data.total_fat_g,
+                    calories: data.total_calories,
+                    components: componentsWithRatios,
+                    image: imageSrc,
+                    timestamp: Date.now()
+                };
+
+                setScanResult(normalizedData);
+                setStatusMsg(null);
             };
 
             const updateComponentWeight = (index, newWeight) => {
@@ -346,7 +455,7 @@
                     ]
                     `;
 
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -356,21 +465,12 @@
                     });
 
                     if (!response.ok) {
-                        if (response.status === 400 || response.status === 403) {
-                            setShowKeyModal(true);
-                            throw new Error("API Key ไม่ถูกต้อง กรุณาตรวจสอบ");
-                        }
-                        let errMsg = `API Error (${response.status})`;
+                        let errorMsg = await response.text();
                         try {
-                            const errData = await response.json();
-                            if (errData.error && errData.error.message) {
-                                errMsg += `: ${errData.error.message}`;
-                            }
-                        } catch (e) {
-                            const txt = await response.text();
-                            if (txt) errMsg += `: ${txt}`;
-                        }
-                        throw new Error(errMsg);
+                            const errorObj = JSON.parse(errorMsg);
+                            errorMsg = errorObj.error?.message || errorMsg;
+                        } catch(e) {}
+                        throw new Error(`API Error: ${errorMsg}`);
                     }
 
                     const result = await response.json();
@@ -384,6 +484,9 @@
                 } catch (e) {
                     console.error(e);
                     setStatusMsg("เกิดข้อผิดพลาด: " + e.message);
+                    if (e.message.includes("API Key") || e.message.includes("blocked")) {
+                        setShowKeyModal(true);
+                    }
                 } finally {
                     setIsComparing(false);
                 }
@@ -391,26 +494,19 @@
 
             const getBestInClass = (data) => {
                 if (!data || data.length === 0) return {};
-                
-                // Find min/max values
                 const minKcal = Math.min(...data.map(d => d.kcal));
                 const minCarb = Math.min(...data.map(d => d.c));
                 const maxProt = Math.max(...data.map(d => d.p));
                 const minFat = Math.min(...data.map(d => d.f));
                 const minInsulin = Math.min(...data.map(d => d.insulin_score));
-
                 return { minKcal, minCarb, maxProt, minFat, minInsulin };
             };
 
             const determineWinner = (data) => {
                 if (!data || data.length === 0) return -1;
-                // Simple logic: High Protein, Low Carb, Low Insulin is best for UP Labs
                 let bestScore = -Infinity;
                 let winnerIndex = -1;
-
                 data.forEach((item, idx) => {
-                    // Formula: (Protein * 2) - Carb - (Fat * 0.5) - (InsulinScore * 0.5)
-                    // High Protein is good. High Carb/Fat/Insulin is bad.
                     const score = (item.p * 2) - item.c - (item.f * 0.5) - (item.insulin_score * 0.5);
                     if (score > bestScore) {
                         bestScore = score;
@@ -441,7 +537,10 @@
             };
 
             const savePreset = async () => {
-                if (!user || !db) return;
+                if (!user) {
+                    setStatusMsg("กำลังเชื่อมต่อระบบ กรุณารอสักครู่...");
+                    return;
+                }
                 const mealId = presetConfig.targetMeal;
                 const data = calculatePreset();
                 setStatusMsg(`กำลังบันทึก ${data.foodName}...`);
@@ -452,12 +551,19 @@
                     setTimeout(() => setStatusMsg(null), 1500);
                     setActiveTab('diary');
                 } catch (e) {
-                    setStatusMsg("บันทึกไม่สำเร็จ");
+                    setStatusMsg("บันทึกไม่สำเร็จ: " + e.message);
                 }
             };
 
             const saveToDiary = async (mealId) => {
-                if (!user || !scanResult || !db) return;
+                if (!user) {
+                    setStatusMsg("กรุณารอระบบยืนยันตัวตนสักครู่...");
+                    return;
+                }
+                if (!scanResult) {
+                    setStatusMsg("ไม่มีข้อมูลให้บันทึก");
+                    return;
+                }
                 setStatusMsg(`กำลังบันทึก...`);
                 try {
                     await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'daily_meals', mealId), scanResult);
@@ -466,12 +572,13 @@
                     setActiveTab('diary');
                     setTimeout(() => setStatusMsg(null), 2000);
                 } catch (error) {
-                    setStatusMsg("เกิดข้อผิดพลาดในการบันทึก");
+                    console.error(error);
+                    setStatusMsg("เกิดข้อผิดพลาดในการบันทึก: " + error.message);
                 }
             };
 
             const deleteMeal = async (mealId) => {
-                if (!user || !db) return;
+                if (!user) return;
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'daily_meals', mealId));
             };
 
@@ -620,32 +727,6 @@
                 });
             };
 
-            const getMealAdvice = (mealData) => {
-                if (!mealData || mealData.isPreset) return null;
-                const totalKcal = mealData.calories;
-                if (totalKcal === 0) return null;
-                const pPct = (mealData.protein_g * 4 / totalKcal) * 100;
-                const cPct = (mealData.carbs_g * 4 / totalKcal) * 100;
-                const fPct = (mealData.fat_g * 9 / totalKcal) * 100;
-                const suggestions = [];
-                const components = mealData.components || [];
-                
-                if (cPct > 45) {
-                    const carbHeavyItem = components.sort((a,b) => b.carbs_g - a.carbs_g)[0];
-                    if (carbHeavyItem) suggestions.push(`ลด ${carbHeavyItem.name} ลงครึ่งหนึ่งเพื่อตัดแป้งส่วนเกิน`);
-                    else suggestions.push("ลดปริมาณข้าวหรือแป้งในมื้อนี้ลง");
-                }
-                if (fPct > 35) {
-                    const fatHeavyItem = components.sort((a,b) => b.fat_g - a.fat_g)[0];
-                    if (fatHeavyItem) suggestions.push(`เลี่ยง ${fatHeavyItem.name} หรือซับน้ำมันออก`);
-                    else suggestions.push("เลี่ยงของทอดหรือกะทิ");
-                }
-                if (pPct < 35) suggestions.push("เพิ่มไข่ขาว 2 ฟอง หรือ ปลาทูอีกครึ่งตัว");
-
-                if (suggestions.length === 0) return { status: 'good', text: "มื้อนี้สัดส่วนดีเยี่ยม! เหมาะสำหรับ Weight Loss แล้ว" };
-                return { status: 'warning', text: suggestions.join(", ") };
-            };
-
             const getDailyStats = () => {
                 return Object.values(meals).reduce((acc, curr) => {
                 acc.c += (curr.carbs_g || 0);
@@ -671,9 +752,134 @@
 
             const mode = getModeInfo(pPct, cPct, fPct);
 
-            const bests = compareResults ? getBestInClass(compareResults) : {};
-            const winnerIdx = compareResults ? determineWinner(compareResults) : -1;
+            const getMealAdvice = (mealData) => {
+                if (!mealData || mealData.isPreset) return null;
+                const totalKcal = mealData.calories;
+                if (totalKcal === 0) return null;
+                const pPct = (mealData.protein_g * 4 / totalKcal) * 100;
+                const cPct = (mealData.carbs_g * 4 / totalKcal) * 100;
+                const fPct = (mealData.fat_g * 9 / totalKcal) * 100;
+                const suggestions = [];
+                
+                if (cPct > 45) {
+                    suggestions.push("ลดปริมาณแป้ง/น้ำตาล");
+                }
+                if (fPct > 35) {
+                    suggestions.push("ลดของมัน/ของทอด");
+                }
+                if (pPct < 35) suggestions.push("เพิ่มโปรตีน (ไข่/เนื้อสัตว์)");
 
+                if (suggestions.length === 0) return { status: 'good', text: "มื้อนี้สัดส่วนดีเยี่ยม!" };
+                return { status: 'warning', text: suggestions.join(", ") };
+            };
+
+            // --- Sub Components ---
+            function NavButton({ active, onClick, icon, label }) {
+                return (
+                    <button 
+                    onClick={onClick}
+                    className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-teal-600 -translate-y-1' : 'text-slate-300 hover:text-slate-400'}`}
+                    >
+                    <div className={`p-2 rounded-2xl ${active ? 'bg-teal-50 shadow-sm' : ''}`}>
+                        {icon}
+                    </div>
+                    <span className="text-[10px] font-bold tracking-wide">{label}</span>
+                    </button>
+                );
+            }
+
+            function MacroPill({ label, val, color }) {
+                return (
+                    <div className={`flex flex-col items-center justify-center p-2 rounded-xl ${color}`}>
+                    <span className="text-[10px] font-bold uppercase opacity-70">{label}</span>
+                    <span className="text-lg font-black leading-none mt-1">{val}g</span>
+                    </div>
+                );
+            }
+
+            function MacroBox({ label, val, totalG, color }) {
+                const pct = totalG ? Math.round(((val * (label === 'FAT' ? 9 : 4)) / totalG) * 100) : 0;
+                return (
+                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
+                    <span className={`text-[9px] font-black mb-1 px-2 py-0.5 rounded-full text-white ${color}`}>{label}</span>
+                    <span className="text-xl font-black text-slate-800">{val}<span className="text-[10px] font-normal ml-0.5 text-slate-400">g</span></span>
+                    <span className="text-[10px] font-bold text-slate-400 mt-1">{pct}%</span>
+                    </div>
+                );
+            }
+
+            function MacroDonutChart({ carbs, protein, fat }) {
+                const cCal = carbs * 4;
+                const pCal = protein * 4;
+                const fCal = fat * 9;
+                const total = cCal + pCal + fCal;
+
+                if (total === 0) return null;
+
+                const slices = [
+                    { label: 'Carbs', value: cCal, raw: carbs, color: '#f97316', percent: cCal / total }, // Orange
+                    { label: 'Protein', value: pCal, raw: protein, color: '#f43f5e', percent: pCal / total }, // Rose
+                    { label: 'Fat', value: fCal, raw: fat, color: '#f59e0b', percent: fCal / total }, // Amber
+                ].filter(s => s.percent > 0);
+
+                let cumulativePercent = 0;
+
+                const getCoordinatesForPercent = (percent) => {
+                    const x = Math.cos(2 * Math.PI * percent);
+                    const y = Math.sin(2 * Math.PI * percent);
+                    return [x, y];
+                }
+
+                return (
+                    <div className="flex items-center justify-center gap-6 py-6 border-b border-slate-100 mb-6">
+                        <div className="relative w-32 h-32 shrink-0">
+                            <svg viewBox="-1 -1 2 2" className="rotate-[-90deg] w-full h-full">
+                                {slices.map((slice, i) => {
+                                    if (slice.percent === 1) {
+                                        return <circle key={i} cx="0" cy="0" r="1" fill={slice.color} />;
+                                    }
+                                    const [startX, startY] = getCoordinatesForPercent(cumulativePercent);
+                                    cumulativePercent += slice.percent;
+                                    const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
+                                    const largeArcFlag = slice.percent > 0.5 ? 1 : 0;
+                                    const pathData = [
+                                        `M 0 0`,
+                                        `L ${startX} ${startY}`,
+                                        `A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY}`,
+                                        `Z`
+                                    ].join(' ');
+                                    return <path key={i} d={pathData} fill={slice.color} />;
+                                })}
+                                <circle cx="0" cy="0" r="0.75" fill="white" />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
+                                <div className="flex items-baseline">
+                                    <span className="text-xl font-black text-slate-700">{Math.round(total)}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 ml-0.5">kcal</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex-1 space-y-2">
+                            {slices.map((slice, i) => (
+                                <div key={i} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: slice.color }}></div>
+                                        <span className="text-xs font-bold text-slate-600">{slice.label}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs font-black text-slate-700">{Math.round(slice.percent * 100)}%</p>
+                                        <p className="text-[9px] text-slate-400 font-medium">{Math.round(slice.value)} kcal</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            // --- Render App ---
             return (
                 <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-24">
                 {/* Header */}
@@ -738,7 +944,6 @@
                             type="file" 
                             ref={fileInputRef}
                             accept="image/*" 
-                            /* capture="environment" removed to allow gallery selection */
                             className="hidden" 
                             onChange={(e) => e.target.files[0] && analyzeImage(e.target.files[0])}
                             />
@@ -775,6 +980,12 @@
 
                             {/* Component Editor */}
                             <div className="p-6">
+                                <MacroDonutChart 
+                                    carbs={scanResult.carbs_g} 
+                                    protein={scanResult.protein_g} 
+                                    fat={scanResult.fat_g} 
+                                />
+
                                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <Edit2 size={14} /> ปรับปริมาณ (กรัม)
                                 </h3>
@@ -823,7 +1034,13 @@
                                 {MEAL_TYPES.map(type => (
                                 <button
                                     key={type.id}
-                                    onClick={() => saveToDiary(type.id)}
+                                    onClick={() => {
+                                        if(manualInputTargetMeal) {
+                                            saveToDiary(type.id);
+                                        } else {
+                                            saveToDiary(type.id);
+                                        }
+                                    }}
                                     className="flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-50 hover:bg-teal-500 hover:text-white hover:shadow-lg hover:shadow-teal-200 text-slate-600 transition-all text-sm border border-transparent font-bold"
                                 >
                                     {type.icon} <span className="inherit-color">{type.label}</span>
@@ -1037,8 +1254,19 @@
                                                 </button>
                                             )}
                                             <button 
-                                            onClick={() => { setActiveTab('scan'); }}
-                                            className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-teal-600"
+                                                onClick={() => { 
+                                                    setManualInputTargetMeal(type.id);
+                                                    setShowManualInputModal(true);
+                                                }}
+                                                className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-teal-600"
+                                                title="Type name manually"
+                                            >
+                                                <Keyboard size={20} />
+                                            </button>
+                                            <button 
+                                                onClick={() => { setActiveTab('scan'); }}
+                                                className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-teal-600"
+                                                title="Scan photo"
                                             >
                                                 <PlusCircle size={20} />
                                             </button>
@@ -1144,6 +1372,50 @@
                                 >
                                     บันทึก {MEAL_TYPES.find(m => m.id === presetConfig.targetMeal)?.label}
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Manual Input Modal */}
+                {showManualInputModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fadeIn">
+                        <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slideUp">
+                            <div className="text-center mb-6">
+                                <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-3 text-teal-600">
+                                    <Type size={24} />
+                                </div>
+                                <h3 className="font-black text-xl text-slate-800">พิมพ์ชื่อเมนู</h3>
+                                <p className="text-sm text-slate-400 mt-1">AI จะช่วยประเมินสารอาหารให้คุณ</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <input 
+                                        type="text" 
+                                        value={manualInputText}
+                                        onChange={(e) => setManualInputText(e.target.value)}
+                                        placeholder="เช่น ข้าวมันไก่, สลัดผัก..."
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-bold outline-none focus:ring-2 focus:ring-teal-500 mt-1"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => setShowManualInputModal(false)}
+                                        className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 transition-all"
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                    <button 
+                                        onClick={analyzeTextMenu}
+                                        className="flex-1 py-3 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-700 transition-all shadow-lg shadow-teal-200 flex items-center justify-center gap-2"
+                                    >
+                                        <Sparkles size={16} />
+                                        วิเคราะห์
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1262,6 +1534,77 @@
                 <span className={`text-[9px] font-black mb-1 px-2 py-0.5 rounded-full text-white ${color}`}>{label}</span>
                 <span className="text-xl font-black text-slate-800">{val}<span className="text-[10px] font-normal ml-0.5 text-slate-400">g</span></span>
                 <span className="text-[10px] font-bold text-slate-400 mt-1">{pct}%</span>
+                </div>
+            );
+        }
+
+        function MacroDonutChart({ carbs, protein, fat }) {
+            const cCal = carbs * 4;
+            const pCal = protein * 4;
+            const fCal = fat * 9;
+            const total = cCal + pCal + fCal;
+
+            if (total === 0) return null;
+
+            const slices = [
+                { label: 'Carbs', value: cCal, raw: carbs, color: '#f97316', percent: cCal / total }, // Orange
+                { label: 'Protein', value: pCal, raw: protein, color: '#f43f5e', percent: pCal / total }, // Rose
+                { label: 'Fat', value: fCal, raw: fat, color: '#f59e0b', percent: fCal / total }, // Amber
+            ].filter(s => s.percent > 0);
+
+            let cumulativePercent = 0;
+
+            const getCoordinatesForPercent = (percent) => {
+                const x = Math.cos(2 * Math.PI * percent);
+                const y = Math.sin(2 * Math.PI * percent);
+                return [x, y];
+            }
+
+            return (
+                <div className="flex items-center justify-center gap-6 py-6 border-b border-slate-100 mb-6">
+                    <div className="relative w-32 h-32 shrink-0">
+                        <svg viewBox="-1 -1 2 2" className="rotate-[-90deg] w-full h-full">
+                            {slices.map((slice, i) => {
+                                if (slice.percent === 1) {
+                                    return <circle key={i} cx="0" cy="0" r="1" fill={slice.color} />;
+                                }
+                                const [startX, startY] = getCoordinatesForPercent(cumulativePercent);
+                                cumulativePercent += slice.percent;
+                                const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
+                                const largeArcFlag = slice.percent > 0.5 ? 1 : 0;
+                                const pathData = [
+                                    `M 0 0`,
+                                    `L ${startX} ${startY}`,
+                                    `A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY}`,
+                                    `Z`
+                                ].join(' ');
+                                return <path key={i} d={pathData} fill={slice.color} />;
+                            })}
+                            <circle cx="0" cy="0" r="0.75" fill="white" />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center flex-col">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
+                            <div className="flex items-baseline">
+                                <span className="text-xl font-black text-slate-700">{Math.round(total)}</span>
+                                <span className="text-[9px] font-bold text-slate-400 ml-0.5">kcal</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 space-y-2">
+                        {slices.map((slice, i) => (
+                            <div key={i} className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: slice.color }}></div>
+                                    <span className="text-xs font-bold text-slate-600">{slice.label}</span>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-black text-slate-700">{Math.round(slice.percent * 100)}%</p>
+                                    <p className="text-[9px] text-slate-400 font-medium">{Math.round(slice.value)} kcal</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             );
         }
