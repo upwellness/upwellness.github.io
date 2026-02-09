@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UP NutriScan AI</title>
+    <title>UP NutriScan AI v1.2.0</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,11 +21,11 @@
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes pulse-ring { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(13, 148, 136, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); } }
         
         .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
         .animate-slideUp { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        .animate-pulse-ring { animation: pulse-ring 2s infinite; }
+        
+        #error-display { display: none; padding: 20px; background: #fee2e2; color: #b91c1c; font-family: monospace; font-size: 12px; white-space: pre-wrap; margin: 20px; border-radius: 10px; border: 1px solid #f87171; }
     </style>
 
     <!-- Import Map for React & Firebase -->
@@ -46,7 +46,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-900">
-    <div id="root"></div>
+    <div id="root" class="flex items-center justify-center min-h-screen text-slate-400">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mx-auto mb-4"></div>
+            <p>กำลังโหลด UP NutriScan...</p>
+        </div>
+    </div>
+    
+    <!-- Area to display critical errors if React fails -->
+    <div id="error-display"></div>
+
+    <script>
+        // Global Error Handler to catch "White Screen" issues
+        window.onerror = function(message, source, lineno, colno, error) {
+            const display = document.getElementById('error-display');
+            document.getElementById('root').style.display = 'none';
+            display.style.display = 'block';
+            display.innerHTML = `<strong>Error Detected:</strong>\n${message}\n\nSource: ${source}:${lineno}:${colno}`;
+            console.error("Global Error:", error);
+        };
+    </script>
 
     <!-- Fixed: Removed 'env' from data-presets to prevent require() transpilation -->
     <script type="text/babel" data-type="module" data-presets="react">
@@ -57,18 +76,20 @@
             UtensilsCrossed, Sparkles, Search, PlusCircle, BookOpen, 
             CheckCircle2, Edit2, Save, Download, X, Settings, Flame, 
             ArrowRight, Image as ImageIcon, Scale, Crown, AlertTriangle, Star, Key, 
-            PieChart as PieChartIcon, Keyboard, Type
+            PieChart as PieChartIcon, Keyboard, Type, Tag
         } from 'lucide-react';
         import { initializeApp } from 'firebase/app';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
         import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 
         // --- Configuration ---
+        const APP_VERSION = "v1.2.0";
         const defaultApiKey = ""; // Default empty for GitHub
 
         // หากคุณทดสอบใน Canvas ให้ใส่ Key ตรงนี้ได้เลย (แต่ลบออกก่อนขึ้น GitHub)
         const TEST_API_KEY = ""; 
 
+        // TODO: ใส่ Firebase Config ของคุณที่นี่
         const firebaseConfig = {
             apiKey: "YOUR_FIREBASE_API_KEY",
             authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -96,6 +117,17 @@
             { id: 'dinner', label: 'มื้อเย็น', icon: <Moon size={20} className="text-indigo-500" /> },
             { id: 'snack', label: 'มื้อว่าง', icon: <Coffee size={20} className="text-emerald-500" /> },
         ];
+
+        // Helper to clean JSON string from Markdown code blocks
+        const cleanJsonString = (str) => {
+            if (!str) return "";
+            return str.replace(/```json/g, '').replace(/```/g, '').trim();
+        };
+
+        // Helper to remove undefined values before saving to Firestore
+        const sanitizeForFirestore = (obj) => {
+            return JSON.parse(JSON.stringify(obj));
+        };
 
         function App() {
             const [user, setUser] = useState(null);
@@ -292,7 +324,10 @@
                     }
 
                     const result = await response.json();
-                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    const rawText = result.candidates[0].content.parts[0].text;
+                    const cleanedJson = cleanJsonString(rawText);
+                    const data = JSON.parse(cleanedJson);
+                    
                     processAndSetScanResult(data, base64Image);
                 } catch (error) {
                     setStatusMsg(error.message);
@@ -349,7 +384,12 @@
                     }
 
                     const result = await response.json();
-                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    if (!result.candidates || !result.candidates[0].content) {
+                         throw new Error("AI did not return any content.");
+                    }
+                    const rawText = result.candidates[0].content.parts[0].text;
+                    const cleanedJson = cleanJsonString(rawText);
+                    const data = JSON.parse(cleanedJson);
                     const placeholderImg = createPlaceholderImage(manualInputText);
                     
                     processAndSetScanResult(data, placeholderImg);
@@ -376,11 +416,11 @@
                 }));
 
                 const normalizedData = {
-                    foodName: data.foodName,
-                    carbs_g: data.total_carbs_g,
-                    protein_g: data.total_protein_g,
-                    fat_g: data.total_fat_g,
-                    calories: data.total_calories,
+                    foodName: data.foodName || "Unknown Food",
+                    carbs_g: data.total_carbs_g || 0,
+                    protein_g: data.total_protein_g || 0,
+                    fat_g: data.total_fat_g || 0,
+                    calories: data.total_calories || 0,
                     components: componentsWithRatios,
                     image: imageSrc,
                     timestamp: Date.now()
@@ -471,7 +511,9 @@
                     }
 
                     const result = await response.json();
-                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    const rawText = result.candidates[0].content.parts[0].text;
+                    const cleanedJson = cleanJsonString(rawText);
+                    const data = JSON.parse(cleanedJson);
                     setCompareResults(data);
                     setStatusMsg(null);
                 } catch (e) {
@@ -534,7 +576,8 @@
                 const data = calculatePreset();
                 setStatusMsg(`กำลังบันทึก ${data.foodName}...`);
                 try {
-                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'daily_meals', mealId), data);
+                    const safeData = sanitizeForFirestore(data);
+                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'daily_meals', mealId), safeData);
                     setShowPresetModal(false);
                     setStatusMsg("บันทึกสำเร็จ!");
                     setTimeout(() => setStatusMsg(null), 1500);
@@ -555,7 +598,10 @@
                 }
                 setStatusMsg(`กำลังบันทึก...`);
                 try {
-                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'daily_meals', mealId), scanResult);
+                    // Sanitize data before saving (remove undefined values)
+                    const safeData = sanitizeForFirestore(scanResult);
+                    
+                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'daily_meals', mealId), safeData);
                     setStatusMsg(`บันทึกลง ${MEAL_TYPES.find(m => m.id === mealId).label} เรียบร้อย`);
                     setScanResult(null);
                     setActiveTab('diary');
@@ -779,6 +825,7 @@
                     </div>
                     
                     <div className="flex gap-2">
+                        {/* API Key Settings Button */}
                         <button 
                             onClick={() => setShowKeyModal(true)}
                             className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${apiKey ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-rose-100 text-rose-600 animate-pulse'}`}
@@ -795,6 +842,9 @@
                             <Settings size={14} /> Presets
                         </button>
                         )}
+                        <div className="absolute top-12 right-4 text-[9px] text-slate-300 font-medium">
+                            {APP_VERSION}
+                        </div>
                     </div>
                 </header>
 
@@ -833,6 +883,7 @@
                         </div>
                         ) : (
                         <div className="space-y-6" ref={resultCardRef}>
+                            {/* Result Card */}
                             <div className="bg-white rounded-[2rem] overflow-hidden shadow-xl shadow-slate-200 border border-slate-100">
                             <div className="h-64 relative">
                                 <img src={scanResult.image} className="w-full h-full object-cover" alt="Scanned Food" />
@@ -860,6 +911,7 @@
                                 </div>
                             </div>
 
+                            {/* Component Editor */}
                             <div className="p-6">
                                 <MacroDonutChart 
                                     carbs={scanResult.carbs_g} 
@@ -906,6 +958,7 @@
                             </div>
                             </div>
 
+                            {/* Save Actions */}
                             <div className="bg-white p-5 rounded-3xl shadow-lg border border-slate-100">
                             <p className="text-center text-sm font-bold text-slate-500 mb-4 flex items-center justify-center gap-2">
                                 <Save size={16} /> บันทึกลงสมุดประจำวัน
@@ -916,6 +969,7 @@
                                     key={type.id}
                                     onClick={() => {
                                         if(manualInputTargetMeal) {
+                                            // Coming from manual input
                                             saveToDiary(type.id);
                                         } else {
                                             saveToDiary(type.id);
