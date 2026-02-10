@@ -68,7 +68,7 @@
                     {items.map((group, idx) => (
                     <div key={idx} className="border-b border-slate-100 last:border-0 pb-2 last:pb-0">
                         <h4 className="text-sm font-semibold text-slate-600 mb-1">{group.symptom}</h4>
-                        <p className="text-sm text-slate-500 leading-relaxed">{group.drugs}</p>
+                        <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-line">{group.drugs}</p>
                     </div>
                     ))}
                 </div>
@@ -83,11 +83,11 @@
                 icon: Brain,
                 color: "border-purple-500",
                 items: [
-                    { symptom: "เวียนหัว / บ้านหมุน", drugs: "Dimenhydrinate, Betahistine (Serc), Flunarizine, Cinnarizine" },
-                    { symptom: "ไมเกรน (Migraine)", drugs: "Ergotamine (Cafergot), Sumatriptan, Naproxen (ป้องกัน: Amitriptyline)" },
-                    { symptom: "ปวดหัว / ไข้", drugs: "Paracetamol 500mg, Ibuprofen 400mg" },
-                    { symptom: "ปวดกล้ามเนื้อ / ออฟฟิศซินโดรม", drugs: "Orphenadrine (Norgesic), Tolperisone (Myonal), Eperisone" },
-                    { symptom: "ปวดปลายประสาท (Neuropathy)", drugs: "Gabapentin, Pregabalin, Vit B-Complex (Neurobion)" }
+                    { symptom: "เวียนหัว / บ้านหมุน", drugs: "• Dimenhydrinate (25-50mg)\n• Betahistine (Serc) 1-2 tab x 3 pc\n• Flunarizine (5-10mg hs)" },
+                    { symptom: "ไมเกรน (Migraine)", drugs: "• Sumatriptan 25-100mg (รักษา)\n• Amitriptyline 10mg hs (ป้องกัน)\n• Ergotamine + Antiemetic (ระวังการใช้)" },
+                    { symptom: "ปวดหัว / ไข้", drugs: "• Paracetamol 500mg prn q 4-6h\n• Ibuprofen 400mg x 3 pc" },
+                    { symptom: "ปวดกล้ามเนื้อ", drugs: "• Eperisone (50mg x 3 pc)\n• Orphenadrine (Norgesic) x 2-3 pc" },
+                    { symptom: "ปวดปลายประสาท", drugs: "• Gabapentin, Pregabalin (300-600mg)\n• Vitamin B1-6-12" }
                 ]
                 },
                 {
@@ -95,11 +95,11 @@
                 icon: Activity,
                 color: "border-orange-500",
                 items: [
-                    { symptom: "โรคกระเพาะ / ติดเชื้อ H.Pylori", drugs: "PPI + Amoxicillin + Metronidazole (หรือ Clarithromycin)" },
-                    { symptom: "กรดไหลย้อน (GERD)", drugs: "Omeprazole/Esomeprazole (PPI) + Gaviscon (Alginate)" },
-                    { symptom: "ท้องอืด / อาหารไม่ย่อย", drugs: "Domperidone, Simethicone (Air-X), Eno, Soda Mint" },
-                    { symptom: "ท้องเสีย (Diarrhea)", drugs: "ORS (จิบเกลือแร่), Charcoal (ดูดซับสารพิษ), Loperamide (หยุดถ่าย-ใช้ระวัง)" },
-                    { symptom: "ท้องผูก (Constipation)", drugs: "Senna (มะขามแขก), Bisacodyl, Lactulose, Psyllium (Fiber)" }
+                    { symptom: "โรคกระเพาะ / H.Pylori", drugs: "สูตร (PPI + Amoxi 1g + Metro 400mg) x 2 นาน 7-14 วัน" },
+                    { symptom: "กรดไหลย้อน (GERD)", drugs: "PPIs (Omeprazole 20mg) x 2 นาน 2 สัปดาห์" },
+                    { symptom: "แน่นท้อง / อิ่มเร็ว", drugs: "Domperidone 10mg x 3 ac" },
+                    { symptom: "ท้องเสีย", drugs: "ORS + Charcoal (ห่างยาอื่น 2 ชม.)\n• Loperamide (2mg แรกรับ แล้ว 2mg ทุกครั้งที่ถ่าย)" },
+                    { symptom: "ท้องผูก", drugs: "Psyllium, Lactulose, Senna, Bisacodyl" }
                 ]
                 },
                 {
@@ -107,11 +107,10 @@
                 icon: Wind,
                 color: "border-teal-500",
                 items: [
-                    { symptom: "แพ้อากาศ / น้ำมูกไหล", drugs: "Loratadine, Cetirizine, Fexofenadine, CPM (ง่วง)" },
-                    { symptom: "คัดจมูก", drugs: "Phenylephrine, Pseudoephedrine (ตาม รพ.), Nasal Spray" },
-                    { symptom: "ไอแห้ง (Dry Cough)", drugs: "Dextromethorphan, Codeine, Levodropropizine" },
-                    { symptom: "ไอมีเสมหะ (Productive Cough)", drugs: "Bromhexine, Ambroxol, Acetylcysteine (NAC), Guaifenesin" },
-                    { symptom: "เจ็บคอ (Sore Throat)", drugs: "ยาอม (Lozenges), Spray พ่นคอ (Kamillosan/Betadine)" }
+                    { symptom: "แพ้อากาศ / น้ำมูก", drugs: "• Loratadine / Cetirizine 10mg OD\n• Fexofenadine 60mg x 2 หรือ 180mg OD" },
+                    { symptom: "คัดจมูก", drugs: "Phenylephrine 10mg x 3-4" },
+                    { symptom: "ไอแห้ง", drugs: "Levodropropizine 60mg x 3\n• Codeine, Dextromethorphan" },
+                    { symptom: "ไอมีเสมหะ", drugs: "Bromhexine, Ambroxol, NAC, Guaifenesin" }
                 ]
                 },
                 {
@@ -119,11 +118,11 @@
                 icon: ShieldPlus,
                 color: "border-pink-500",
                 items: [
-                    { symptom: "เริม / งูสวัด (Herpes/Shingles)", drugs: "Acyclovir (กิน/ทา) ภายใน 72 ชม. แรก" },
-                    { symptom: "เชื้อรา (กลาก/เกลื้อน)", drugs: "Clotrimazole cream, Ketoconazole cream/shampoo" },
-                    { symptom: "ลมพิษ / ผื่นแพ้ / แมลงกัด", drugs: "Calamine, Triamcinolone cream (Steroid - ห้ามทาแผลติดเชื้อ)" },
-                    { symptom: "แผลสด / แผลติดเชื้อ", drugs: "Povidone Iodine, Chlorhexidine, Fusidic acid cream" },
-                    { symptom: "แผลร้อนใน", drugs: "Triamcinolone oral paste (Kenalog), Glycerin borax" }
+                    { symptom: "เริม (Herpes Simplex)", drugs: "Acyclovir 400mg x 5 (5 วัน) หรือ 200mg x 5" },
+                    { symptom: "งูสวัด (Shingles)", drugs: "Acyclovir 800mg x 5 (7-10 วัน) ภายใน 72 ชม.แรก" },
+                    { symptom: "เชื้อรา (กลาก/เกลื้อน)", drugs: "Azole cream ทานาน 2-4 สัปดาห์" },
+                    { symptom: "หิด (Scabies)", drugs: "Permethrin cream, Benzyl benzoate\n• Ivermectin 0.2 mg/kg/dose" },
+                    { symptom: "แผลติดเชื้อ", drugs: "Dicloxacillin 250-500mg x 4 ac (5-7 วัน)" }
                 ]
                 },
                 {
@@ -131,10 +130,9 @@
                 icon: Droplet,
                 color: "border-blue-500",
                 items: [
-                    { symptom: "กระเพาะปัสสาวะอักเสบ (UTI)", drugs: "Norfloxacin, Ciprofloxacin, Fosfomycin (ซองเดียว)" },
-                    { symptom: "ตกขาวเชื้อรา (คัน/เป็นก้อน)", drugs: "Clotrimazole (สอด), Fluconazole/Itraconazole (กิน)" },
-                    { symptom: "ตกขาวแบคทีเรีย (กลิ่นคาว)", drugs: "Metronidazole (ห้ามดื่มแอลกอฮอล์)" },
-                    { symptom: "ปวดประจำเดือน", drugs: "Mefenamic acid (Ponstan), Ibuprofen" }
+                    { symptom: "กระเพาะปัสสาวะอักเสบ (UTI)", drugs: "• Nitrofurantoin 100mg x 2 (5-7 วัน)\n• Fosfomycin 3g (Single dose)\n• Norfloxacin 400mg x 2 (3-5 วัน)\n• Flavoxate 200mg x 3 (แก้ปวดเกร็ง)" },
+                    { symptom: "ตกขาวเชื้อรา (VVC)", drugs: "• Itraconazole 200mg x 2 (1 วัน) หรือ 200mg OD (3 วัน)\n• Clotrimazole 500mg สอด (Single)" },
+                    { symptom: "ตกขาวแบคทีเรีย (BV)", drugs: "• Metronidazole 2g (Single) หรือ 400mg x 2 (7 วัน)\n• Tinidazole 2g (Single)" }
                 ]
                 },
                 {
@@ -142,10 +140,9 @@
                 icon: Eye,
                 color: "border-cyan-500",
                 items: [
-                    { symptom: "ตาแห้ง / ระคายเคือง", drugs: "Artificial Tears (น้ำตาเทียมรายวัน/รายเดือน)" },
-                    { symptom: "ตาติดเชื้อ (Eye Infection)", drugs: "Tobramycin Drop (Tobrex), Chloramphenicol Ointment" },
-                    { symptom: "หูอักเสบ / ปวดหู", drugs: "Dexoph (Steroid+Antibiotic drop), Amoxicillin (กิน)" },
-                    { symptom: "ขี้หูอุดตัน", drugs: "Dewax (Sodium docusate) หยอดละลายขี้หู" }
+                    { symptom: "ตาติดเชื้อ / กุ้งยิง", drugs: "• Tobramycin / Terramycin Eye Oint.\n• Dicloxacillin 500mg x 4 ac" },
+                    { symptom: "ภูมิแพ้ตา", drugs: "Antazoline (Hista-oph), Artificial tears" },
+                    { symptom: "หูอักเสบ", drugs: "Dexoph ear drop 3-4 drops x 3-4\n• Amoxicillin 500mg x 3 pc (7-10 วัน)" }
                 ]
                 },
                 {
@@ -153,10 +150,9 @@
                 icon: Pill,
                 color: "border-indigo-500",
                 items: [
-                    { symptom: "เมารถ / เมาเรือ", drugs: "Dimenhydrinate (กินก่อนออกเดินทาง 30 นาที)" },
-                    { symptom: "นอนไม่หลับ", drugs: "Melatonin, Valerian Root, Diphenhydramine (Sleep aid)" },
-                    { symptom: "เบื่ออาหาร / บำรุง", drugs: "Cyproheptadine (กระตุ้น), Vitamin B-Complex" },
-                    { symptom: "ริดสีดวงทวาร", drugs: "Daflon (กิน), Proctosedyl (เหน็บ/ทา), Petch Sang Kart" }
+                    { symptom: "เมารถ / เมาเรือ", drugs: "Dimenhydrinate 50mg (ก่อนเดินทาง 30 นาที)" },
+                    { symptom: "นอนไม่หลับ", drugs: "Melatonin, Valerian, Diphenhydramine 50mg" },
+                    { symptom: "เลิกบุหรี่", drugs: "Cytisine 1.5mg, Nicotine Gum, หญ้าดอกขาว" }
                 ]
                 }
             ];
