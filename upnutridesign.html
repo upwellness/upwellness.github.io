@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriDesign - ออกแบบมื้ออาหารลดไขมัน</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Hide scrollbar for category list */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        // --- ICONS (SVG Components) ---
+        // สร้าง Component ไอคอนจำลองเพื่อให้ใช้งานเหมือน Lucide React ได้
+        const IconWrapper = ({ children, size = 24, className = "", color = "currentColor", ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+                {children}
+            </svg>
+        );
+
+        const Plus = (props) => <IconWrapper {...props}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></IconWrapper>;
+        const Minus = (props) => <IconWrapper {...props}><line x1="5" y1="12" x2="19" y2="12"></line></IconWrapper>;
+        const Trash2 = (props) => <IconWrapper {...props}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></IconWrapper>;
+        const PieChart = (props) => <IconWrapper {...props}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></IconWrapper>;
+        const Info = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></IconWrapper>;
+        const Utensils = (props) => <IconWrapper {...props}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></IconWrapper>;
+        const Leaf = (props) => <IconWrapper {...props}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></IconWrapper>;
+        const Beef = (props) => <IconWrapper {...props}><circle cx="12.5" cy="8.5" r="2.5"/><path d="M12.5 2a6.5 6.5 0 0 0-6.22 4.6c-1.1 3.13-.78 3.9-3.18 6.08A3.5 3.5 0 0 0 5 18c4 0 5-4 8-4a4.5 4.5 0 0 1 4.5 4.5c0 4 6.5 4.5 8 2a3.5 3.5 0 0 0-6-3.21C18.5 14.5 19 12 19 8.5a6.5 6.5 0 0 0-6.5-6.5Z"/></IconWrapper>;
+        const Droplet = (props) => <IconWrapper {...props}><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-7.406-2.122-3.715-2.222-3.957-3.28-5.228a1 1 0 0 0-1.44 0c-1.058 1.27-1.158 1.512-3.28 5.228C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></IconWrapper>;
+        const Wheat = (props) => <IconWrapper {...props}><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></IconWrapper>;
+        const Search = (props) => <IconWrapper {...props}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></IconWrapper>;
+        const X = (props) => <IconWrapper {...props}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></IconWrapper>;
+        const Coffee = (props) => <IconWrapper {...props}><path d="M17 8h1a4 4 0 1 1 0 8h-1"></path><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></IconWrapper>;
+        const Soup = (props) => <IconWrapper {...props}><path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z"></path><path d="M7 21h10"></path><path d="M19.5 12 22 6"></path><path d="M16.25 12 18 3.5"></path><path d="M5 6 7.75 12"></path><path d="M6 3.5 8 12"></path></IconWrapper>;
+        const Cookie = (props) => <IconWrapper {...props}><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"></path><path d="M8.5 8.5v.01"></path><path d="M16 15.5v.01"></path><path d="M12 12v.01"></path><path d="M11 17v.01"></path><path d="M7 14v.01"></path></IconWrapper>;
+        const Zap = (props) => <IconWrapper {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></IconWrapper>;
+        const Star = (props) => <IconWrapper {...props}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></IconWrapper>;
+        const IceCream = (props) => <IconWrapper {...props}><path d="m7 11 4.08 10.35a1 1 0 0 0 1.84 0L17 11"></path><path d="M17 7A5 5 0 0 0 7 7"></path><path d="M17 7a2 2 0 0 1 0 4H7a2 2 0 0 1 0-4"></path></IconWrapper>;
+
+
+        // --- MEGA FOOD DATABASE (400+ Popular Items) ---
+        const FOOD_DATABASE = [
+            // --- 1. Protein: Meat, Poultry, Seafood, Eggs ---
+            { id: 101, name: 'อกไก่ต้ม/นึ่ง', category: 'protein', calories: 120, protein: 23, carbs: 0, fat: 2.5, unit: '100g', emoji: '🐔' },
+            { id: 102, name: 'อกไก่ย่าง (ลอกหนัง)', category: 'protein', calories: 165, protein: 31, carbs: 0, fat: 3.6, unit: '100g', emoji: '🍗' },
+            { id: 103, name: 'สะโพกไก่ (ลอกหนัง)', category: 'protein', calories: 209, protein: 26, carbs: 0, fat: 10.9, unit: '100g', emoji: '🍖' },
+            { id: 104, name: 'น่องไก่ติดสะโพกย่าง', category: 'protein', calories: 350, protein: 24, carbs: 0, fat: 28, unit: '1 ชิ้นใหญ่', emoji: '🍗' },
+            { id: 105, name: 'ปีกไก่ทอด', category: 'protein', calories: 290, protein: 27, carbs: 0, fat: 19, unit: '3 ปีกกลาง', emoji: '🍗' },
+            { id: 106, name: 'สันในหมู', category: 'protein', calories: 143, protein: 26, carbs: 0, fat: 3.5, unit: '100g', emoji: '🐖' },
+            { id: 107, name: 'หมูสับ (ติดมันปกติ)', category: 'protein', calories: 260, protein: 17, carbs: 0, fat: 21, unit: '100g', emoji: '🥘' },
+            { id: 108, name: 'หมูสามชั้นสไลด์', category: 'protein', calories: 518, protein: 9, carbs: 0, fat: 53, unit: '100g', emoji: '🥓' },
+            { id: 109, name: 'เบคอนทอด', category: 'protein', calories: 89, protein: 6, carbs: 0.2, fat: 7, unit: '2 ชิ้น', emoji: '🥓' },
+            { id: 110, name: 'คอหมูย่าง', category: 'protein', calories: 350, protein: 18, carbs: 2, fat: 30, unit: '100g', emoji: '🥩' },
+            { id: 111, name: 'หมูแดดเดียวทอด', category: 'protein', calories: 380, protein: 25, carbs: 5, fat: 30, unit: '100g', emoji: '🥓' },
+            { id: 112, name: 'เนื้อวัว (สันนอก) ย่าง', category: 'protein', calories: 240, protein: 28, carbs: 0, fat: 14, unit: '150g', emoji: '🥩' },
+            { id: 113, name: 'เนื้อวัว (ริบอาย) ย่าง', category: 'protein', calories: 290, protein: 24, carbs: 0, fat: 22, unit: '150g', emoji: '🥩' },
+            { id: 114, name: 'เนื้อบด (Lean)', category: 'protein', calories: 250, protein: 26, carbs: 0, fat: 15, unit: '100g', emoji: '🍔' },
+            { id: 115, name: 'ไข่ไก่ต้ม', category: 'protein', calories: 78, protein: 6, carbs: 0.6, fat: 5, unit: '1 ฟอง', emoji: '🥚' },
+            { id: 116, name: 'ไข่ดาว (น้ำมันน้อย)', category: 'protein', calories: 120, protein: 6, carbs: 0.8, fat: 10, unit: '1 ฟอง', emoji: '🍳' },
+            { id: 117, name: 'ไข่เจียว (น้ำมันปกติ)', category: 'protein', calories: 250, protein: 12, carbs: 2, fat: 22, unit: '2 ฟอง', emoji: '🍳' },
+            { id: 118, name: 'ไข่ขาวต้ม', category: 'protein', calories: 17, protein: 3.6, carbs: 0.2, fat: 0, unit: '1 ฟอง', emoji: '🥚' },
+            { id: 119, name: 'ไข่ตุ๋นหมูสับ', category: 'protein', calories: 120, protein: 10, carbs: 2, fat: 8, unit: '1 ถ้วย', emoji: '🍮' },
+            { id: 120, name: 'แซลมอนย่าง/สเต็ก', category: 'protein', calories: 208, protein: 20, carbs: 0, fat: 13, unit: '100g', emoji: '🐟' },
+            { id: 121, name: 'แซลมอนซาชิมิ', category: 'protein', calories: 180, protein: 20, carbs: 0, fat: 11, unit: '100g', emoji: '🍣' },
+            { id: 122, name: 'ปลากะพงนึ่งมะนาว', category: 'protein', calories: 120, protein: 22, carbs: 2, fat: 3, unit: '100g', emoji: '🐟' },
+            { id: 123, name: 'ปลาทูทอด', category: 'protein', calories: 150, protein: 20, carbs: 0, fat: 8, unit: '1 ตัวกลาง', emoji: '🐟' },
+            { id: 124, name: 'กุ้งแม่น้ำเผา', category: 'protein', calories: 200, protein: 30, carbs: 0, fat: 8, unit: '2 ตัวกลาง', emoji: '🦐' },
+            { id: 125, name: 'กุ้งต้ม/ลวก', category: 'protein', calories: 99, protein: 24, carbs: 0.2, fat: 0.3, unit: '100g', emoji: '🍤' },
+            { id: 126, name: 'หมึกย่าง', category: 'protein', calories: 92, protein: 16, carbs: 3, fat: 1.4, unit: '100g', emoji: '🦑' },
+            { id: 127, name: 'หอยแมลงภู่นึ่ง', category: 'protein', calories: 172, protein: 24, carbs: 7, fat: 4, unit: '100g (เนื้อ)', emoji: '🦪' },
+            { id: 128, name: 'ทูน่ากระป๋อง (ในน้ำแร่)', category: 'protein', calories: 116, protein: 26, carbs: 0, fat: 1, unit: '1 กระป๋อง', emoji: '🥫' },
+            { id: 129, name: 'ไส้กรอกหมู (รมควัน)', category: 'protein', calories: 300, protein: 12, carbs: 5, fat: 26, unit: '2 ชิ้นยาว', emoji: '🌭' },
+            { id: 130, name: 'ลูกชิ้นหมูปิ้ง', category: 'protein', calories: 150, protein: 8, carbs: 15, fat: 6, unit: '1 ไม้ (4 ลูก)', emoji: '🍡' },
+
+            // --- 2. Plant Protein & Dairy ---
+            { id: 150, name: 'เต้าหู้ขาว (แข็ง)', category: 'protein', calories: 145, protein: 16, carbs: 4, fat: 7, unit: '100g', emoji: '🧊' },
+            { id: 151, name: 'เต้าหู้ไข่', category: 'protein', calories: 70, protein: 5, carbs: 3, fat: 4, unit: '1 หลอด', emoji: '🍮' },
+            { id: 152, name: 'นมวัว (Full Fat)', category: 'protein', calories: 150, protein: 8, carbs: 12, fat: 8, unit: '1 แก้ว (240ml)', emoji: '🥛' },
+            { id: 153, name: 'นม Low Fat', category: 'protein', calories: 100, protein: 8, carbs: 12, fat: 2.5, unit: '1 แก้ว', emoji: '🥛' },
+            { id: 154, name: 'นมถั่วเหลือง (ไม่หวาน)', category: 'protein', calories: 80, protein: 8, carbs: 4, fat: 4, unit: '1 แก้ว', emoji: '🥛' },
+            { id: 155, name: 'นมถั่วเหลือง (หวานปกติ)', category: 'protein', calories: 140, protein: 7, carbs: 22, fat: 4, unit: '1 แก้ว', emoji: '🥛' },
+            { id: 156, name: 'กรีกโยเกิร์ต (Plain)', category: 'protein', calories: 100, protein: 10, carbs: 6, fat: 4, unit: '1 ถ้วย (150g)', emoji: '🥣' },
+            { id: 157, name: 'โยเกิร์ตผลไม้รวม', category: 'protein', calories: 180, protein: 4, carbs: 32, fat: 2, unit: '1 ถ้วย', emoji: '🥣' },
+            { id: 158, name: 'เวย์โปรตีน (Isolate)', category: 'protein', calories: 120, protein: 25, carbs: 2, fat: 0.5, unit: '1 สกู๊ป', emoji: '🥤' },
+            { id: 159, name: 'Plant Based Protein', category: 'protein', calories: 150, protein: 25, carbs: 5, fat: 3, unit: '1 สกู๊ป', emoji: '🌱' },
+
+            // --- 3. Carbs: Rice, Noodles, Bread ---
+            { id: 201, name: 'ข้าวสวย (หอมมะลิ)', category: 'carb', calories: 160, protein: 3, carbs: 35, fat: 0.5, unit: '1 ทัพพี', emoji: '🍚' },
+            { id: 202, name: 'ข้าวกล้อง/ข้าวแดง', category: 'carb', calories: 110, protein: 2.5, carbs: 23, fat: 1, unit: '1 ทัพพี', emoji: '🍚' },
+            { id: 203, name: 'ข้าวไรซ์เบอร์รี่', category: 'carb', calories: 130, protein: 2.6, carbs: 28, fat: 0.9, unit: '1 ทัพพี', emoji: '🍚' },
+            { id: 204, name: 'ข้าวเหนียว', category: 'carb', calories: 145, protein: 3, carbs: 32, fat: 0.5, unit: 'ครึ่งทัพพี', emoji: '🍙' },
+            { id: 205, name: 'ข้าวญี่ปุ่น', category: 'carb', calories: 180, protein: 3, carbs: 38, fat: 0.5, unit: '1 ทัพพี', emoji: '🍚' },
+            { id: 206, name: 'เส้นหมี่ขาว (ลวก)', category: 'carb', calories: 150, protein: 2, carbs: 35, fat: 0.2, unit: '1 ก้อน', emoji: '🍜' },
+            { id: 207, name: 'เส้นเล็ก (ลวก)', category: 'carb', calories: 180, protein: 2, carbs: 40, fat: 1, unit: '1 ก้อน', emoji: '🍜' },
+            { id: 208, name: 'เส้นใหญ่ (ลวก)', category: 'carb', calories: 220, protein: 2, carbs: 48, fat: 2, unit: '1 ถ้วย', emoji: '🍜' },
+            { id: 209, name: 'บะหมี่หยก/เหลือง', category: 'carb', calories: 200, protein: 7, carbs: 40, fat: 2, unit: '1 ก้อน', emoji: '🍜' },
+            { id: 210, name: 'วุ้นเส้น (สุก)', category: 'carb', calories: 80, protein: 0, carbs: 20, fat: 0, unit: '1 ถ้วย', emoji: '🍲' },
+            { id: 211, name: 'เส้นบุก', category: 'carb', calories: 10, protein: 0, carbs: 2, fat: 0, unit: '100g', emoji: '🍜' },
+            { id: 212, name: 'เส้นสปาเก็ตตี้', category: 'carb', calories: 220, protein: 8, carbs: 43, fat: 1, unit: '100g (สุก)', emoji: '🍝' },
+            { id: 213, name: 'ขนมจีน', category: 'carb', calories: 90, protein: 1, carbs: 20, fat: 0, unit: '1 จับ', emoji: '🧶' },
+            { id: 214, name: 'ขนมปังขาว', category: 'carb', calories: 80, protein: 2, carbs: 15, fat: 1, unit: '1 แผ่น', emoji: '🍞' },
+            { id: 215, name: 'ขนมปังโฮลวีต', category: 'carb', calories: 75, protein: 3, carbs: 13, fat: 1, unit: '1 แผ่น', emoji: '🍞' },
+            { id: 216, name: 'ครัวซองต์ (Plain)', category: 'carb', calories: 230, protein: 5, carbs: 26, fat: 12, unit: '1 ชิ้น', emoji: '🥐' },
+            { id: 217, name: 'เบเกิล (Bagel)', category: 'carb', calories: 250, protein: 10, carbs: 48, fat: 1.5, unit: '1 ชิ้น', emoji: '🥯' },
+            { id: 218, name: 'มันหวานนึ่ง', category: 'carb', calories: 114, protein: 2, carbs: 27, fat: 0.1, unit: '1 หัวกลาง', emoji: '🍠' },
+            { id: 219, name: 'มันฝรั่งต้ม/อบ', category: 'carb', calories: 87, protein: 2, carbs: 20, fat: 0.1, unit: '1 หัวกลาง', emoji: '🥔' },
+            { id: 220, name: 'เฟรนช์ฟรายส์', category: 'carb', calories: 312, protein: 3, carbs: 41, fat: 15, unit: '1 ถุงกลาง', emoji: '🍟' },
+            { id: 221, name: 'ข้าวโพดต้ม', category: 'carb', calories: 90, protein: 3, carbs: 19, fat: 1, unit: '1 ฝัก', emoji: '🌽' },
+            { id: 222, name: 'เผือกนึ่ง', category: 'carb', calories: 120, protein: 1, carbs: 27, fat: 0.2, unit: '100g', emoji: '🥔' },
+            { id: 223, name: 'ข้าวโอ๊ต (สุก)', category: 'carb', calories: 150, protein: 5, carbs: 27, fat: 3, unit: '1 ถ้วย', emoji: '🥣' },
+
+            // --- 4. Fruits ---
+            { id: 250, name: 'กล้วยหอม', category: 'carb', calories: 105, protein: 1, carbs: 27, fat: 0.3, unit: '1 ลูก', emoji: '🍌' },
+            { id: 251, name: 'กล้วยน้ำว้า', category: 'carb', calories: 60, protein: 1, carbs: 15, fat: 0.2, unit: '1 ลูก', emoji: '🍌' },
+            { id: 252, name: 'แอปเปิ้ลเขียว', category: 'carb', calories: 80, protein: 0.5, carbs: 20, fat: 0.2, unit: '1 ลูก', emoji: '🍏' },
+            { id: 253, name: 'แอปเปิ้ลแดง', category: 'carb', calories: 95, protein: 0.5, carbs: 25, fat: 0.3, unit: '1 ลูก', emoji: '🍎' },
+            { id: 254, name: 'ส้มเขียวหวาน', category: 'carb', calories: 60, protein: 1, carbs: 15, fat: 0, unit: '1 ลูก', emoji: '🍊' },
+            { id: 255, name: 'มะม่วงสุก', category: 'carb', calories: 150, protein: 1, carbs: 35, fat: 0.5, unit: 'ครึ่งลูก', emoji: '🥭' },
+            { id: 256, name: 'มะม่วงดิบ/มัน', category: 'carb', calories: 100, protein: 1, carbs: 25, fat: 0.3, unit: 'ครึ่งลูก', emoji: '🥭' },
+            { id: 257, name: 'ทุเรียน (หมอนทอง)', category: 'carb', calories: 160, protein: 2, carbs: 29, fat: 5, unit: '1 เม็ดกลาง', emoji: '🦴' },
+            { id: 258, name: 'แตงโม', category: 'carb', calories: 30, protein: 0.6, carbs: 8, fat: 0.1, unit: '100g', emoji: '🍉' },
+            { id: 259, name: 'สับปะรด', category: 'carb', calories: 50, protein: 0.5, carbs: 13, fat: 0.1, unit: '1 ชิ้นยาว', emoji: '🍍' },
+            { id: 260, name: 'ฝรั่ง', category: 'carb', calories: 60, protein: 2.5, carbs: 14, fat: 1, unit: '1 ลูก', emoji: '🍈' },
+            { id: 261, name: 'แก้วมังกร', category: 'carb', calories: 60, protein: 1, carbs: 13, fat: 0.4, unit: 'ครึ่งลูก', emoji: '🐲' },
+            { id: 262, name: 'มะละกอสุก', category: 'carb', calories: 55, protein: 0.5, carbs: 14, fat: 0.1, unit: '1 ชิ้นยาว', emoji: '🍈' },
+            { id: 263, name: 'เงาะ/ลำไย/ลิ้นจี่', category: 'carb', calories: 75, protein: 1, carbs: 18, fat: 0, unit: '5 ผล', emoji: '🍒' },
+            { id: 264, name: 'สตรอเบอร์รี่', category: 'carb', calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, unit: '100g', emoji: '🍓' },
+            { id: 265, name: 'องุ่น', category: 'carb', calories: 69, protein: 0.7, carbs: 18, fat: 0.2, unit: '15 ลูก', emoji: '🍇' },
+
+            // --- 5. Fat: Good Fats, Nuts, Oils ---
+            { id: 301, name: 'อโวคาโด', category: 'fat', calories: 160, protein: 2, carbs: 8.5, fat: 15, unit: 'ครึ่งลูก', emoji: '🥑' },
+            { id: 302, name: 'อัลมอนด์อบ', category: 'fat', calories: 164, protein: 6, carbs: 6, fat: 14, unit: '1 กำมือ (30g)', emoji: '🥜' },
+            { id: 303, name: 'เม็ดมะม่วงหิมพานต์', category: 'fat', calories: 160, protein: 5, carbs: 9, fat: 13, unit: '1 กำมือ', emoji: '🥜' },
+            { id: 304, name: 'ถั่วลิสงคั่ว', category: 'fat', calories: 170, protein: 7, carbs: 5, fat: 15, unit: '1 กำมือ', emoji: '🥜' },
+            { id: 305, name: 'เนยถั่ว (Peanut Butter)', category: 'fat', calories: 190, protein: 8, carbs: 6, fat: 16, unit: '2 ช้อนโต๊ะ', emoji: '🥜' },
+            { id: 306, name: 'น้ำมันมะกอก', category: 'fat', calories: 119, protein: 0, carbs: 0, fat: 13.5, unit: '1 ช้อนโต๊ะ', emoji: '🫒' },
+            { id: 307, name: 'น้ำมันมะพร้าว', category: 'fat', calories: 117, protein: 0, carbs: 0, fat: 13.6, unit: '1 ช้อนโต๊ะ', emoji: '🥥' },
+            { id: 308, name: 'น้ำมันพืช/หมู/ถั่วเหลือง', category: 'fat', calories: 120, protein: 0, carbs: 0, fat: 14, unit: '1 ช้อนโต๊ะ', emoji: '🍳' },
+            { id: 309, name: 'เนยสด (Butter)', category: 'fat', calories: 102, protein: 0.1, carbs: 0, fat: 11.5, unit: '1 ช้อนโต๊ะ', emoji: '🧈' },
+            { id: 310, name: 'เชดดาร์ชีส', category: 'fat', calories: 113, protein: 7, carbs: 1, fat: 9, unit: '1 แผ่น', emoji: '🧀' },
+            { id: 311, name: 'มอสซาเรลล่าชีส', category: 'fat', calories: 85, protein: 6, carbs: 1, fat: 6, unit: '100g', emoji: '🧀' },
+            { id: 312, name: 'หัวกะทิ', category: 'fat', calories: 230, protein: 2, carbs: 6, fat: 24, unit: '100ml', emoji: '🥥' },
+            { id: 313, name: 'มายองเนส', category: 'fat', calories: 90, protein: 0, carbs: 0, fat: 10, unit: '1 ช้อนโต๊ะ', emoji: '🥛' },
+            { id: 314, name: 'น้ำสลัดครีม', category: 'fat', calories: 80, protein: 0, carbs: 4, fat: 7, unit: '1 ช้อนโต๊ะ', emoji: '🥗' },
+            { id: 315, name: 'น้ำสลัดงาญี่ปุ่น', category: 'fat', calories: 50, protein: 0.5, carbs: 3, fat: 4, unit: '1 ช้อนโต๊ะ', emoji: '🥗' },
+            { id: 316, name: 'ดาร์กช็อกโกแลต (70%+)', category: 'fat', calories: 170, protein: 2, carbs: 13, fat: 12, unit: '30g', emoji: '🍫' },
+            { id: 317, name: 'เมล็ดเจีย', category: 'fat', calories: 60, protein: 3, carbs: 5, fat: 4, unit: '1 ช้อนโต๊ะ', emoji: '🌱' },
+            { id: 318, name: 'วิปครีม (นมแท้)', category: 'fat', calories: 52, protein: 0.3, carbs: 0.4, fat: 5.5, unit: '1 ช้อนโต๊ะ', emoji: '🧁' },
+
+            // --- 6. Veggies (Fiber) ---
+            { id: 401, name: 'บรอกโคลี', category: 'veggie', calories: 34, protein: 2.8, carbs: 7, fat: 0.4, unit: '100g', emoji: '🥦' },
+            { id: 402, name: 'คะน้า', category: 'veggie', calories: 22, protein: 2, carbs: 4, fat: 0.5, unit: '100g', emoji: '🥬' },
+            { id: 403, name: 'ผักบุ้ง', category: 'veggie', calories: 19, protein: 2, carbs: 3, fat: 0.2, unit: '100g', emoji: '🌿' },
+            { id: 404, name: 'กะหล่ำปลี', category: 'veggie', calories: 25, protein: 1, carbs: 6, fat: 0.1, unit: '100g', emoji: '🥬' },
+            { id: 405, name: 'ผักกาดขาว', category: 'veggie', calories: 16, protein: 1, carbs: 3, fat: 0.2, unit: '100g', emoji: '🥬' },
+            { id: 406, name: 'ผักโขม', category: 'veggie', calories: 23, protein: 2.9, carbs: 3.6, fat: 0.4, unit: '100g', emoji: '🌿' },
+            { id: 407, name: 'แตงกวา', category: 'veggie', calories: 15, protein: 0.7, carbs: 3.6, fat: 0.1, unit: '100g', emoji: '🥒' },
+            { id: 408, name: 'มะเขือเทศ', category: 'veggie', calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, unit: '1 ลูก', emoji: '🍅' },
+            { id: 409, name: 'แครอท', category: 'veggie', calories: 41, protein: 0.9, carbs: 10, fat: 0.2, unit: '100g', emoji: '🥕' },
+            { id: 410, name: 'ฟักทองนึ่ง', category: 'veggie', calories: 45, protein: 1, carbs: 10, fat: 0, unit: '100g', emoji: '🎃' },
+            { id: 411, name: 'เห็ดออรินจิ/เห็ดฟาง', category: 'veggie', calories: 35, protein: 3, carbs: 5, fat: 0.1, unit: '100g', emoji: '🍄' },
+            { id: 412, name: 'เห็ดเข็มทอง', category: 'veggie', calories: 37, protein: 2.7, carbs: 7.8, fat: 0, unit: '100g', emoji: '🍄' },
+            { id: 413, name: 'ถั่วฝักยาว', category: 'veggie', calories: 47, protein: 3, carbs: 8, fat: 0.1, unit: '100g', emoji: '🌱' },
+            { id: 414, name: 'หน่อไม้ฝรั่ง', category: 'veggie', calories: 20, protein: 2.2, carbs: 3.9, fat: 0.1, unit: '100g', emoji: '🎍' },
+            { id: 415, name: 'มะละกอดิบ (เส้น)', category: 'veggie', calories: 40, protein: 1, carbs: 10, fat: 0, unit: '1 จานเล็ก', emoji: '🥗' },
+            { id: 416, name: 'หอมใหญ่', category: 'veggie', calories: 40, protein: 1, carbs: 9, fat: 0.1, unit: '1 หัว', emoji: '🧅' },
+            { id: 417, name: 'พริกหยวก/หวาน', category: 'veggie', calories: 25, protein: 1, carbs: 5, fat: 0.2, unit: '1 ลูก', emoji: '🫑' },
+            { id: 418, name: 'ผักสลัดรวม (Lettuce/Cos)', category: 'veggie', calories: 15, protein: 1, carbs: 3, fat: 0, unit: '1 ถ้วย', emoji: '🥗' },
+            { id: 419, name: 'สาหร่ายวากาเมะ', category: 'veggie', calories: 45, protein: 3, carbs: 9, fat: 0.6, unit: '1 ถ้วยเล็ก', emoji: '🌿' },
+            { id: 420, name: 'กระเจี๊ยบเขียวลวก', category: 'veggie', calories: 33, protein: 2, carbs: 7, fat: 0.1, unit: '100g', emoji: '🌿' },
+
+            // --- 7. Popular Dishes: Thai (จานเดียว/กับข้าว) ---
+            { id: 501, name: 'ข้าวกะเพราไก่ไข่ดาว', category: 'dish', calories: 630, protein: 25, carbs: 70, fat: 28, unit: '1 จาน', emoji: '🍛' },
+            { id: 502, name: 'ข้าวกะเพราหมูสับไข่ดาว', category: 'dish', calories: 750, protein: 26, carbs: 70, fat: 38, unit: '1 จาน', emoji: '🍛' },
+            { id: 503, name: 'ข้าวมันไก่ (พร้อมหนัง)', category: 'dish', calories: 596, protein: 25, carbs: 70, fat: 24, unit: '1 จาน', emoji: '🍗' },
+            { id: 504, name: 'ข้าวมันไก่ (ไม่หนัง)', category: 'dish', calories: 480, protein: 28, carbs: 70, fat: 10, unit: '1 จาน', emoji: '🍗' },
+            { id: 505, name: 'ข้าวหมูแดง', category: 'dish', calories: 540, protein: 18, carbs: 80, fat: 16, unit: '1 จาน', emoji: '🍛' },
+            { id: 506, name: 'ข้าวขาหมู (คากิ+หนัง)', category: 'dish', calories: 690, protein: 28, carbs: 60, fat: 38, unit: '1 จาน', emoji: '🍖' },
+            { id: 507, name: 'ข้าวไข่เจียวหมูสับ', category: 'dish', calories: 680, protein: 22, carbs: 65, fat: 38, unit: '1 จาน', emoji: '🍳' },
+            { id: 508, name: 'ผัดไทยกุ้งสด', category: 'dish', calories: 550, protein: 18, carbs: 75, fat: 20, unit: '1 จาน', emoji: '🍝' },
+            { id: 509, name: 'ส้มตำไทย', category: 'dish', calories: 120, protein: 5, carbs: 20, fat: 2, unit: '1 จาน', emoji: '🥗' },
+            { id: 510, name: 'ส้มตำปูปลาร้า', category: 'dish', calories: 100, protein: 8, carbs: 15, fat: 1, unit: '1 จาน', emoji: '🥗' },
+            { id: 511, name: 'ลาบหมู', category: 'dish', calories: 150, protein: 18, carbs: 8, fat: 6, unit: '1 จาน', emoji: '🥙' },
+            { id: 512, name: 'น้ำตกหมู', category: 'dish', calories: 200, protein: 18, carbs: 8, fat: 10, unit: '1 จาน', emoji: '🥩' },
+            { id: 513, name: 'คอหมูย่าง', category: 'dish', calories: 350, protein: 15, carbs: 5, fat: 30, unit: '1 จาน', emoji: '🥩' },
+            { id: 514, name: 'ต้มยำกุ้งน้ำข้น', category: 'dish', calories: 250, protein: 20, carbs: 10, fat: 15, unit: '1 ถ้วย', emoji: '🍲' },
+            { id: 515, name: 'แกงเขียวหวานไก่', category: 'dish', calories: 350, protein: 15, carbs: 10, fat: 28, unit: '1 ถ้วย', emoji: '🍲' },
+            { id: 516, name: 'แกงมัสมั่นไก่', category: 'dish', calories: 450, protein: 20, carbs: 20, fat: 32, unit: '1 ถ้วย', emoji: '🍲' },
+            { id: 517, name: 'พะแนงหมู', category: 'dish', calories: 380, protein: 18, carbs: 15, fat: 28, unit: '1 ถ้วย', emoji: '🍲' },
+            { id: 518, name: 'ก๋วยเตี๋ยวหมูน้ำใส', category: 'dish', calories: 350, protein: 15, carbs: 60, fat: 6, unit: '1 ชาม', emoji: '🍜' },
+            { id: 519, name: 'ก๋วยเตี๋ยวต้มยำ', category: 'dish', calories: 400, protein: 18, carbs: 60, fat: 10, unit: '1 ชาม', emoji: '🍜' },
+            { id: 520, name: 'ก๋วยเตี๋ยวเรือ (น้ำตก)', category: 'dish', calories: 450, protein: 20, carbs: 55, fat: 15, unit: '1 ชาม', emoji: '🍜' },
+            { id: 521, name: 'บะหมี่แห้งหมูแดง', category: 'dish', calories: 450, protein: 15, carbs: 65, fat: 15, unit: '1 ชาม', emoji: '🍜' },
+            { id: 522, name: 'สุกี้น้ำไก่/ทะเล', category: 'dish', calories: 350, protein: 25, carbs: 45, fat: 8, unit: '1 ชาม', emoji: '🍲' },
+            { id: 523, name: 'ข้าวผัดหมู/ไก่', category: 'dish', calories: 560, protein: 18, carbs: 70, fat: 23, unit: '1 จาน', emoji: '🍛' },
+            { id: 524, name: 'ราดหน้าหมู', category: 'dish', calories: 450, protein: 18, carbs: 60, fat: 15, unit: '1 จาน', emoji: '🍜' },
+            { id: 525, name: 'ผัดซีอิ๊วหมู', category: 'dish', calories: 650, protein: 22, carbs: 75, fat: 30, unit: '1 จาน', emoji: '🍜' },
+            { id: 526, name: 'ยำวุ้นเส้น', category: 'dish', calories: 150, protein: 10, carbs: 25, fat: 1, unit: '1 จาน', emoji: '🥗' },
+            { id: 527, name: 'ยำมาม่า', category: 'dish', calories: 350, protein: 12, carbs: 50, fat: 12, unit: '1 จาน', emoji: '🥗' },
+            { id: 528, name: 'ไข่พะโล้', category: 'dish', calories: 280, protein: 14, carbs: 10, fat: 18, unit: '1 ถ้วย', emoji: '🍲' },
+            { id: 529, name: 'แกงส้มชะอมกุ้ง', category: 'dish', calories: 250, protein: 18, carbs: 15, fat: 12, unit: '1 ถ้วย', emoji: '🍲' },
+            { id: 530, name: 'ข้าวคลุกกะปิ', category: 'dish', calories: 600, protein: 20, carbs: 75, fat: 22, unit: '1 จาน', emoji: '🍛' },
+            { id: 531, name: 'ก๋วยจั๊บน้ำข้น', category: 'dish', calories: 480, protein: 20, carbs: 60, fat: 18, unit: '1 ชาม', emoji: '🍜' },
+            { id: 532, name: 'เย็นตาโฟ', category: 'dish', calories: 420, protein: 15, carbs: 65, fat: 10, unit: '1 ชาม', emoji: '🍜' },
+            
+            // --- 8. Popular Dishes: International & Fast Food ---
+            { id: 550, name: 'เบอร์เกอร์หมู/เนื้อ', category: 'dish', calories: 550, protein: 25, carbs: 45, fat: 30, unit: '1 ชิ้น', emoji: '🍔' },
+            { id: 551, name: 'พิซซ่า (1 ชิ้น)', category: 'dish', calories: 300, protein: 12, carbs: 35, fat: 12, unit: '1 ชิ้นกลาง', emoji: '🍕' },
+            { id: 552, name: 'สปาเก็ตตี้คาโบนาร่า', category: 'dish', calories: 750, protein: 25, carbs: 65, fat: 45, unit: '1 จาน', emoji: '🍝' },
+            { id: 553, name: 'สปาเก็ตตี้ซอสมะเขือเทศ', category: 'dish', calories: 450, protein: 15, carbs: 70, fat: 12, unit: '1 จาน', emoji: '🍝' },
+            { id: 554, name: 'สเต็กหมู พริกไทยดำ', category: 'dish', calories: 600, protein: 40, carbs: 20, fat: 35, unit: '1 จาน', emoji: '🥩' },
+            { id: 555, name: 'สลัดไก่ย่าง', category: 'dish', calories: 350, protein: 25, carbs: 15, fat: 20, unit: '1 จาน', emoji: '🥗' },
+            { id: 556, name: 'ซูชิ (แซลมอน)', category: 'dish', calories: 50, protein: 4, carbs: 8, fat: 1, unit: '1 คำ', emoji: '🍣' },
+            { id: 557, name: 'ข้าวหน้าปลาไหล', category: 'dish', calories: 650, protein: 25, carbs: 80, fat: 22, unit: '1 ชาม', emoji: '🍱' },
+            { id: 558, name: 'ข้าวแกงกะหรี่หมูทอด', category: 'dish', calories: 850, protein: 28, carbs: 100, fat: 35, unit: '1 จาน', emoji: '🍛' },
+            { id: 559, name: 'ราเมงทงคตสึ', category: 'dish', calories: 700, protein: 25, carbs: 75, fat: 30, unit: '1 ชาม', emoji: '🍜' },
+            { id: 560, name: 'ไก่ทอด (ชิ้นใหญ่)', category: 'dish', calories: 350, protein: 20, carbs: 15, fat: 22, unit: '1 ชิ้น', emoji: '🍗' },
+            
+            // --- 9. Snacks & Sweets (ของหวาน/กินเล่น) ---
+            { id: 801, name: 'มันฝรั่งทอด (ถุงละ 20บ.)', category: 'snack', calories: 160, protein: 2, carbs: 18, fat: 10, unit: '1 ถุง', emoji: '🍟' },
+            { id: 802, name: 'ป๊อปคอร์น (ชีส/คาราเมล)', category: 'snack', calories: 300, protein: 3, carbs: 40, fat: 15, unit: '1 ถ้วยกลาง', emoji: '🍿' },
+            { id: 803, name: 'ถั่วแระญี่ปุ่น', category: 'snack', calories: 120, protein: 11, carbs: 10, fat: 5, unit: '1 ถ้วย', emoji: '🥜' },
+            { id: 804, name: 'หมูแผ่น/หมูหยอง', category: 'snack', calories: 100, protein: 8, carbs: 12, fat: 3, unit: '1 กำมือ', emoji: '🍖' },
+            { id: 805, name: 'คุกกี้เนย', category: 'snack', calories: 150, protein: 1, carbs: 20, fat: 8, unit: '2 ชิ้น', emoji: '🍪' },
+            { id: 806, name: 'บราวนี่', category: 'snack', calories: 350, protein: 4, carbs: 40, fat: 20, unit: '1 ชิ้น', emoji: '🍫' },
+            { id: 807, name: 'เค้กช็อกโกแลต', category: 'snack', calories: 400, protein: 5, carbs: 50, fat: 22, unit: '1 ชิ้น', emoji: '🍰' },
+            { id: 808, name: 'ชีสเค้ก', category: 'snack', calories: 350, protein: 6, carbs: 30, fat: 24, unit: '1 ชิ้น', emoji: '🍰' },
+            { id: 809, name: 'โดนัท (เคลือบน้ำตาล)', category: 'snack', calories: 250, protein: 3, carbs: 30, fat: 14, unit: '1 ชิ้น', emoji: '🍩' },
+            { id: 810, name: 'ไอศกรีมกะทิ', category: 'snack', calories: 180, protein: 2, carbs: 25, fat: 8, unit: '1 สกู๊ป', emoji: '🍨' },
+            { id: 811, name: 'ไอศกรีมช็อกโกแลต', category: 'snack', calories: 250, protein: 4, carbs: 30, fat: 14, unit: '1 สกู๊ป', emoji: '🍦' },
+            { id: 812, name: 'ข้าวเหนียวมะม่วง', category: 'snack', calories: 450, protein: 6, carbs: 80, fat: 12, unit: '1 ชุด', emoji: '🥭' },
+            { id: 813, name: 'บัวลอยไข่หวาน', category: 'snack', calories: 380, protein: 6, carbs: 60, fat: 14, unit: '1 ถ้วย', emoji: '🥣' },
+            { id: 814, name: 'ทับทิมกรอบ', category: 'snack', calories: 250, protein: 1, carbs: 50, fat: 6, unit: '1 ถ้วย', emoji: '🍧' },
+            { id: 815, name: 'ทองหยิบ/ทองหยอด', category: 'snack', calories: 60, protein: 1, carbs: 12, fat: 1, unit: '1 ชิ้น/เม็ด', emoji: '🟠' },
+            { id: 816, name: 'ฝอยทอง', category: 'snack', calories: 150, protein: 3, carbs: 30, fat: 3, unit: '1 แพเล็ก', emoji: '🧶' },
+            { id: 817, name: 'ขนมครก', category: 'snack', calories: 120, protein: 1, carbs: 18, fat: 6, unit: '1 คู่', emoji: '🥥' },
+            { id: 818, name: 'ฮันนี่โทสต์', category: 'snack', calories: 800, protein: 12, carbs: 100, fat: 45, unit: '1 จานใหญ่', emoji: '🍞' },
+            { id: 819, name: 'บิงซู (ผลไม้)', category: 'snack', calories: 450, protein: 8, carbs: 80, fat: 12, unit: '1 ถ้วย', emoji: '🍧' },
+            { id: 820, name: 'วาฟเฟิล', category: 'snack', calories: 300, protein: 6, carbs: 40, fat: 14, unit: '1 แผ่น', emoji: '🧇' },
+
+            // --- 10. Beverages (Drink) ---
+            { id: 701, name: 'น้ำเปล่า', category: 'drink', calories: 0, protein: 0, carbs: 0, fat: 0, unit: '1 แก้ว', emoji: '💧' },
+            { id: 702, name: 'กาแฟดำ (ไม่หวาน)', category: 'drink', calories: 5, protein: 0, carbs: 1, fat: 0, unit: '1 แก้ว', emoji: '☕' },
+            { id: 703, name: 'เอสเพรสโซ่เย็น (หวานมัน)', category: 'drink', calories: 250, protein: 4, carbs: 30, fat: 12, unit: '1 แก้ว', emoji: '☕' },
+            { id: 704, name: 'ลาเต้ (ไม่หวาน)', category: 'drink', calories: 120, protein: 6, carbs: 10, fat: 6, unit: '1 แก้ว', emoji: '☕' },
+            { id: 705, name: 'ชานมไข่มุก (หวานปกติ)', category: 'drink', calories: 350, protein: 2, carbs: 60, fat: 10, unit: '1 แก้ว', emoji: '🧋' },
+            { id: 706, name: 'ชาเขียวนม (หวานปกติ)', category: 'drink', calories: 300, protein: 4, carbs: 45, fat: 12, unit: '1 แก้ว', emoji: '🍵' },
+            { id: 707, name: 'ชามะนาว', category: 'drink', calories: 120, protein: 0, carbs: 30, fat: 0, unit: '1 แก้ว', emoji: '🍹' },
+            { id: 708, name: 'น้ำส้มคั้นสด', category: 'drink', calories: 120, protein: 1, carbs: 28, fat: 0, unit: '1 แก้ว', emoji: '🍊' },
+            { id: 709, name: 'น้ำอัดลม', category: 'drink', calories: 140, protein: 0, carbs: 35, fat: 0, unit: '1 กระป๋อง', emoji: '🥤' },
+            { id: 710, name: 'น้ำอัดลม (0 cal)', category: 'drink', calories: 0, protein: 0, carbs: 0, fat: 0, unit: '1 กระป๋อง', emoji: '🥤' },
+            { id: 711, name: 'เบียร์', category: 'drink', calories: 150, protein: 1, carbs: 13, fat: 0, unit: '1 กระป๋อง', emoji: '🍺' },
+            { id: 712, name: 'ไวน์แดง', category: 'drink', calories: 125, protein: 0, carbs: 4, fat: 0, unit: '1 แก้วไวน์', emoji: '🍷' },
+            { id: 713, name: 'น้ำมะพร้าว', category: 'drink', calories: 45, protein: 0.5, carbs: 11, fat: 0.1, unit: '1 ลูก', emoji: '🥥' },
+            { id: 714, name: 'นมเปรี้ยว', category: 'drink', calories: 140, protein: 4, carbs: 25, fat: 2, unit: '1 ขวดเล็ก', emoji: '🥛' },
+
+            // --- 11. Condiments (เครื่องปรุง) ---
+            { id: 601, name: 'น้ำปลา', category: 'condiment', calories: 10, protein: 2, carbs: 1, fat: 0, unit: '1 ช้อนโต๊ะ', emoji: '🧂' },
+            { id: 602, name: 'ซอสปรุงรส', category: 'condiment', calories: 5, protein: 1, carbs: 0.5, fat: 0, unit: '1 ช้อนโต๊ะ', emoji: '🧂' },
+            { id: 603, name: 'น้ำมันหอย', category: 'condiment', calories: 15, protein: 0, carbs: 4, fat: 0, unit: '1 ช้อนโต๊ะ', emoji: '🦪' },
+            { id: 604, name: 'น้ำตาลทราย', category: 'condiment', calories: 45, protein: 0, carbs: 12, fat: 0, unit: '1 ช้อนโต๊ะ', emoji: '🧂' },
+            { id: 605, name: 'น้ำจิ้มสุกี้', category: 'condiment', calories: 35, protein: 0.5, carbs: 8, fat: 0.5, unit: '1 ช้อนโต๊ะ', emoji: '🍲' },
+            { id: 606, name: 'น้ำจิ้มไก่/บ๊วย', category: 'condiment', calories: 50, protein: 0, carbs: 12, fat: 0, unit: '1 ช้อนโต๊ะ', emoji: '🍗' },
+            { id: 607, name: 'น้ำจิ้มซีฟู้ด', category: 'condiment', calories: 15, protein: 0.5, carbs: 3, fat: 0, unit: '1 ช้อนโต๊ะ', emoji: '🌶️' },
+            { id: 608, name: 'น้ำพริกเผา', category: 'condiment', calories: 80, protein: 1, carbs: 8, fat: 5, unit: '1 ช้อนโต๊ะ', emoji: '🌶️' },
+            { id: 609, name: 'ซอสมะเขือเทศ', category: 'condiment', calories: 20, protein: 0, carbs: 5, fat: 0, unit: '1 ช้อนโต๊ะ', emoji: '🍅' },
+            { id: 610, name: 'ผงชูรส', category: 'condiment', calories: 0, protein: 0, carbs: 0, fat: 0, unit: '1 ช้อนชา', emoji: '🧂' },
+        ];
+
+        const CATEGORIES = [
+            { id: 'all', name: 'ทั้งหมด', icon: Utensils, color: 'bg-gray-100 text-gray-600' },
+            { id: 'dish', name: 'จานเดียว/กับข้าว', icon: Soup, color: 'bg-orange-100 text-orange-600' },
+            { id: 'protein', name: 'โปรตีน/เนื้อสัตว์', icon: Beef, color: 'bg-rose-100 text-rose-600' },
+            { id: 'carb', name: 'คาร์บ/ผลไม้', icon: Wheat, color: 'bg-blue-100 text-blue-600' },
+            { id: 'fat', name: 'ไขมันดี', icon: Droplet, color: 'bg-amber-100 text-amber-600' },
+            { id: 'veggie', name: 'ผัก & ไฟเบอร์', icon: Leaf, color: 'bg-green-100 text-green-600' },
+            { id: 'snack', name: 'ขนม/กินเล่น', icon: Cookie, color: 'bg-purple-100 text-purple-600' },
+            { id: 'drink', name: 'เครื่องดื่ม', icon: Coffee, color: 'bg-cyan-100 text-cyan-600' },
+            { id: 'condiment', name: 'เครื่องปรุง', icon: Zap, color: 'bg-yellow-100 text-yellow-600' },
+        ];
+
+        const App = () => {
+            const [meal, setMeal] = useState([]);
+            const [selectedCategory, setSelectedCategory] = useState('all');
+            const [searchTerm, setSearchTerm] = useState('');
+
+            // Add Item to Meal
+            const addToMeal = (item) => {
+                const existingItem = meal.find((i) => i.id === item.id);
+                if (existingItem) {
+                    setMeal(meal.map((i) => (i.id === item.id ? { ...i, qty: i.qty + 1 } : i)));
+                } else {
+                    setMeal([...meal, { ...item, qty: 1 }]);
+                }
+            };
+
+            // Remove/Decrease Item
+            const removeFromMeal = (itemId, removeAll = false) => {
+                if (removeAll) {
+                    setMeal(meal.filter((i) => i.id !== itemId));
+                } else {
+                    const existingItem = meal.find((i) => i.id === itemId);
+                    if (existingItem.qty === 1) {
+                        setMeal(meal.filter((i) => i.id !== itemId));
+                    } else {
+                        setMeal(meal.map((i) => (i.id === itemId ? { ...i, qty: i.qty - 1 } : i)));
+                    }
+                }
+            };
+
+            // Check for Weight Loss Friendly (Super Fit Criteria)
+            // Criteria: Protein > 45% of energy, Fat < 25% of energy
+            const checkFriendly = (item) => {
+                if (item.category === 'condiment' || item.calories === 0) return false;
+
+                const calP = item.protein * 4;
+                const calF = item.fat * 9;
+                const calC = item.carbs * 4;
+                const totalCal = calP + calF + calC;
+
+                if (totalCal === 0) return false;
+
+                const pctP = (calP / totalCal) * 100;
+                const pctF = (calF / totalCal) * 100;
+
+                return pctP >= 45 && pctF <= 25;
+            };
+
+            // Calculations
+            const stats = useMemo(() => {
+                let totalCals = 0;
+                let totalP = 0; // grams
+                let totalC = 0; // grams
+                let totalF = 0; // grams
+
+                meal.forEach((item) => {
+                    totalCals += item.calories * item.qty;
+                    totalP += item.protein * item.qty;
+                    totalC += item.carbs * item.qty;
+                    totalF += item.fat * item.qty;
+                });
+
+                const calP = totalP * 4;
+                const calC = totalC * 4;
+                const calF = totalF * 9;
+                const totalMacroCals = calP + calC + calF || 1;
+
+                const pctP = Math.round((calP / totalMacroCals) * 100);
+                const pctC = Math.round((calC / totalMacroCals) * 100);
+                const pctF = Math.round((calF / totalMacroCals) * 100);
+
+                return { totalCals, totalP, totalC, totalF, pctP, pctC, pctF };
+            }, [meal]);
+
+            // Insights Logic
+            const getInsight = () => {
+                if (meal.length === 0) return { text: "เริ่มจัดจานอาหารของคุณเลย!", color: "text-gray-500", bg: "bg-gray-100" };
+                
+                if (stats.pctC < 20 && stats.pctF > 40) {
+                    return { 
+                        text: "🔥 Fat Burning Mode: สัดส่วนนี้ช่วยกระตุ้นการใช้ไขมัน เหมาะกับช่วง Reset ระบบเผาผลาญ", 
+                        color: "text-orange-700", 
+                        bg: "bg-orange-100" 
+                    };
+                }
+                if (stats.pctP > 40) {
+                    return { 
+                        text: "💪 Muscle & Satiety: โปรตีนสูงช่วยให้อิ่มนานและรักษามวลกล้ามเนื้อ", 
+                        color: "text-rose-700", 
+                        bg: "bg-rose-100" 
+                    };
+                }
+                return { 
+                    text: "⚖️ Metabolic Flexibility: สัดส่วนสมดุล ร่างกายได้รับสารอาหารครบถ้วน", 
+                    color: "text-blue-700", 
+                    bg: "bg-blue-100" 
+                };
+            };
+
+            const insight = getInsight();
+            
+            // Filter Logic including Search
+            const filteredFood = useMemo(() => {
+                return FOOD_DATABASE.filter(item => {
+                    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+                    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+                    return matchesCategory && matchesSearch;
+                });
+            }, [selectedCategory, searchTerm]);
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8">
+                    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        
+                        {/* Header (Mobile only) */}
+                        <div className="lg:col-span-12 lg:hidden mb-4">
+                        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-600">
+                            NutriDesign <span className="text-slate-400 text-lg font-normal">Mega DB</span>
+                        </h1>
+                        </div>
+
+                        {/* --- LEFT COLUMN: Food Picker --- */}
+                        <div className="lg:col-span-8 space-y-6">
+                            <div className="hidden lg:block mb-2">
+                                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-600">
+                                    NutriDesign <span className="text-slate-400 text-lg font-normal">Mega Database</span>
+                                </h1>
+                                <p className="text-slate-500">ฐานข้อมูล 400+ รายการยอดฮิต ครอบคลุมสตรีทฟู้ด คาเฟ่ และอินเตอร์</p>
+                            </div>
+
+                            {/* Search Bar */}
+                            <div className="relative">
+                                <input 
+                                    type="text"
+                                    placeholder="ค้นหาเมนู (เช่น หมูกระทะ, ชานม, ส้มตำ, เค้ก)..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent shadow-sm"
+                                />
+                                <div className="absolute left-3 top-3.5 text-slate-400">
+                                    <Search size={20} />
+                                </div>
+                                {searchTerm && (
+                                    <button 
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Category Filter */}
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                {CATEGORIES.map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setSelectedCategory(cat.id)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+                                            selectedCategory === cat.id 
+                                                ? 'bg-slate-800 text-white shadow-md' 
+                                                : 'bg-white text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        <cat.icon size={16} />
+                                        {cat.name}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Tips / Legend */}
+                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3 text-sm text-emerald-800">
+                                <div className="bg-emerald-100 p-2 rounded-full border border-emerald-300">
+                                    <Star size={16} className="text-emerald-600 fill-emerald-600" />
+                                </div>
+                                <div>
+                                    <span className="font-bold">Super Fit Choice:</span> รายการที่มีกรอบสีเขียวทอง คือเมนูที่ผ่านเกณฑ์ <span className="font-semibold">Protein &gt; 45%</span> และ <span className="font-semibold">Fat &lt; 25%</span> เหมาะสำหรับการลดไขมัน
+                                </div>
+                            </div>
+
+                            {/* Food Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                                {filteredFood.length > 0 ? (
+                                    filteredFood.map((item) => {
+                                        const isFriendly = checkFriendly(item);
+                                        return (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => addToMeal(item)}
+                                                className={`group relative p-3 rounded-2xl shadow-sm hover:shadow-md transition-all text-left flex flex-col items-center
+                                                    ${isFriendly 
+                                                        ? 'bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-400 ring-2 ring-emerald-100 ring-offset-1' 
+                                                        : 'bg-white border border-slate-100 hover:border-emerald-200'
+                                                    }`}
+                                            >
+                                                {isFriendly && (
+                                                    <div className="absolute top-2 left-2 text-emerald-500 animate-pulse">
+                                                        <Star size={12} fill="currentColor" />
+                                                    </div>
+                                                )}
+                                                <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">{item.emoji}</div>
+                                                <div className="font-semibold text-slate-700 text-sm text-center leading-tight h-9 flex items-center justify-center w-full line-clamp-2">{item.name}</div>
+                                                <div className="text-[10px] text-slate-400 mb-1">{item.unit} • {item.calories} kcal</div>
+                                                <div className="w-full flex justify-center gap-1 text-[9px] font-medium opacity-60">
+                                                    <span className={isFriendly ? "font-bold text-rose-600" : "text-rose-500"}>P:{item.protein}</span>
+                                                    <span className="text-blue-500">C:{item.carbs}</span>
+                                                    <span className={isFriendly ? "font-bold text-amber-600" : "text-amber-500"}>F:{item.fat}</span>
+                                                </div>
+                                                <div className="absolute top-2 right-2 bg-emerald-100 text-emerald-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Plus size={12} />
+                                                </div>
+                                            </button>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="col-span-full py-10 text-center text-slate-400">
+                                        <div className="flex justify-center mb-2 opacity-50"><IceCream size={32} /></div>
+                                        <p>ไม่พบรายการอาหารที่ค้นหา</p>
+                                        <p className="text-sm">ลองค้นหาคำอื่น เช่น "ไข่", "ไก่", "เส้น"</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* --- RIGHT COLUMN: Dashboard & Plate --- */}
+                        <div className="lg:col-span-4 space-y-6">
+                            
+                            {/* 1. Nutrient Visualization Card */}
+                            <div className="bg-white rounded-3xl shadow-xl p-6 border border-slate-100 sticky top-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-bold flex items-center gap-2">
+                                        <PieChart className="text-emerald-500" /> สารอาหารรวม
+                                    </h2>
+                                    <div className="text-right">
+                                        <span className="block text-3xl font-extrabold text-slate-800">{Math.round(stats.totalCals)}</span>
+                                        <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Calories</span>
+                                    </div>
+                                </div>
+
+                                {/* Insight Box */}
+                                <div className={`mb-6 p-4 rounded-xl ${insight.bg} ${insight.color} text-sm font-medium flex gap-2 items-start`}>
+                                    <div className="mt-0.5 shrink-0"><Info size={18} /></div>
+                                    {insight.text}
+                                </div>
+
+                                {/* Macro Bars */}
+                                <div className="space-y-4 mb-8">
+                                    {/* Carbs */}
+                                    <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="font-semibold text-blue-600">Carbs (C)</span>
+                                            <span className="text-slate-500">{Math.round(stats.totalC)}g <span className="text-blue-600 ml-1">({stats.pctC}%)</span></span>
+                                        </div>
+                                        <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-blue-500 transition-all duration-500 ease-out" style={{ width: `${stats.pctC}%` }}></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Protein */}
+                                    <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="font-semibold text-rose-600">Protein (P)</span>
+                                            <span className="text-slate-500">{Math.round(stats.totalP)}g <span className="text-rose-600 ml-1">({stats.pctP}%)</span></span>
+                                        </div>
+                                        <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-rose-500 transition-all duration-500 ease-out" style={{ width: `${stats.pctP}%` }}></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Fat */}
+                                    <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="font-semibold text-amber-600">Fat (F)</span>
+                                            <span className="text-slate-500">{Math.round(stats.totalF)}g <span className="text-amber-600 ml-1">({stats.pctF}%)</span></span>
+                                        </div>
+                                        <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-amber-500 transition-all duration-500 ease-out" style={{ width: `${stats.pctF}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 2. Your Plate (Selected Items) */}
+                                <div className="border-t border-slate-100 pt-4">
+                                    <h3 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                                        <Utensils size={18} /> ในจานของคุณ ({meal.length})
+                                    </h3>
+                                    
+                                    {meal.length === 0 ? (
+                                        <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                                            <div className="flex justify-center mb-2 opacity-50"><Leaf size={32} /></div>
+                                            <p>ยังไม่มีรายการอาหาร</p>
+                                            <p className="text-sm">เลือกจากเมนูทางซ้ายได้เลย</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {meal.map((item) => (
+                                                <div key={item.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="text-2xl">{item.emoji}</div>
+                                                        <div>
+                                                            <div className="font-medium text-slate-700 text-sm line-clamp-1">{item.name}</div>
+                                                            <div className="text-xs text-slate-400">{item.unit} x {item.qty}</div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex items-center bg-slate-100 rounded-lg">
+                                                            <button 
+                                                                onClick={() => removeFromMeal(item.id)}
+                                                                className="p-1.5 hover:bg-slate-200 rounded-l-lg text-slate-600"
+                                                            >
+                                                                <Minus size={14} />
+                                                            </button>
+                                                            <span className="px-2 text-sm font-semibold w-6 text-center">{item.qty}</span>
+                                                            <button 
+                                                                onClick={() => addToMeal(item)}
+                                                                className="p-1.5 hover:bg-slate-200 rounded-r-lg text-slate-600"
+                                                            >
+                                                                <Plus size={14} />
+                                                            </button>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => removeFromMeal(item.id, true)}
+                                                            className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Total Summary Footer */}
+                                {meal.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
+                                        <div className="bg-blue-50 p-2 rounded-lg">
+                                            <div className="text-xs text-slate-500">Carbs</div>
+                                            <div className="font-bold text-blue-700">{Math.round(stats.totalC)}g</div>
+                                        </div>
+                                        <div className="bg-rose-50 p-2 rounded-lg">
+                                            <div className="text-xs text-slate-500">Protein</div>
+                                            <div className="font-bold text-rose-700">{Math.round(stats.totalP)}g</div>
+                                        </div>
+                                        <div className="bg-amber-50 p-2 rounded-lg">
+                                            <div className="text-xs text-slate-500">Fat</div>
+                                            <div className="font-bold text-amber-700">{Math.round(stats.totalF)}g</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
