@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Central Hub</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+        .animate-spin-custom {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Custom Scrollbar for Icon Selection */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 relative overflow-x-hidden min-h-screen transition-colors duration-300">
+
+    <!-- Background Soft Effects -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-blue-200/40 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-teal-200/30 rounded-full blur-[120px]"></div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-6 py-12 relative z-10">
+        
+        <!-- Top Navigation & Edit Toggle -->
+        <div class="flex justify-between items-center mb-4">
+            <!-- Sync Status / Config Button -->
+            <div class="flex items-center gap-3">
+                <button onclick="openModal('supabase')" class="flex items-center gap-2 px-4 py-2 bg-white text-slate-600 rounded-full font-medium transition-all shadow-sm border border-slate-200 hover:bg-slate-100 hover:text-blue-600">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline text-sm">ฐานข้อมูล</span>
+                </button>
+                
+                <div id="sync-status-container"></div>
+            </div>
+
+            <button id="edit-toggle-btn" onclick="toggleEditMode()" class="flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all shadow-sm border bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800">
+                <i data-lucide="settings" class="w-4 h-4" id="edit-icon"></i>
+                <span id="edit-text">ตั้งค่าเมนู</span>
+            </button>
+        </div>
+
+        <!-- Header Section -->
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white border border-slate-200 shadow-xl shadow-blue-900/5 mb-6">
+                <i data-lucide="globe" class="w-10 h-10 text-blue-500"></i>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-800 mb-3 tracking-tight">
+                My Central Hub
+            </h1>
+            <p class="text-slate-500 text-lg max-w-md mx-auto">
+                รวมลิงก์และเครื่องมือสำคัญของคุณไว้ในที่เดียว
+            </p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="relative max-w-xl mx-auto mb-12 group">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i data-lucide="search" class="w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+            </div>
+            <input
+                type="text"
+                id="search-input"
+                class="w-full py-4 pl-12 pr-4 bg-white border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+                placeholder="ค้นหาลิงก์ที่ต้องการ..."
+                oninput="handleSearch(event)"
+            />
+        </div>
+
+        <!-- Links Container -->
+        <div id="app-container" class="space-y-10">
+            <!-- Content will be injected here by JS -->
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-24 text-center text-sm text-slate-400">
+            <p>© <span id="current-year"></span> My Central Hub. All links gathered in one place.</p>
+        </div>
+
+    </div>
+
+    <!-- Modal Form -->
+    <div id="modal-overlay" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100">
+            <div class="flex justify-between items-center p-6 border-b border-slate-100">
+                <h3 id="modal-title" class="text-xl font-bold text-slate-800"></h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form id="modal-form" onsubmit="handleSaveModal(event)" class="p-6 space-y-4">
+                <div id="modal-body">
+                    <!-- Dynamic Form Content -->
+                </div>
+
+                <div class="pt-4 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">ยกเลิก</button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-sm">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Set Year
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+
+        // Data Models & Constants
+        const iconLucideMap = {
+            Search: 'search', Globe: 'globe', Mail: 'mail', Youtube: 'youtube', Github: 'github', 
+            Instagram: 'instagram', Activity: 'activity', Heart: 'heart', Briefcase: 'briefcase', 
+            Calendar: 'calendar', Music: 'music', Video: 'video', MonitorPlay: 'monitor-play', 
+            Dumbbell: 'dumbbell', ShoppingBag: 'shopping-bag', Facebook: 'facebook', Twitter: 'twitter', 
+            Linkedin: 'linkedin', Link: 'link', Plus: 'plus', Trash2: 'trash-2'
+        };
+
+        const initialData = [
+            {
+                id: "cat-1", category: "ทำงาน & เครื่องมือ (Work & Tools)", iconName: "Briefcase",
+                links: [
+                    { id: "link-1-1", name: "ระบบจัดการเอกสาร (Docs)", url: "https://docs.google.com", iconName: "Mail", color: "text-blue-500" },
+                    { id: "link-1-2", name: "ปฏิทินงาน (Calendar)", url: "https://calendar.google.com", iconName: "Calendar", color: "text-green-500" },
+                    { id: "link-1-3", name: "โปรเจกต์ (GitHub)", url: "https://github.com", iconName: "Github", color: "text-slate-600" },
+                ]
+            },
+            {
+                id: "cat-2", category: "สุขภาพ & ความเป็นอยู่ (Health & Lifestyle)", iconName: "Heart",
+                links: [
+                    { id: "link-2-1", name: "UP Labs Reset Program", url: "#", description: "รีเซ็ตระบบเผาผลาญ 3 วันแรก (Metabolic Flexibility)", iconName: "Activity", color: "text-emerald-500" },
+                    { id: "link-2-2", name: "บันทึกการออกกำลังกาย", url: "#", iconName: "Dumbbell", color: "text-orange-500" },
+                ]
+            },
+            {
+                id: "cat-3", category: "โซเชียล & บันเทิง (Social & Entertainment)", iconName: "MonitorPlay",
+                links: [
+                    { id: "link-3-1", name: "YouTube", url: "https://youtube.com", iconName: "Youtube", color: "text-red-500" },
+                    { id: "link-3-2", name: "Spotify", url: "https://spotify.com", iconName: "Music", color: "text-green-500" },
+                    { id: "link-3-3", name: "Netflix", url: "https://netflix.com", iconName: "Video", color: "text-red-600" },
+                ]
+            }
+        ];
+
+        const colorOptions = [
+            { label: 'น้ำเงิน', value: 'text-blue-500' }, { label: 'เขียว', value: 'text-green-500' },
+            { label: 'แดง', value: 'text-red-500' }, { label: 'ส้ม', value: 'text-orange-500' },
+            { label: 'ม่วง', value: 'text-purple-500' }, { label: 'เทา', value: 'text-slate-500' },
+            { label: 'ชมพู', value: 'text-pink-500' }
+        ];
+
+        // State variables
+        let linkData = [];
+        let supabaseConfig = { url: '', key: '' };
+        let isEditing = false;
+        let searchTerm = "";
+        let currentModalState = { type: '', categoryId: null };
+        let formData = {};
+
+        // Initialization
+        function init() {
+            const savedConfig = localStorage.getItem('supabase_config_v1');
+            if (savedConfig) supabaseConfig = JSON.parse(savedConfig);
+
+            const savedData = localStorage.getItem('linkHubData_v1');
+            linkData = savedData ? JSON.parse(savedData) : initialData;
+
+            loadFromSupabase();
+            renderApp();
+        }
+
+        // Render functions
+        function renderApp() {
+            const container = document.getElementById('app-container');
+            let html = '';
+
+            const filteredData = linkData.map(category => {
+                const filteredLinks = category.links.filter(link => 
+                    link.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (link.description && link.description.toLowerCase().includes(searchTerm.toLowerCase()))
+                );
+                return { ...category, links: filteredLinks };
+            }).filter(category => category.links.length > 0 || isEditing);
+
+            if (filteredData.length > 0) {
+                filteredData.forEach((category, idx) => {
+                    const iconTag = iconLucideMap[category.iconName] || 'globe';
+                    
+                    html += `
+                        <div class="animate-fade-in-up" style="animation-delay: ${idx * 0.1}s">
+                            <div class="flex items-center justify-between gap-3 mb-4 px-2 group/cat">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-blue-100/50 rounded-lg text-blue-600 border border-blue-200/50">
+                                        <i data-lucide="${iconTag}" class="w-5 h-5"></i>
+                                    </div>
+                                    <h2 class="text-xl font-bold text-slate-800">${category.category}</h2>
+                                </div>
+                                ${isEditing ? `
+                                <button onclick="handleDeleteCategory('${category.id}')" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover/cat:opacity-100" title="ลบหมวดหมู่">
+                                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    `;
+
+                    category.links.forEach(link => {
+                        const linkIconTag = iconLucideMap[link.iconName] || 'link';
+                        html += `
+                            <div class="relative group/link">
+                                <a href="${isEditing ? '#' : link.url}" target="${isEditing ? '_self' : '_blank'}" rel="noopener noreferrer" 
+                                   class="flex items-center p-4 bg-white border border-slate-200 rounded-2xl transition-all duration-300 shadow-sm hover:shadow-md hover:border-blue-300 overflow-hidden ${isEditing ? 'pointer-events-none' : 'hover:-translate-y-1'}">
+                                    <div class="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-slate-50 ${link.color} mr-4 border border-slate-100 transition-transform duration-300 ${!isEditing ? 'group-hover/link:scale-110' : ''}">
+                                        <i data-lucide="${linkIconTag}" class="w-6 h-6"></i>
+                                    </div>
+                                    <div class="flex-grow min-w-0 pr-6">
+                                        <h3 class="text-base font-semibold text-slate-700 truncate group-hover/link:text-blue-600 transition-colors">${link.name}</h3>
+                                        ${link.description ? `<p class="text-sm text-slate-500 truncate mt-0.5">${link.description}</p>` : ''}
+                                    </div>
+                                    ${!isEditing ? '<i data-lucide="chevron-right" class="absolute right-4 w-5 h-5 text-slate-300 group-hover/link:text-blue-500 transform group-hover/link:translate-x-1 transition-all"></i>' : ''}
+                                </a>
+                                ${isEditing ? `
+                                <button onclick="handleDeleteLink('${category.id}', '${link.id}')" class="absolute top-1/2 -translate-y-1/2 right-4 p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors shadow-sm z-10" title="ลบลิงก์">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+
+                    if (isEditing) {
+                        html += `
+                            <button onclick="openModal('link', '${category.id}')" class="flex flex-col items-center justify-center p-4 min-h-[88px] border-2 border-dashed border-slate-300 rounded-2xl hover:border-blue-400 hover:bg-blue-50/50 text-slate-500 hover:text-blue-600 transition-all group">
+                                <i data-lucide="plus" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
+                                <span class="text-sm font-medium">เพิ่มลิงก์</span>
+                            </button>
+                        `;
+                    }
+
+                    html += `</div></div>`;
+                });
+            } else if (!isEditing) {
+                html = `
+                    <div class="text-center py-20 text-slate-400">
+                        <i data-lucide="search" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+                        <p class="text-lg">ไม่พบลิงก์ที่คุณค้นหา</p>
+                    </div>
+                `;
+            }
+
+            if (isEditing) {
+                html += `
+                    <div class="pt-6">
+                        <button onclick="openModal('category')" class="w-full py-4 border-2 border-dashed border-blue-300 rounded-2xl bg-blue-50/30 text-blue-600 hover:bg-blue-100/50 hover:border-blue-400 font-semibold flex items-center justify-center gap-2 transition-all">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                            เพิ่มหมวดหมู่ใหม่
+                        </button>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+            lucide.createIcons(); // Render icons
+        }
+
+        // Actions
+        function toggleEditMode() {
+            isEditing = !isEditing;
+            const btn = document.getElementById('edit-toggle-btn');
+            const icon = document.getElementById('edit-icon');
+            const text = document.getElementById('edit-text');
+
+            if (isEditing) {
+                btn.className = "flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all shadow-sm border bg-blue-600 text-white border-blue-600 hover:bg-blue-700";
+                icon.setAttribute('data-lucide', 'x');
+                text.innerText = "ปิดโหมดแก้ไข";
+            } else {
+                btn.className = "flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all shadow-sm border bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800";
+                icon.setAttribute('data-lucide', 'settings');
+                text.innerText = "ตั้งค่าเมนู";
+            }
+            renderApp();
+        }
+
+        function handleSearch(e) {
+            searchTerm = e.target.value;
+            renderApp();
+        }
+
+        function handleDeleteCategory(categoryId) {
+            if (confirm('คุณแน่ใจหรือไม่ที่จะลบหมวดหมู่นี้พร้อมลิงก์ทั้งหมดข้างใน?')) {
+                const newData = linkData.filter(c => c.id !== categoryId);
+                syncDataToDb(newData);
+            }
+        }
+
+        function handleDeleteLink(categoryId, linkId) {
+            const newData = linkData.map(c => {
+                if (c.id === categoryId) return { ...c, links: c.links.filter(l => l.id !== linkId) };
+                return c;
+            });
+            syncDataToDb(newData);
+        }
+
+        // Modal Management
+        function openModal(type, categoryId = null) {
+            currentModalState = { type, categoryId };
+            const modal = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if (type === 'supabase') {
+                title.innerText = 'ตั้งค่าเชื่อมต่อ Supabase';
+                formData = { url: supabaseConfig.url, key: supabaseConfig.key };
+                body.innerHTML = `
+                    <div class="p-3 bg-blue-50 border border-blue-100 text-blue-800 rounded-lg text-sm mb-4">
+                        <strong>คำแนะนำฐานข้อมูล:</strong> ให้สร้าง Table ชื่อ <code>link_hub</code> <br/>
+                        1. <code>id</code> (type: int8, Primary Key)<br/>
+                        2. <code>data</code> (type: jsonb)<br/>
+                        *ระบบจะบันทึกข้อมูลแบบ JSON เข้าไปในแถวที่ id = 1
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Supabase Project URL</label>
+                        <input type="url" id="form-url" required value="${formData.url}" placeholder="https://xxxxxx.supabase.co" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="formData.url = this.value">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Anon / Public Key</label>
+                        <input type="text" id="form-key" required value="${formData.key}" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="formData.key = this.value">
+                    </div>
+                `;
+            } else {
+                title.innerText = type === 'category' ? 'เพิ่มหมวดหมู่ใหม่' : 'เพิ่มลิงก์ใหม่';
+                formData = { name: '', url: '', description: '', iconName: type === 'category' ? 'Globe' : 'Link', color: 'text-blue-500' };
+                
+                let formHtml = `
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อ <span class="text-red-500">*</span></label>
+                        <input type="text" required placeholder="${type === 'category' ? 'เช่น โปรแกรมที่ใช้บ่อย' : 'ชื่อเว็บไซต์หรือเอกสาร'}" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="formData.name = this.value">
+                    </div>
+                `;
+
+                if (type === 'link') {
+                    formHtml += `
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">URL (ลิงก์)</label>
+                            <input type="url" placeholder="https://..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="formData.url = this.value">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">รายละเอียด (ไม่บังคับ)</label>
+                            <input type="text" placeholder="คำอธิบายสั้นๆ..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="formData.description = this.value">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">เลือกสีไอคอน</label>
+                            <div class="flex gap-2 flex-wrap" id="color-picker-container">
+                                ${colorOptions.map(c => `
+                                    <button type="button" onclick="selectColor('${c.value}')" id="color-btn-${c.value}" class="color-btn w-8 h-8 rounded-full border-2 flex items-center justify-center ${formData.color === c.value ? 'border-slate-800' : 'border-transparent hover:scale-110'}">
+                                        <div class="w-6 h-6 rounded-full bg-slate-50 ${c.value} flex items-center justify-center border border-slate-200">
+                                            <div class="w-3 h-3 rounded-full bg-current"></div>
+                                        </div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                formHtml += `
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">เลือกไอคอน</label>
+                        <div class="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto custom-scrollbar p-2 border border-slate-200 rounded-lg bg-slate-50" id="icon-picker-container">
+                            ${Object.keys(iconLucideMap).map(iconName => `
+                                <button type="button" onclick="selectIcon('${iconName}')" id="icon-btn-${iconName}" class="icon-btn p-2 rounded-lg flex items-center justify-center transition-colors ${formData.iconName === iconName ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-200'}" title="${iconName}">
+                                    <i data-lucide="${iconLucideMap[iconName]}" class="w-5 h-5"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                body.innerHTML = formHtml;
+                lucide.createIcons();
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal-overlay');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Helpers for Modal Form
+        function selectColor(colorValue) {
+            formData.color = colorValue;
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.classList.remove('border-slate-800');
+                btn.classList.add('border-transparent');
+            });
+            document.getElementById(`color-btn-${colorValue}`).classList.remove('border-transparent');
+            document.getElementById(`color-btn-${colorValue}`).classList.add('border-slate-800');
+        }
+
+        function selectIcon(iconName) {
+            formData.iconName = iconName;
+            document.querySelectorAll('.icon-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'text-blue-600');
+                btn.classList.add('text-slate-500');
+            });
+            document.getElementById(`icon-btn-${iconName}`).classList.remove('text-slate-500');
+            document.getElementById(`icon-btn-${iconName}`).classList.add('bg-blue-100', 'text-blue-600');
+        }
+
+        function handleSaveModal(e) {
+            e.preventDefault();
+            
+            if (currentModalState.type === 'supabase') {
+                supabaseConfig = { url: formData.url, key: formData.key };
+                localStorage.setItem('supabase_config_v1', JSON.stringify(supabaseConfig));
+                closeModal();
+                loadFromSupabase(); // Reload data with new config
+                return;
+            }
+
+            if (!formData.name.trim()) return;
+
+            let newData = [...linkData];
+            if (currentModalState.type === 'category') {
+                newData.push({
+                    id: `cat-${Date.now()}`,
+                    category: formData.name,
+                    iconName: formData.iconName,
+                    links: []
+                });
+            } else if (currentModalState.type === 'link') {
+                const newLink = {
+                    id: `link-${Date.now()}`,
+                    name: formData.name,
+                    url: formData.url || '#',
+                    description: formData.description,
+                    iconName: formData.iconName,
+                    color: formData.color
+                };
+                newData = newData.map(c => 
+                    c.id === currentModalState.categoryId ? { ...c, links: [...c.links, newLink] } : c
+                );
+            }
+            
+            syncDataToDb(newData);
+            closeModal();
+        }
+
+        // Supabase Sync Logic (REST API)
+        function updateSyncUI(status, message = '') {
+            const container = document.getElementById('sync-status-container');
+            if (status === 'syncing') {
+                container.innerHTML = `<span class="flex items-center gap-1 text-sm text-blue-500 font-medium bg-blue-50 px-3 py-1 rounded-full"><i data-lucide="refresh-cw" class="w-4 h-4 animate-spin-custom"></i> <span class="hidden sm:inline">กำลังซิงค์...</span></span>`;
+            } else if (status === 'success') {
+                container.innerHTML = `<span class="flex items-center gap-1 text-sm font-medium px-3 py-1 rounded-full text-green-600 bg-green-50"><i data-lucide="check-circle-2" class="w-4 h-4"></i> <span class="hidden sm:inline">${message}</span></span>`;
+                setTimeout(() => { container.innerHTML = ''; }, 3000);
+            } else if (status === 'error') {
+                container.innerHTML = `<span class="flex items-center gap-1 text-sm font-medium px-3 py-1 rounded-full text-red-600 bg-red-50"><span class="hidden sm:inline">${message}</span></span>`;
+                setTimeout(() => { container.innerHTML = ''; }, 3000);
+            } else {
+                container.innerHTML = '';
+            }
+            lucide.createIcons();
+        }
+
+        async function loadFromSupabase() {
+            if (!supabaseConfig.url || !supabaseConfig.key) return;
+
+            updateSyncUI('syncing');
+            try {
+                const response = await fetch(`${supabaseConfig.url}/rest/v1/link_hub?id=eq.1&select=data`, {
+                    headers: { 'apikey': supabaseConfig.key, 'Authorization': `Bearer ${supabaseConfig.key}` }
+                });
+                if (!response.ok) throw new Error('Fetch failed');
+                const data = await response.json();
+                
+                if (data && data.length > 0 && data[0].data) {
+                    linkData = data[0].data;
+                    localStorage.setItem('linkHubData_v1', JSON.stringify(linkData));
+                }
+                updateSyncUI('idle');
+                renderApp();
+            } catch (error) {
+                console.error('Error loading from Supabase:', error);
+                updateSyncUI('error', 'โหลดข้อมูลล้มเหลว');
+            }
+        }
+
+        async function syncDataToDb(newData) {
+            linkData = newData;
+            localStorage.setItem('linkHubData_v1', JSON.stringify(newData));
+            renderApp();
+
+            if (!supabaseConfig.url || !supabaseConfig.key) return;
+
+            updateSyncUI('syncing');
+            try {
+                const response = await fetch(`${supabaseConfig.url}/rest/v1/link_hub`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': supabaseConfig.key,
+                        'Authorization': `Bearer ${supabaseConfig.key}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify({ id: 1, data: newData })
+                });
+
+                if (!response.ok) throw new Error('Upsert failed');
+                updateSyncUI('success', 'ซิงค์สำเร็จ');
+            } catch (error) {
+                console.error('Error saving to Supabase:', error);
+                updateSyncUI('error', 'บันทึกล้มเหลว');
+            }
+        }
+
+        // Run App
+        init();
+
+    </script>
+</body>
+</html>
