@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Backup Manager</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            background-color: #0f172a; /* slate-900 */
+            color: #f1f5f9; /* slate-100 */
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5); 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(71, 85, 105, 0.8); 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 1); 
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Icon Components (Replacing Lucide import) ---
+        const Icon = ({ path, className }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                {path}
+            </svg>
+        );
+
+        // Fixed: Wrapped multiple SVG elements in React Fragments (<>...</>)
+        const Icons = {
+            Database: (
+                <>
+                    <path d="M3 5V19A9 3 0 0 0 21 19V5" />
+                    <path d="M21 5A9 3 0 0 0 3 5" />
+                    <path d="M3 12A9 3 0 0 0 21 12" />
+                </>
+            ),
+            Server: (
+                <>
+                    <rect width="20" height="8" x="2" y="2" rx="2" ry="2" />
+                    <rect width="20" height="8" x="2" y="14" rx="2" ry="2" />
+                    <line x1="6" x2="6.01" y1="6" y2="6" />
+                    <line x1="6" x2="6.01" y1="18" y2="18" />
+                </>
+            ),
+            Download: (
+                <>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" x2="12" y1="15" y2="3" />
+                </>
+            ),
+            Upload: (
+                <>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" x2="12" y1="3" y2="15" />
+                </>
+            ),
+            CheckCircle: (
+                <>
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                </>
+            ),
+            RefreshCw: (
+                <>
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                    <path d="M21 3v5h-5" />
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                    <path d="M8 16H3v5" />
+                </>
+            ),
+            ShieldAlert: (
+                <>
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                    <line x1="12" x2="12" y1="8" y2="12" />
+                    <line x1="12" x2="12.01" y1="16" y2="16" />
+                </>
+            ),
+            Terminal: (
+                <>
+                    <polyline points="4 17 10 11 4 5" />
+                    <line x1="12" x2="20" y1="19" y2="19" />
+                </>
+            ),
+            Trash2: (
+                <>
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                    <line x1="10" x2="10" y1="11" y2="17" />
+                    <line x1="14" x2="14" y1="11" y2="17" />
+                </>
+            )
+        };
+
+        const App = () => {
+            // --- State Configuration ---
+            const [url, setUrl] = useState('');
+            const [key, setKey] = useState('');
+            const [isConnected, setIsConnected] = useState(false);
+            const [supabaseClient, setSupabaseClient] = useState(null);
+
+            // --- State Data ---
+            const [tables, setTables] = useState([]);
+            const [selectedTables, setSelectedTables] = useState({});
+            const [logs, setLogs] = useState([]);
+            const [loading, setLoading] = useState(false);
+
+            // --- Logs Helper ---
+            const log = (message, type = 'info') => {
+                const timestamp = new Date().toLocaleTimeString();
+                setLogs(prev => [{ msg: message, type, time: timestamp }, ...prev]);
+            };
+
+            // --- Connect to Supabase ---
+            const handleConnect = async () => {
+                if (!url || !key) {
+                    log('กรุณากรอก URL และ Service Role Key', 'error');
+                    return;
+                }
+
+                try {
+                    setLoading(true);
+                    
+                    // Access global supabase object from CDN
+                    const { createClient } = window.supabase;
+                    const client = createClient(url, key, {
+                        auth: { persistSession: false }
+                    });
+
+                    // Test connection by calling the helper RPC
+                    const { data, error } = await client.rpc('get_public_tables');
+
+                    if (error) {
+                        throw new Error(`Connection failed: ${error.message} (Did you create the 'get_public_tables' RPC?)`);
+                    }
+
+                    setSupabaseClient(client);
+                    setIsConnected(true);
+                    
+                    const tableList = data.map(t => t.table_name);
+                    setTables(tableList);
+                    
+                    // Select all by default
+                    const initialSelection = {};
+                    tableList.forEach(t => initialSelection[t] = true);
+                    setSelectedTables(initialSelection);
+
+                    log(`เชื่อมต่อสำเร็จ! พบ ${tableList.length} ตาราง`, 'success');
+                } catch (err) {
+                    log(err.message, 'error');
+                    setIsConnected(false);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // --- Toggle Table Selection ---
+            const toggleTable = (tableName) => {
+                setSelectedTables(prev => ({
+                    ...prev,
+                    [tableName]: !prev[tableName]
+                }));
+            };
+
+            // --- Backup Logic ---
+            const handleBackup = async () => {
+                if (!supabaseClient) return;
+                setLoading(true);
+                setLogs([]);
+                log('เริ่มกระบวนการ Backup...', 'info');
+
+                const backupData = {};
+                const tablesToBackup = Object.keys(selectedTables).filter(t => selectedTables[t]);
+
+                if (tablesToBackup.length === 0) {
+                    log('ไม่ได้เลือกตารางใดๆ', 'warning');
+                    setLoading(false);
+                    return;
+                }
+
+                try {
+                    for (const tableName of tablesToBackup) {
+                        log(`กำลังดึงข้อมูลจากตาราง: ${tableName}...`, 'info');
+                        
+                        const { data, error } = await supabaseClient.from(tableName).select('*');
+
+                        if (error) {
+                            log(`ล้มเหลวที่ตาราง ${tableName}: ${error.message}`, 'error');
+                        } else {
+                            backupData[tableName] = data;
+                            log(`สำเร็จ: ${tableName} (${data.length} แถว)`, 'success');
+                        }
+                    }
+
+                    // Create JSON Blob
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    const fileName = `supabase_backup_${timestamp}.json`;
+                    const json = JSON.stringify(backupData, null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const href = URL.createObjectURL(blob);
+
+                    // Trigger Download
+                    const link = document.createElement('a');
+                    link.href = href;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    log(`Backup เสร็จสิ้น! ดาวน์โหลดไฟล์ ${fileName}`, 'success');
+                } catch (err) {
+                    log(`เกิดข้อผิดพลาดร้ายแรง: ${err.message}`, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // --- Restore Logic ---
+            const fileInputRef = useRef(null);
+            
+            const handleRestore = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                setLoading(true);
+                setLogs([]);
+                log(`เริ่มอ่านไฟล์: ${file.name}...`, 'info');
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const content = JSON.parse(e.target.result);
+                        const tableNames = Object.keys(content);
+                        
+                        log(`พบข้อมูล ${tableNames.length} ตารางในไฟล์`, 'info');
+
+                        for (const tableName of tableNames) {
+                            const rows = content[tableName];
+                            if (!rows || rows.length === 0) {
+                                log(`ข้ามตาราง ${tableName} (ไม่มีข้อมูล)`, 'warning');
+                                continue;
+                            }
+
+                            log(`กำลัง Restore ตาราง: ${tableName} (${rows.length} แถว)...`, 'info');
+
+                            // Using Upsert to handle existing IDs
+                            const { error } = await supabaseClient.from(tableName).upsert(rows);
+
+                            if (error) {
+                                log(`Error ตาราง ${tableName}: ${error.message}`, 'error');
+                            } else {
+                                log(`Restore ตาราง ${tableName} สำเร็จ`, 'success');
+                            }
+                        }
+
+                        log('กระบวนการ Restore เสร็จสิ้น', 'success');
+                    } catch (err) {
+                        log(`ไฟล์ JSON ไม่ถูกต้อง หรือเกิดข้อผิดพลาด: ${err.message}`, 'error');
+                    } finally {
+                        setLoading(false);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
+                    {/* Header */}
+                    <header className="bg-slate-800 border-b border-slate-700 p-4 shadow-md">
+                        <div className="container mx-auto flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-emerald-400">
+                                <Icon path={Icons.Database} className="w-6 h-6" />
+                                <h1 className="text-xl font-bold text-white">Supabase Backup Manager</h1>
+                            </div>
+                            <div className="text-sm text-slate-400">
+                                Secure Client-Side Tool
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="container mx-auto p-4 md:p-8 space-y-6">
+                        
+                        {/* Connection Panel */}
+                        {!isConnected ? (
+                            <div className="max-w-md mx-auto bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <Icon path={Icons.Server} className="w-5 h-5 text-blue-400" /> ตั้งค่าการเชื่อมต่อ
+                                </h2>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">Supabase URL</label>
+                                        <input 
+                                            type="text" 
+                                            value={url}
+                                            onChange={(e) => setUrl(e.target.value)}
+                                            placeholder="https://xyz.supabase.co"
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1 flex justify-between">
+                                            <span>Service Role Key (secret)</span>
+                                            <span className="text-xs text-amber-500 flex items-center gap-1">
+                                                <Icon path={Icons.ShieldAlert} className="w-3 h-3" /> ใช้เพื่อ Bypass RLS
+                                            </span>
+                                        </label>
+                                        <input 
+                                            type="password" 
+                                            value={key}
+                                            onChange={(e) => setKey(e.target.value)}
+                                            placeholder="eyJh..."
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div className="bg-amber-500/10 text-amber-200 p-3 rounded-lg text-xs border border-amber-500/20">
+                                        <strong>คำเตือน:</strong> ต้องรัน SQL Function <code>get_public_tables</code> ใน Supabase ก่อนใช้งาน เพื่อให้ App ดึงรายชื่อตารางได้
+                                    </div>
+
+                                    <button 
+                                        onClick={handleConnect}
+                                        disabled={loading}
+                                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                                    >
+                                        {loading ? 
+                                            <Icon path={Icons.RefreshCw} className="w-4 h-4 animate-spin" /> : 
+                                            <Icon path={Icons.CheckCircle} className="w-4 h-4" />
+                                        }
+                                        เชื่อมต่อฐานข้อมูล
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                
+                                {/* Left Column: Actions & Tables */}
+                                <div className="lg:col-span-2 space-y-6">
+                                    
+                                    {/* Status Bar */}
+                                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                                            <span className="text-emerald-400 font-medium">Connected</span>
+                                            <span className="text-slate-500 text-sm ml-2 hidden sm:inline truncate max-w-[200px]">{url}</span>
+                                        </div>
+                                        <button 
+                                            onClick={() => setIsConnected(false)}
+                                            className="text-xs bg-slate-700 hover:bg-red-500/20 hover:text-red-400 px-3 py-1.5 rounded transition-colors"
+                                        >
+                                            Disconnect
+                                        </button>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <button 
+                                            onClick={handleBackup}
+                                            disabled={loading}
+                                            className="bg-blue-600 hover:bg-blue-500 p-6 rounded-xl border border-blue-500/30 flex flex-col items-center justify-center gap-3 transition-all hover:-translate-y-1 shadow-lg"
+                                        >
+                                            <Icon path={Icons.Download} className="w-8 h-8 text-white" />
+                                            <div className="text-center">
+                                                <div className="font-bold text-lg">Backup (Export JSON)</div>
+                                                <div className="text-blue-200 text-sm">ดาวน์โหลดข้อมูลตารางที่เลือก</div>
+                                            </div>
+                                        </button>
+
+                                        <div className="relative group">
+                                            <input 
+                                                type="file" 
+                                                ref={fileInputRef}
+                                                onChange={handleRestore}
+                                                accept=".json"
+                                                disabled={loading}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
+                                            />
+                                            <div className="bg-slate-700 group-hover:bg-slate-600 p-6 rounded-xl border border-slate-600 h-full flex flex-col items-center justify-center gap-3 transition-all shadow-lg">
+                                                <Icon path={Icons.Upload} className="w-8 h-8 text-amber-400" />
+                                                <div className="text-center">
+                                                    <div className="font-bold text-lg">Restore (Import JSON)</div>
+                                                    <div className="text-slate-300 text-sm">อัปโหลดไฟล์ JSON เพื่อ Upsert</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Table Selection */}
+                                    <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                                        <div className="p-4 bg-slate-800/50 border-b border-slate-700 flex justify-between items-center">
+                                            <h3 className="font-semibold flex items-center gap-2">
+                                                <Icon path={Icons.Database} className="w-4 h-4 text-slate-400" /> 
+                                                Tables ({tables.length})
+                                            </h3>
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => {
+                                                        const all = {}; tables.forEach(t => all[t] = true);
+                                                        setSelectedTables(all);
+                                                    }}
+                                                    className="text-xs text-blue-400 hover:text-blue-300"
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button 
+                                                    onClick={() => setSelectedTables({})}
+                                                    className="text-xs text-slate-400 hover:text-slate-300"
+                                                >
+                                                    Deselect All
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                            {tables.map(tableName => (
+                                                <label 
+                                                    key={tableName}
+                                                    className={`
+                                                        flex items-center gap-2 p-2 rounded cursor-pointer border transition-all
+                                                        ${selectedTables[tableName] 
+                                                            ? 'bg-blue-500/20 border-blue-500/50 text-blue-100' 
+                                                            : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:bg-slate-700'}
+                                                    `}
+                                                >
+                                                    <input 
+                                                        type="checkbox"
+                                                        className="hidden"
+                                                        checked={!!selectedTables[tableName]}
+                                                        onChange={() => toggleTable(tableName)}
+                                                    />
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${selectedTables[tableName] ? 'bg-blue-500 border-blue-500' : 'border-slate-500'}`}>
+                                                        {selectedTables[tableName] && <Icon path={Icons.CheckCircle} className="w-3 h-3 text-white" />}
+                                                    </div>
+                                                    <span className="text-sm truncate font-mono">{tableName}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Console Logs */}
+                                <div className="bg-black/40 rounded-xl border border-slate-700 flex flex-col h-[500px] lg:h-auto overflow-hidden">
+                                    <div className="p-3 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+                                        <span className="text-sm font-mono flex items-center gap-2 text-slate-300">
+                                            <Icon path={Icons.Terminal} className="w-4 h-4" /> Activity Log
+                                        </span>
+                                        {logs.length > 0 && (
+                                            <button onClick={() => setLogs([])} className="text-slate-500 hover:text-white transition-colors">
+                                                <Icon path={Icons.Trash2} className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="flex-1 p-4 overflow-y-auto font-mono text-xs space-y-2 custom-scrollbar">
+                                        {logs.length === 0 && (
+                                            <div className="text-slate-600 text-center mt-10 italic">Ready to process...</div>
+                                        )}
+                                        {logs.map((log, index) => (
+                                            <div key={index} className={`flex gap-2 animate-fade-in`}>
+                                                <span className="text-slate-500 shrink-0">[{log.time}]</span>
+                                                <span className={`
+                                                    break-all
+                                                    ${log.type === 'error' ? 'text-red-400' : ''}
+                                                    ${log.type === 'success' ? 'text-emerald-400' : ''}
+                                                    ${log.type === 'warning' ? 'text-amber-400' : ''}
+                                                    ${log.type === 'info' ? 'text-slate-300' : ''}
+                                                `}>
+                                                    {log.msg}
+                                                </span>
+                                            </div>
+                                        ))}
+                                        {loading && (
+                                            <div className="flex gap-2 text-blue-400 animate-pulse">
+                                                <span>... Processing ...</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Footer Info */}
+                    <footer className="container mx-auto p-8 text-center text-slate-500 text-sm">
+                        <p>⚠️ <strong>ข้อควรระวัง:</strong> แอพนี้ Backup เฉพาะข้อมูล (Data) ไม่รวม Schema, Functions, หรือ Triggers.</p>
+                        <p>สำหรับการ Backup แบบ Full System ควรใช้ <code>supabase db dump</code> ผ่าน CLI</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
