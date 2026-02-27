@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metabolic CGM Analyzer</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM (UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  
+  <!-- PropTypes & ResizeObserver (Required for Recharts UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/resize-observer-polyfill@1.5.1/dist/ResizeObserver.global.min.js"></script>
+  
+  <!-- Recharts (Pinned to 2.1.9 for stable browser UMD support) -->
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.1.9/umd/Recharts.min.js"></script>
+  
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Babel for parsing JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { font-family: 'Prompt', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="root"></div>
+
+  <!-- Main Application Script -->
+  <script type="text/babel" data-type="module">
+    const { useState, useMemo, useEffect, useCallback } = React;
+    
+    // Safety check for Recharts
+    const recharts = window.Recharts || {};
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, ResponsiveContainer, ReferenceArea, ReferenceLine, ComposedChart } = recharts;
+
+    // ==========================================
+    // ⚙️ SUPABASE CONFIGURATION
+    // ให้นำ URL และ Anon Key จาก Project Settings ของคุณมาใส่ตรงนี้
+    // ==========================================
+    const SUPABASE_URL = 'https://qzqvwbucjxwgtmbdkrlu.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cXZ3YnVjanh3Z3RtYmRrcmx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzgxODksImV4cCI6MjA4MDk1NDE4OX0.RYvc5kMueNhsOu---WOKcXYnOZLVnjiWklp1IiHmgS8';
+    
+    const isSupabaseConfigured = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+    const supabase = isSupabaseConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    // --- SVG Icons Components ---
+    const IconActivity = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>;
+    const IconCalendar = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
+    const IconClock = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+    const IconUpload = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>;
+    const IconUtensils = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>;
+    const IconUser = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+    const IconSave = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
+    const IconLoader = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className + " animate-spin"}><line x1="12" x2="12" y1="2" y2="6"/><line x1="12" x2="12" y1="18" y2="22"/><line x1="4.93" x2="7.76" y1="4.93" y2="7.76"/><line x1="16.24" x2="19.07" y1="16.24" y2="19.07"/><line x1="2" x2="6" y1="12" y2="12"/><line x1="18" x2="22" y1="12" y2="12"/><line x1="4.93" x2="7.76" y1="19.07" y2="16.24"/><line x1="16.24" x2="19.07" y1="7.76" y2="4.93"/></svg>;
+    const IconInfo = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>;
+    const IconCheckCircle = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="9 11 12 14 22 4"/></svg>;
+    const IconDatabase = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>;
+
+    // --- Helper Functions ---
+    const parseDateString = (dateStr) => new Date(dateStr.replace(' ', 'T'));
+    const formatTime = (date) => date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const formatDate = (date) => date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+    const formatDateTime = (date) => `${formatDate(date)} ${formatTime(date)}`;
+    const getLocalDateString = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    const chunkArray = (array, size) => {
+      const chunks = [];
+      for (let i = 0; i < array.length; i += size) chunks.push(array.slice(i, i + size));
+      return chunks;
+    };
+
+    const RANGE_OPTIONS = [
+      { label: '4 ชั่วโมง', hours: 4 },
+      { label: '8 ชั่วโมง', hours: 8 },
+      { label: '12 ชั่วโมง', hours: 12 },
+      { label: '24 ชั่วโมง', hours: 24 },
+      { label: '3 วัน', hours: 72 },
+      { label: '7 วัน', hours: 168 },
+      { label: '14 วัน', hours: 336 },
+    ];
+
+    // --- Main Component ---
+    function App() {
+      const [availableProfiles, setAvailableProfiles] = useState([]);
+      const [allData, setAllData] = useState([]);
+      const [allMeals, setAllMeals] = useState([]);
+      
+      const [selectedProfile, setSelectedProfile] = useState('');
+      const [newProfileName, setNewProfileName] = useState('');
+      
+      // Refresh Trigger to re-fetch data after mutation
+      const [refreshTrigger, setRefreshTrigger] = useState(0);
+      
+      // Time Filtering State
+      const [anchorDateStr, setAnchorDateStr] = useState('');
+      const [timeRangeHours, setTimeRangeHours] = useState(24);
+      
+      const [isUploading, setIsUploading] = useState(false);
+      const [uploadProgress, setUploadProgress] = useState(0);
+      const [newMealTime, setNewMealTime] = useState('');
+      const [newMealDesc, setNewMealDesc] = useState('');
+
+      // 1. Fetch available profiles on mount
+      useEffect(() => {
+        if (!supabase) return;
+        const fetchProfiles = async () => {
+          // ดึงรายชื่อ profile_name แบบคร่าวๆ (Supabase JS ไม่มี SELECT DISTINCT ตรงๆ เราเลยดึงข้อมูลส่วนนึงมาคัดกรอง)
+          const { data, error } = await supabase.from('cgm_readings').select('profile_name').limit(2000);
+          if (data && !error) {
+            const uniqueProfiles = [...new Set(data.map(d => d.profile_name))].filter(Boolean);
+            setAvailableProfiles(uniqueProfiles);
+          }
+        };
+        fetchProfiles();
+      }, []);
+
+      // 2. Fetch Data for Selected Profile
+      useEffect(() => {
+        if (!selectedProfile || !supabase) return;
+        
+        const loadData = async () => {
+          try {
+            const [resCgm, resMeals] = await Promise.all([
+              supabase.from('cgm_readings').select('*').eq('profile_name', selectedProfile).order('reading_timestamp', { ascending: true }),
+              supabase.from('cgm_meals').select('*').eq('profile_name', selectedProfile).order('meal_timestamp', { ascending: true })
+            ]);
+
+            if (resCgm.error) throw resCgm.error;
+            if (resMeals.error) throw resMeals.error;
+
+            // Map DB format to App State format
+            const mappedData = (resCgm.data || []).map(d => ({
+              profile: d.profile_name,
+              originalTime: d.original_time,
+              timestamp: Number(d.reading_timestamp),
+              dateStr: d.date_str,
+              glucose: d.glucose,
+              time: new Date(Number(d.reading_timestamp))
+            }));
+            
+            const mappedMeals = (resMeals.data || []).map(m => ({
+              id: m.id,
+              profile: m.profile_name,
+              timestamp: Number(m.meal_timestamp),
+              dateStr: m.date_str,
+              description: m.description,
+              time: new Date(Number(m.meal_timestamp))
+            }));
+
+            setAllData(mappedData);
+            setAllMeals(mappedMeals);
+            
+          } catch (err) {
+            console.error("Error loading Supabase data:", err);
+            alert("เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาตรวจสอบ Console");
+          }
+        };
+
+        loadData();
+      }, [selectedProfile, refreshTrigger]);
+
+      // Unique Days for the Dropdown
+      const uniqueDays = useMemo(() => {
+        const days = allData.map(d => d.dateStr);
+        return [...new Set(days)].sort((a, b) => new Date(b) - new Date(a));
+      }, [allData]);
+
+      // Auto-select latest day
+      useEffect(() => {
+        if (uniqueDays.length > 0 && (!anchorDateStr || !uniqueDays.includes(anchorDateStr))) {
+          setAnchorDateStr(uniqueDays[0]);
+        }
+      }, [uniqueDays, anchorDateStr]);
+
+      // Calculate the exact time window based on selected Date & Range
+      const { startTimestamp, endTimestamp } = useMemo(() => {
+        if (!anchorDateStr || allData.length === 0) return { startTimestamp: 0, endTimestamp: 0 };
+        
+        // Find the absolute latest timestamp that occurred ON the anchor date
+        const dataInDay = allData.filter(d => d.dateStr === anchorDateStr);
+        let maxTs = 0;
+        if (dataInDay.length > 0) {
+            maxTs = Math.max(...dataInDay.map(d => d.timestamp));
+        } else {
+            maxTs = new Date(`${anchorDateStr}T23:59:59`).getTime();
+        }
+        
+        const startTs = maxTs - (timeRangeHours * 60 * 60 * 1000);
+        return { startTimestamp: startTs, endTimestamp: maxTs };
+      }, [anchorDateStr, timeRangeHours, allData]);
+
+      // Filter Data for the Chart and Stats
+      const currentRangeData = useMemo(() => {
+        if (allData.length === 0 || startTimestamp === 0) return [];
+        return allData.filter(d => d.timestamp > startTimestamp && d.timestamp <= endTimestamp);
+      }, [allData, startTimestamp, endTimestamp]);
+
+      // Calculate Advanced Stats (CV, Avg, TIR)
+      const rangeStats = useMemo(() => {
+        if (currentRangeData.length === 0) return null;
+        
+        let sum = 0;
+        let optimal = 0; // 70-110
+        let acceptable = 0; // 110-140
+        let low = 0; // < 70
+        
+        currentRangeData.forEach(d => {
+          sum += d.glucose;
+          if (d.glucose < 70) low++;
+          else if (d.glucose <= 110) optimal++;
+          else if (d.glucose <= 140) acceptable++;
+        });
+
+        const total = currentRangeData.length;
+        const mean = sum / total;
+        
+        // Calculate Standard Deviation for CV
+        let sumSqDiff = 0;
+        currentRangeData.forEach(d => {
+            sumSqDiff += Math.pow(d.glucose - mean, 2);
+        });
+        const sd = Math.sqrt(sumSqDiff / total);
+        const cv = (sd / mean) * 100;
+
+        return {
+          avg: Math.round(mean),
+          optimalPct: Math.round((optimal / total) * 100),
+          acceptablePct: Math.round((acceptable / total) * 100),
+          lowPct: Math.round((low / total) * 100),
+          min: Math.min(...currentRangeData.map(d => d.glucose)),
+          max: Math.max(...currentRangeData.map(d => d.glucose)),
+          cv: cv.toFixed(1)
+        };
+      }, [currentRangeData]);
+
+      // Upload CSV & Save to Supabase
+      const handleFileUpload = (event) => {
+        if (!selectedProfile || !supabase) return;
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        setUploadProgress(0);
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const lines = e.target.result.trim().split('\n');
+          const parsedData = lines.slice(1).map(line => {
+            const [timeStr, glucStr] = line.split(',');
+            if (!timeStr || !glucStr) return null;
+            const timeObj = parseDateString(timeStr);
+            if (isNaN(timeObj.getTime())) return null;
+            return {
+              profile_name: selectedProfile,
+              original_time: timeStr,
+              reading_timestamp: timeObj.getTime(),
+              date_str: getLocalDateString(timeObj),
+              glucose: parseFloat(glucStr)
+            };
+          }).filter(d => d && !isNaN(d.glucose));
+
+          // Batch Upload
+          const chunks = chunkArray(parsedData, 500);
+          let processed = 0;
+
+          try {
+            for (const chunk of chunks) {
+              const { error } = await supabase
+                .from('cgm_readings')
+                .upsert(chunk, { onConflict: 'profile_name, reading_timestamp' });
+              
+              if (error) throw error;
+              
+              processed += chunk.length;
+              setUploadProgress(Math.round((processed / parsedData.length) * 100));
+            }
+          } catch (err) {
+            console.error("Upload error:", err);
+            alert("เกิดข้อผิดพลาดในการอัปโหลด: " + err.message);
+          } finally {
+            setIsUploading(false);
+            setRefreshTrigger(prev => prev + 1); // Trigger data reload
+            event.target.value = '';
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      // Add Meal to Supabase
+      const handleAddMeal = async (e) => {
+        e.preventDefault();
+        if (!newMealTime || !selectedProfile || !supabase) return;
+        
+        const mealDateTime = new Date(`${anchorDateStr}T${newMealTime}`);
+        const timestamp = mealDateTime.getTime();
+        
+        const newMeal = {
+          profile_name: selectedProfile,
+          meal_timestamp: timestamp,
+          date_str: anchorDateStr,
+          description: newMealDesc || 'มื้ออาหาร',
+        };
+
+        try {
+          const { error } = await supabase.from('cgm_meals').insert([newMeal]);
+          if (error) throw error;
+          
+          setNewMealTime(''); 
+          setNewMealDesc('');
+          setRefreshTrigger(prev => prev + 1);
+        } catch (err) {
+          console.error("Add meal error:", err);
+          alert("ไม่สามารถเพิ่มมื้ออาหารได้: " + err.message);
+        }
+      };
+
+      // Delete Meal from Supabase
+      const removeMeal = async (id) => {
+        if (!supabase) return;
+        try {
+          const { error } = await supabase.from('cgm_meals').delete().eq('id', id);
+          if (error) throw error;
+          setRefreshTrigger(prev => prev + 1);
+        } catch (err) {
+          console.error("Delete meal error:", err);
+          alert("ไม่สามารถลบมื้ออาหารได้");
+        }
+      };
+
+      // Analyze meals within the CURRENT visible range
+      const analyzedMeals = useMemo(() => {
+        return allMeals.filter(m => m.timestamp >= startTimestamp && m.timestamp <= endTimestamp).map(meal => {
+          const beforeMealData = allData.filter(d => d.timestamp <= meal.timestamp);
+          const baseline = beforeMealData.length > 0 ? beforeMealData[beforeMealData.length - 1].glucose : null;
+          const windowEnd = meal.timestamp + (2 * 60 * 60 * 1000);
+          const windowData = allData.filter(d => d.timestamp >= meal.timestamp && d.timestamp <= windowEnd);
+          
+          if (windowData.length === 0) return { ...meal, baseline, peakGlucose: null, lagMins: null, delta: null };
+
+          let peakData = windowData[0];
+          windowData.forEach(d => { if (d.glucose > peakData.glucose) peakData = d; });
+          const lagMins = Math.round((peakData.timestamp - meal.timestamp) / 60000);
+          return {
+            ...meal, baseline, peakGlucose: peakData.glucose,
+            peakTime: new Date(peakData.timestamp), lagMins, delta: baseline ? peakData.glucose - baseline : null
+          };
+        }).sort((a,b) => b.timestamp - a.timestamp); // Newest meal first
+      }, [allMeals, allData, startTimestamp, endTimestamp]);
+
+      // Initial loading state / Errors
+      if (!window.Recharts) return <div className="p-10 text-center text-rose-500 font-bold">ไม่สามารถโหลดไลบรารี Recharts ได้ กรุณารีเฟรชหน้าเว็บอีกครั้ง</div>;
+      
+      // Checking Supabase Config
+      if (!isSupabaseConfigured) {
+        return (
+          <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+             <div className="bg-white p-10 rounded-3xl shadow-xl max-w-lg w-full text-center border border-slate-100">
+                <IconDatabase size={64} className="text-rose-400 mx-auto mb-4" />
+                <h1 className="text-2xl font-bold text-slate-800 mb-2">ยังไม่ได้ตั้งค่า Supabase</h1>
+                <p className="text-slate-500 text-sm mb-6">กรุณาแก้ไขโค้ดบรรทัดที่ 34 และ 35 โดยการใส่ `SUPABASE_URL` และ `SUPABASE_ANON_KEY` ของโปรเจกต์คุณ เพื่อเริ่มใช้งานฐานข้อมูล</p>
+             </div>
+          </div>
+        );
+      }
+
+      // Profile Selection Screen
+      if (!selectedProfile) {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-6">
+            <div className="bg-white p-10 rounded-3xl shadow-xl max-w-lg w-full text-center border border-slate-100">
+              <div className="w-20 h-20 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mx-auto mb-6"><IconUser size={40} /></div>
+              <h1 className="text-2xl font-bold text-slate-800 mb-2">เข้าสู่ระบบวิเคราะห์ CGM (Supabase)</h1>
+              <p className="text-slate-500 mb-8 text-sm">สร้างโปรไฟล์ใหม่หรือเลือกโปรไฟล์ที่มีอยู่เพื่อดูข้อมูล UP Labs Metabolic Flexibility</p>
+              
+              {availableProfiles.length > 0 && (
+                <div className="mb-6 text-left">
+                  <label className="block text-sm font-medium text-slate-600 mb-2">โปรไฟล์ที่มีอยู่ใน Database</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {availableProfiles.map(p => (
+                      <button key={p} onClick={() => setSelectedProfile(p)} className="p-3 border border-slate-200 hover:border-teal-400 hover:bg-teal-50 rounded-xl text-slate-700 font-medium transition-colors">{p}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <form onSubmit={(e) => { e.preventDefault(); if(newProfileName.trim()) setSelectedProfile(newProfileName.trim()); }} className="text-left">
+                <label className="block text-sm font-medium text-slate-600 mb-2">สร้างโปรไฟล์ใหม่</label>
+                <div className="flex gap-2">
+                  <input type="text" placeholder="พิมพ์ชื่อโปรไฟล์..." value={newProfileName} onChange={(e) => setNewProfileName(e.target.value)} className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50" />
+                  <button type="submit" disabled={!newProfileName.trim()} className="bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 text-white px-6 py-3 rounded-xl font-medium">เริ่มใช้งาน</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      // Main Dashboard
+      return (
+        <div className="min-h-screen p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-6">
+            
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+              <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800"><IconActivity className="text-teal-500"/> Metabolic Dashboard</h1>
+                <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
+                  โปรไฟล์: <strong className="text-teal-600">{selectedProfile}</strong>
+                  <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded ml-2">Supabase DB</span>
+                  <button onClick={() => setSelectedProfile('')} className="text-xs bg-slate-100 px-2 py-0.5 rounded ml-2">เปลี่ยน</button>
+                </p>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Time Range Selectors */}
+                {uniqueDays.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200">
+                      <IconCalendar size={18} className="text-slate-400" />
+                      <select value={anchorDateStr} onChange={(e) => setAnchorDateStr(e.target.value)} className="bg-transparent border-none outline-none font-medium text-slate-700 cursor-pointer">
+                        {uniqueDays.map(day => <option key={day} value={day}>สิ้นสุด: {formatDate(new Date(day))}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200">
+                      <IconClock size={18} className="text-slate-400" />
+                      <select value={timeRangeHours} onChange={(e) => setTimeRangeHours(Number(e.target.value))} className="bg-transparent border-none outline-none font-medium text-slate-700 cursor-pointer">
+                        {RANGE_OPTIONS.map(opt => <option key={opt.hours} value={opt.hours}>ย้อนหลัง {opt.label}</option>)}
+                      </select>
+                    </div>
+                  </>
+                )}
+                
+                <label className={`cursor-pointer bg-teal-500 hover:bg-teal-600 text-white py-2.5 px-5 rounded-xl font-medium inline-flex items-center gap-2 ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}>
+                  {isUploading ? <IconLoader size={18} /> : <IconUpload size={18} />}
+                  {isUploading ? `กำลังโหลด ${uploadProgress}%` : 'อัปโหลด CSV'}
+                  <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
+                </label>
+              </div>
+            </div>
+
+            {allData.length === 0 ? (
+               <div className="bg-white p-12 rounded-2xl shadow-sm text-center">
+                 <IconDatabase className="text-slate-200 mx-auto mb-4 w-16 h-16" />
+                 <h3 className="text-lg font-bold text-slate-700 mb-2">ยังไม่มีข้อมูลน้ำตาลในระบบ</h3>
+                 <p className="text-slate-500">กดปุ่ม อัปโหลด CSV ด้านบนเพื่อนำเข้าข้อมูล ระบบจะบันทึกลง Supabase ทันที</p>
+               </div>
+            ) : (
+              <>
+                {/* Advanced Stats */}
+                {rangeStats && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full"></div>
+                      <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconActivity size={16}/> เฉลี่ย (Average)</div>
+                      <div className="text-3xl font-bold text-slate-800">{rangeStats.avg} <span className="text-sm font-normal text-slate-400">mg/dL</span></div>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-50 rounded-bl-full"></div>
+                      <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconCheckCircle size={16}/> Optimal (70-110)</div>
+                      <div className="text-3xl font-bold text-slate-800">{rangeStats.optimalPct}% <span className="text-sm font-normal text-slate-400">ของเวลา</span></div>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-violet-50 rounded-bl-full"></div>
+                      <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2" title="Coefficient of Variation (<30% is highly stable)"><IconActivity size={16}/> ความแปรปรวน (CV)</div>
+                      <div className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+                        {rangeStats.cv}% 
+                        {rangeStats.cv <= 30 ? <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">ดีมาก</span> : 
+                         rangeStats.cv <= 36 ? <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">ปานกลาง</span> :
+                         <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">แกว่งสูง</span>}
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-amber-50 rounded-bl-full"></div>
+                      <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconClock size={16}/> สูงสุด / ต่ำสุด</div>
+                      <div className="text-3xl font-bold text-slate-800">
+                        <span className="text-amber-500">{rangeStats.max}</span> <span className="text-lg text-slate-300">/</span> <span className="text-indigo-400">{rangeStats.min}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Chart */}
+                <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-slate-800">กราฟระดับน้ำตาล ({timeRangeHours < 24 ? `${timeRangeHours} ชั่วโมง` : `${timeRangeHours/24} วัน`})</h2>
+                    <div className="flex gap-4 text-xs font-medium text-slate-500">
+                      <span className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-100 rounded-full"></div> Optimal</span>
+                      <span className="flex items-center gap-1"><div className="w-3 h-3 bg-rose-400 rounded-full"></div> มื้ออาหาร</span>
+                    </div>
+                  </div>
+                  
+                  <div className="h-96 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={currentRangeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis 
+                          dataKey="timestamp" type="number" scale="time" domain={['dataMin', 'dataMax']} 
+                          tickFormatter={(unix) => timeRangeHours > 24 ? formatDateTime(new Date(unix)) : formatTime(new Date(unix))}
+                          stroke="#94a3b8" fontSize={11} minTickGap={40}
+                        />
+                        <YAxis domain={[40, Math.max(200, rangeStats?.max + 20 || 200)]} stroke="#94a3b8" fontSize={12} tickCount={6}/>
+                        
+                        <RechartsTooltip 
+                          content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-white/95 p-3 rounded-xl shadow-lg border border-slate-200">
+                                  <p className="text-slate-500 text-xs mb-1">{formatDateTime(new Date(label))}</p>
+                                  <p className="text-teal-600 font-bold text-lg">{payload[0].value} <span className="text-xs">mg/dL</span></p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }} 
+                        />
+                        
+                        <ReferenceArea y1={70} y2={110} fill="#10b981" fillOpacity={0.06} />
+                        <ReferenceLine y={140} stroke="#f59e0b" strokeDasharray="3 3" opacity={0.5} />
+                        <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" opacity={0.3} />
+
+                        {analyzedMeals.map((meal) => (
+                          <ReferenceLine key={meal.id} x={meal.timestamp} stroke="#fb7185" strokeWidth={2} strokeDasharray="4 4" label={{ position: 'insideTopLeft', value: '🍽️', fill: '#fb7185', fontSize: 16 }} />
+                        ))}
+
+                        <Line type="monotone" dataKey="glucose" stroke="#14b8a6" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: "#0d9488" }} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Meals Section */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                  
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 xl:col-span-1 h-fit">
+                    <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><IconUtensils className="text-rose-400" /> บันทึกมื้ออาหาร</h2>
+                    <form onSubmit={handleAddMeal} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">เวลา (ในวันที่ {formatDate(new Date(anchorDateStr))})</label>
+                        <input type="time" required value={newMealTime} onChange={(e) => setNewMealTime(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">รายละเอียด (Optional)</label>
+                        <input type="text" placeholder="เช่น กาแฟดำ" value={newMealDesc} onChange={(e) => setNewMealDesc(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50" />
+                      </div>
+                      <button type="submit" className="w-full bg-rose-400 hover:bg-rose-500 text-white font-medium py-2.5 rounded-xl flex items-center justify-center gap-2"><IconSave size={18}/> บันทึกมื้อ</button>
+                    </form>
+
+                    <div className="mt-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                      <div className="flex items-center gap-2 text-blue-800 font-bold text-sm mb-2"><IconInfo size={16}/> ทำไมต้องดูค่า CV% ?</div>
+                      <p className="text-xs text-blue-700 leading-relaxed">
+                        <b>CV (Coefficient of Variation)</b> บ่งบอกความสวิงของน้ำตาล ยิ่งแกว่งมาก ยิ่งกระตุ้นอินซูลินบ่อยเป้าหมายของการสร้าง <b>Metabolic Flexibility</b> คือรักษาระดับ CV ให้อยู่ต่ำกว่า <b>30%</b>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 xl:col-span-2 overflow-hidden flex flex-col">
+                    <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><IconClock className="text-indigo-400" /> วิเคราะห์มื้ออาหาร (ช่วงเวลาที่เลือก)</h2>
+                    
+                    <div className="overflow-x-auto flex-1">
+                      {analyzedMeals.length > 0 ? (
+                        <table className="w-full text-left border-collapse min-w-[600px]">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                              <th className="pb-3 font-medium">วันที่-เวลา</th>
+                              <th className="pb-3 font-medium text-center">Baseline</th>
+                              <th className="pb-3 font-medium text-center">Peak</th>
+                              <th className="pb-3 font-medium text-center">Delta</th>
+                              <th className="pb-3 font-medium text-center">Lag Time</th>
+                              <th className="pb-3 font-medium"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-sm">
+                            {analyzedMeals.map((meal) => (
+                              <tr key={meal.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                <td className="py-3">
+                                  <div className="font-semibold text-slate-800">{timeRangeHours > 24 ? formatDateTime(new Date(meal.timestamp)) : formatTime(new Date(meal.timestamp))}</div>
+                                  <div className="text-slate-500 text-xs">{meal.description}</div>
+                                </td>
+                                <td className="py-3 text-center">{meal.baseline || '-'}</td>
+                                <td className="py-3 text-center">
+                                  {meal.peakGlucose ? <div className="font-bold text-slate-800">{meal.peakGlucose}</div> : '-'}
+                                  <div className="text-xs text-slate-400">{meal.peakTime ? formatTime(meal.peakTime) : ''}</div>
+                                </td>
+                                <td className="py-3 text-center">
+                                  {meal.delta !== null ? (
+                                    <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold ${meal.delta <= 30 ? 'bg-emerald-100 text-emerald-700' : meal.delta <= 50 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
+                                      +{Math.round(meal.delta)}
+                                    </span>
+                                  ) : '-'}
+                                </td>
+                                <td className="py-3 text-center">{meal.lagMins !== null ? `${meal.lagMins} นาที` : '-'}</td>
+                                <td className="py-3 text-right">
+                                  <button onClick={() => removeMeal(meal.id)} className="text-slate-300 hover:text-rose-500 text-lg">&times;</button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-slate-400 py-10">
+                          <IconUtensils size={32} className="mb-3 opacity-20" />
+                          <p>ไม่พบมื้ออาหารในช่วงเวลานี้</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Render App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
