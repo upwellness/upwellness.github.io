@@ -97,6 +97,7 @@
       const [allMeals, setAllMeals] = useState([]);
       
       const [selectedProfile, setSelectedProfile] = useState('');
+      const [dropdownProfile, setDropdownProfile] = useState('');
       const [newProfileName, setNewProfileName] = useState('');
       
       // Refresh Trigger to re-fetch data after mutation
@@ -111,19 +112,42 @@
       const [newMealTime, setNewMealTime] = useState('');
       const [newMealDesc, setNewMealDesc] = useState('');
 
-      // 1. Fetch available profiles on mount
+      // 1. Fetch available profiles on mount (Loop through pagination to get ALL distinct profiles)
       useEffect(() => {
         if (!supabase) return;
         const fetchProfiles = async () => {
-          // ดึงรายชื่อ profile_name แบบคร่าวๆ (Supabase JS ไม่มี SELECT DISTINCT ตรงๆ เราเลยดึงข้อมูลส่วนนึงมาคัดกรอง)
-          const { data, error } = await supabase.from('cgm_readings').select('profile_name').limit(2000);
-          if (data && !error) {
-            const uniqueProfiles = [...new Set(data.map(d => d.profile_name))].filter(Boolean);
-            setAvailableProfiles(uniqueProfiles);
+          let allProfiles = new Set();
+          let hasMore = true;
+          let start = 0;
+          const step = 1000; // Supabase API limit per request
+
+          try {
+            while (hasMore) {
+              const { data, error } = await supabase
+                .from('cgm_readings')
+                .select('profile_name')
+                .range(start, start + step - 1);
+              
+              if (error) throw error;
+              if (!data || data.length === 0) break;
+              
+              data.forEach(d => {
+                if (d.profile_name) allProfiles.add(d.profile_name);
+              });
+              
+              if (data.length < step) {
+                hasMore = false;
+              } else {
+                start += step;
+              }
+            }
+            setAvailableProfiles([...allProfiles].sort());
+          } catch (err) {
+            console.error("Error fetching profiles:", err);
           }
         };
         fetchProfiles();
-      }, []);
+      }, [refreshTrigger]);
 
       // 2. Fetch Data for Selected Profile
       useEffect(() => {
@@ -384,15 +408,37 @@
               <p className="text-slate-500 mb-8 text-sm">สร้างโปรไฟล์ใหม่หรือเลือกโปรไฟล์ที่มีอยู่เพื่อดูข้อมูล UP Labs Metabolic Flexibility</p>
               
               {availableProfiles.length > 0 && (
-                <div className="mb-6 text-left">
-                  <label className="block text-sm font-medium text-slate-600 mb-2">โปรไฟล์ที่มีอยู่ใน Database</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {availableProfiles.map(p => (
-                      <button key={p} onClick={() => setSelectedProfile(p)} className="p-3 border border-slate-200 hover:border-teal-400 hover:bg-teal-50 rounded-xl text-slate-700 font-medium transition-colors">{p}</button>
-                    ))}
+                <>
+                  <div className="mb-6 text-left">
+                    <label className="block text-sm font-medium text-slate-600 mb-2">เลือกโปรไฟล์ที่มีอยู่ใน Database</label>
+                    <div className="flex gap-2">
+                      <select 
+                        value={dropdownProfile} 
+                        onChange={(e) => setDropdownProfile(e.target.value)}
+                        className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50 text-slate-700"
+                      >
+                        <option value="">-- เลือกชื่อโปรไฟล์ของคุณ --</option>
+                        {availableProfiles.map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                      <button 
+                        onClick={() => setSelectedProfile(dropdownProfile)}
+                        disabled={!dropdownProfile}
+                        className="bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-300 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                      >
+                        เข้าสู่ระบบ
+                      </button>
+                    </div>
                   </div>
-                </div>
+                  <div className="my-6 flex items-center gap-3 opacity-50">
+                    <div className="h-px bg-slate-300 flex-1"></div>
+                    <span className="text-xs">หรือ</span>
+                    <div className="h-px bg-slate-300 flex-1"></div>
+                  </div>
+                </>
               )}
+
               <form onSubmit={(e) => { e.preventDefault(); if(newProfileName.trim()) setSelectedProfile(newProfileName.trim()); }} className="text-left">
                 <label className="block text-sm font-medium text-slate-600 mb-2">สร้างโปรไฟล์ใหม่</label>
                 <div className="flex gap-2">
@@ -417,7 +463,7 @@
                 <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
                   โปรไฟล์: <strong className="text-teal-600">{selectedProfile}</strong>
                   <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded ml-2">Supabase DB</span>
-                  <button onClick={() => setSelectedProfile('')} className="text-xs bg-slate-100 px-2 py-0.5 rounded ml-2">เปลี่ยน</button>
+                  <button onClick={() => { setSelectedProfile(''); setDropdownProfile(''); }} className="text-xs bg-slate-100 px-2 py-0.5 rounded ml-2">เปลี่ยน</button>
                 </p>
               </div>
               
