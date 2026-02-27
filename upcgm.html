@@ -27,6 +27,11 @@
 
   <style>
     body { font-family: 'Prompt', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    /* Custom Scrollbar for inner tables */
+    .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -42,7 +47,6 @@
 
     // ==========================================
     // ⚙️ SUPABASE CONFIGURATION
-    // ให้นำ URL และ Anon Key จาก Project Settings ของคุณมาใส่ตรงนี้
     // ==========================================
     const SUPABASE_URL = 'https://qzqvwbucjxwgtmbdkrlu.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cXZ3YnVjanh3Z3RtYmRrcmx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzgxODksImV4cCI6MjA4MDk1NDE4OX0.RYvc5kMueNhsOu---WOKcXYnOZLVnjiWklp1IiHmgS8';
@@ -62,6 +66,9 @@
     const IconInfo = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>;
     const IconCheckCircle = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="9 11 12 14 22 4"/></svg>;
     const IconDatabase = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>;
+    const IconTrophy = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>;
+    const IconAlert = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+    const IconChartBar = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>;
 
     // --- Helper Functions ---
     const parseDateString = (dateStr) => new Date(dateStr.replace(' ', 'T'));
@@ -100,6 +107,9 @@
       const [dropdownProfile, setDropdownProfile] = useState('');
       const [newProfileName, setNewProfileName] = useState('');
       
+      // Tabs: 'dashboard' | 'analyzer'
+      const [activeTab, setActiveTab] = useState('dashboard');
+
       // Refresh Trigger to re-fetch data after mutation
       const [refreshTrigger, setRefreshTrigger] = useState(0);
       
@@ -119,32 +129,18 @@
           let allProfiles = new Set();
           let hasMore = true;
           let start = 0;
-          const step = 1000; // Supabase API limit per request
+          const step = 1000; 
 
           try {
             while (hasMore) {
-              const { data, error } = await supabase
-                .from('cgm_readings')
-                .select('profile_name')
-                .range(start, start + step - 1);
-              
+              const { data, error } = await supabase.from('cgm_readings').select('profile_name').range(start, start + step - 1);
               if (error) throw error;
               if (!data || data.length === 0) break;
-              
-              data.forEach(d => {
-                if (d.profile_name) allProfiles.add(d.profile_name);
-              });
-              
-              if (data.length < step) {
-                hasMore = false;
-              } else {
-                start += step;
-              }
+              data.forEach(d => { if (d.profile_name) allProfiles.add(d.profile_name); });
+              if (data.length < step) hasMore = false; else start += step;
             }
             setAvailableProfiles([...allProfiles].sort());
-          } catch (err) {
-            console.error("Error fetching profiles:", err);
-          }
+          } catch (err) { console.error("Error fetching profiles:", err); }
         };
         fetchProfiles();
       }, [refreshTrigger]);
@@ -155,8 +151,6 @@
         
         const loadData = async () => {
           try {
-            // Loop through pagination to get ALL records for the selected profile
-            // (Overcoming Supabase's default 1000-row limit)
             let allReadings = [];
             let hasMore = true;
             let start = 0;
@@ -164,139 +158,95 @@
 
             while (hasMore) {
               const { data, error } = await supabase
-                .from('cgm_readings')
-                .select('*')
-                .eq('profile_name', selectedProfile)
-                .order('reading_timestamp', { ascending: true })
+                .from('cgm_readings').select('*')
+                .eq('profile_name', selectedProfile).order('reading_timestamp', { ascending: true })
                 .range(start, start + step - 1);
                 
               if (error) throw error;
               if (!data || data.length === 0) break;
-              
               allReadings = [...allReadings, ...data];
-              
-              if (data.length < step) {
-                hasMore = false;
-              } else {
-                start += step;
-              }
+              if (data.length < step) hasMore = false; else start += step;
             }
 
-            // Fetch Meals (Usually doesn't exceed 1000 rows, so one query is fine)
             const resMeals = await supabase
-               .from('cgm_meals')
-               .select('*')
-               .eq('profile_name', selectedProfile)
-               .order('meal_timestamp', { ascending: true });
+               .from('cgm_meals').select('*')
+               .eq('profile_name', selectedProfile).order('meal_timestamp', { ascending: true });
 
             if (resMeals.error) throw resMeals.error;
 
-            // Map DB format to App State format
             const mappedData = allReadings.map(d => ({
-              profile: d.profile_name,
-              originalTime: d.original_time,
-              timestamp: Number(d.reading_timestamp),
-              dateStr: d.date_str,
-              glucose: d.glucose,
-              time: new Date(Number(d.reading_timestamp))
+              profile: d.profile_name, originalTime: d.original_time,
+              timestamp: Number(d.reading_timestamp), dateStr: d.date_str,
+              glucose: d.glucose, time: new Date(Number(d.reading_timestamp))
             }));
             
             const mappedMeals = (resMeals.data || []).map(m => ({
-              id: m.id,
-              profile: m.profile_name,
-              timestamp: Number(m.meal_timestamp),
-              dateStr: m.date_str,
-              description: m.description,
-              time: new Date(Number(m.meal_timestamp))
+              id: m.id, profile: m.profile_name,
+              timestamp: Number(m.meal_timestamp), dateStr: m.date_str,
+              description: m.description, time: new Date(Number(m.meal_timestamp))
             }));
 
             setAllData(mappedData);
             setAllMeals(mappedMeals);
-            
           } catch (err) {
             console.error("Error loading Supabase data:", err);
             alert("เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาตรวจสอบ Console");
           }
         };
-
         loadData();
       }, [selectedProfile, refreshTrigger]);
 
-      // Unique Days for the Dropdown
       const uniqueDays = useMemo(() => {
         const days = allData.map(d => d.dateStr);
         return [...new Set(days)].sort((a, b) => new Date(b) - new Date(a));
       }, [allData]);
 
-      // Auto-select latest day
       useEffect(() => {
         if (uniqueDays.length > 0 && (!anchorDateStr || !uniqueDays.includes(anchorDateStr))) {
           setAnchorDateStr(uniqueDays[0]);
         }
       }, [uniqueDays, anchorDateStr]);
 
-      // Calculate the exact time window based on selected Date & Range
       const { startTimestamp, endTimestamp } = useMemo(() => {
         if (!anchorDateStr || allData.length === 0) return { startTimestamp: 0, endTimestamp: 0 };
-        
-        // Find the absolute latest timestamp that occurred ON the anchor date
         const dataInDay = allData.filter(d => d.dateStr === anchorDateStr);
         let maxTs = 0;
-        if (dataInDay.length > 0) {
-            maxTs = Math.max(...dataInDay.map(d => d.timestamp));
-        } else {
-            maxTs = new Date(`${anchorDateStr}T23:59:59`).getTime();
-        }
-        
+        if (dataInDay.length > 0) { maxTs = Math.max(...dataInDay.map(d => d.timestamp)); } 
+        else { maxTs = new Date(`${anchorDateStr}T23:59:59`).getTime(); }
         const startTs = maxTs - (timeRangeHours * 60 * 60 * 1000);
         return { startTimestamp: startTs, endTimestamp: maxTs };
       }, [anchorDateStr, timeRangeHours, allData]);
 
-      // Filter Data for the Chart and Stats
       const currentRangeData = useMemo(() => {
         if (allData.length === 0 || startTimestamp === 0) return [];
         return allData.filter(d => d.timestamp > startTimestamp && d.timestamp <= endTimestamp);
       }, [allData, startTimestamp, endTimestamp]);
 
-      // Calculate Advanced Stats (CV, Avg, TIR)
       const rangeStats = useMemo(() => {
         if (currentRangeData.length === 0) return null;
-        
-        let sum = 0;
-        let optimal = 0; // 70-110
-        let acceptable = 0; // 110-140
-        let low = 0; // < 70
-        
+        let sum = 0, optimal = 0, acceptable = 0, low = 0;
         currentRangeData.forEach(d => {
           sum += d.glucose;
           if (d.glucose < 70) low++;
           else if (d.glucose <= 110) optimal++;
           else if (d.glucose <= 140) acceptable++;
         });
-
         const total = currentRangeData.length;
         const mean = sum / total;
-        
-        // Calculate Standard Deviation for CV
         let sumSqDiff = 0;
-        currentRangeData.forEach(d => {
-            sumSqDiff += Math.pow(d.glucose - mean, 2);
-        });
+        currentRangeData.forEach(d => { sumSqDiff += Math.pow(d.glucose - mean, 2); });
         const sd = Math.sqrt(sumSqDiff / total);
         const cv = (sd / mean) * 100;
 
         return {
-          avg: Math.round(mean),
-          optimalPct: Math.round((optimal / total) * 100),
-          acceptablePct: Math.round((acceptable / total) * 100),
-          lowPct: Math.round((low / total) * 100),
+          avg: Math.round(mean), optimalPct: Math.round((optimal / total) * 100),
+          acceptablePct: Math.round((acceptable / total) * 100), lowPct: Math.round((low / total) * 100),
           min: Math.min(...currentRangeData.map(d => d.glucose)),
           max: Math.max(...currentRangeData.map(d => d.glucose)),
           cv: cv.toFixed(1)
         };
       }, [currentRangeData]);
 
-      // Upload CSV & Save to Supabase
       const handleFileUpload = (event) => {
         if (!selectedProfile || !supabase) return;
         const file = event.target.files[0];
@@ -314,113 +264,152 @@
             const timeObj = parseDateString(timeStr);
             if (isNaN(timeObj.getTime())) return null;
             return {
-              profile_name: selectedProfile,
-              original_time: timeStr,
-              reading_timestamp: timeObj.getTime(),
-              date_str: getLocalDateString(timeObj),
+              profile_name: selectedProfile, original_time: timeStr,
+              reading_timestamp: timeObj.getTime(), date_str: getLocalDateString(timeObj),
               glucose: parseFloat(glucStr)
             };
           }).filter(d => d && !isNaN(d.glucose));
 
-          // Batch Upload
           const chunks = chunkArray(parsedData, 500);
           let processed = 0;
-
           try {
             for (const chunk of chunks) {
-              const { error } = await supabase
-                .from('cgm_readings')
-                .upsert(chunk, { onConflict: 'profile_name, reading_timestamp' });
-              
+              const { error } = await supabase.from('cgm_readings').upsert(chunk, { onConflict: 'profile_name, reading_timestamp' });
               if (error) throw error;
-              
               processed += chunk.length;
               setUploadProgress(Math.round((processed / parsedData.length) * 100));
             }
           } catch (err) {
-            console.error("Upload error:", err);
-            alert("เกิดข้อผิดพลาดในการอัปโหลด: " + err.message);
+            console.error("Upload error:", err); alert("เกิดข้อผิดพลาดในการอัปโหลด: " + err.message);
           } finally {
-            setIsUploading(false);
-            setRefreshTrigger(prev => prev + 1); // Trigger data reload
-            event.target.value = '';
+            setIsUploading(false); setRefreshTrigger(prev => prev + 1); event.target.value = '';
           }
         };
         reader.readAsText(file);
       };
 
-      // Add Meal to Supabase
       const handleAddMeal = async (e) => {
         e.preventDefault();
         if (!newMealTime || !selectedProfile || !supabase) return;
-        
         const mealDateTime = new Date(`${anchorDateStr}T${newMealTime}`);
         const timestamp = mealDateTime.getTime();
-        
-        const newMeal = {
-          profile_name: selectedProfile,
-          meal_timestamp: timestamp,
-          date_str: anchorDateStr,
-          description: newMealDesc || 'มื้ออาหาร',
-        };
+        const newMeal = { profile_name: selectedProfile, meal_timestamp: timestamp, date_str: anchorDateStr, description: newMealDesc || 'มื้ออาหาร' };
 
         try {
           const { error } = await supabase.from('cgm_meals').insert([newMeal]);
           if (error) throw error;
-          
-          setNewMealTime(''); 
-          setNewMealDesc('');
-          setRefreshTrigger(prev => prev + 1);
+          setNewMealTime(''); setNewMealDesc(''); setRefreshTrigger(prev => prev + 1);
         } catch (err) {
-          console.error("Add meal error:", err);
-          alert("ไม่สามารถเพิ่มมื้ออาหารได้: " + err.message);
+          console.error("Add meal error:", err); alert("ไม่สามารถเพิ่มมื้ออาหารได้: " + err.message);
         }
       };
 
-      // Delete Meal from Supabase
       const removeMeal = async (id) => {
         if (!supabase) return;
         try {
           const { error } = await supabase.from('cgm_meals').delete().eq('id', id);
           if (error) throw error;
           setRefreshTrigger(prev => prev + 1);
-        } catch (err) {
-          console.error("Delete meal error:", err);
-          alert("ไม่สามารถลบมื้ออาหารได้");
-        }
+        } catch (err) { console.error("Delete meal error:", err); alert("ไม่สามารถลบมื้ออาหารได้"); }
       };
 
-      // Analyze meals within the CURRENT visible range
-      const analyzedMeals = useMemo(() => {
-        return allMeals.filter(m => m.timestamp >= startTimestamp && m.timestamp <= endTimestamp).map(meal => {
+      // Helper to find closest glucose reading at a specific time (+/- 15 mins tolerance)
+      const getGlucoseAtTime = (targetTs, toleranceMs = 15 * 60000) => {
+        const windowData = allData.filter(d => Math.abs(d.timestamp - targetTs) <= toleranceMs);
+        if (windowData.length === 0) return null;
+        // Find the absolute closest
+        let closest = windowData[0];
+        let minDiff = Math.abs(windowData[0].timestamp - targetTs);
+        windowData.forEach(d => {
+          const diff = Math.abs(d.timestamp - targetTs);
+          if (diff < minDiff) { minDiff = diff; closest = d; }
+        });
+        return closest.glucose;
+      };
+
+      // ==========================================
+      // 🧠 ADVANCED MEAL ANALYSIS (UP Labs Concepts)
+      // ==========================================
+      const fullyAnalyzedMeals = useMemo(() => {
+        return allMeals.map(meal => {
+          // 1. Baseline (Closest reading before or at meal time)
           const beforeMealData = allData.filter(d => d.timestamp <= meal.timestamp);
           const baseline = beforeMealData.length > 0 ? beforeMealData[beforeMealData.length - 1].glucose : null;
-          const windowEnd = meal.timestamp + (2 * 60 * 60 * 1000);
+          
+          // 2. Window Data (Up to 3 hours)
+          const windowEnd = meal.timestamp + (3 * 60 * 60 * 1000);
           const windowData = allData.filter(d => d.timestamp >= meal.timestamp && d.timestamp <= windowEnd);
           
-          if (windowData.length === 0) return { ...meal, baseline, peakGlucose: null, lagMins: null, delta: null };
+          if (windowData.length === 0 || !baseline) return { ...meal, baseline: null, peakGlucose: null, delta: null, valid: false };
 
+          // 3. Peak Finding
           let peakData = windowData[0];
           windowData.forEach(d => { if (d.glucose > peakData.glucose) peakData = d; });
           const lagMins = Math.round((peakData.timestamp - meal.timestamp) / 60000);
+          const delta = peakData.glucose - baseline;
+
+          // 4. Time Checkpoints (1hr, 2hr, 3hr)
+          const hr1 = getGlucoseAtTime(meal.timestamp + 1 * 3600000);
+          const hr2 = getGlucoseAtTime(meal.timestamp + 2 * 3600000);
+          const hr3 = getGlucoseAtTime(meal.timestamp + 3 * 3600000);
+
+          // 5. Scoring & Ranking System (Out of 100)
+          let score = 100;
+          if (delta > 30) score -= (delta - 30); // Penalty for high spike
+          if (lagMins > 60) score -= 10; // Penalty for slow processing
+          if (hr2 && hr2 > baseline + 20) score -= 15; // Penalty if not recovered by 2hr
+          if (hr3 && hr3 > baseline + 10) score -= 15; // Penalty if not recovered by 3hr
+          
+          // Clamp score
+          score = Math.max(0, Math.min(100, Math.round(score)));
+
+          let grade = 'C';
+          if (score >= 85) grade = 'A';
+          else if (score >= 60) grade = 'B';
+
+          // 6. UP Labs Insights Generation
+          let insights = [];
+          if (delta <= 30 && hr2 && hr2 <= baseline + 10) {
+            insights.push({ type: 'success', text: 'ขึ้นน้อย ลงเร็ว (Metabolic Flexible): ร่างกายจัดการคาร์บได้ดีมาก อินซูลินทำงานไวและปิดจ๊อบได้เร็ว' });
+          } else if (delta > 50 && hr2 && hr2 > baseline + 30) {
+            insights.push({ type: 'danger', text: 'ขึ้นสูง ลงช้า (Insulin Load): กระตุ้นอินซูลินหนักและค้างนาน อาจเกิด Randle Effect ทำให้ร่างกายเบรกการเผาผลาญไขมันยาวนาน' });
+          } else if (delta > 50 && hr2 && hr2 <= baseline + 10) {
+            insights.push({ type: 'warning', text: 'ขึ้นสูง ลงเร็ว (Spike & Crash): น้ำตาลเด้งแรง อินซูลินจึงหลั่งมาปราบอย่างหนัก อาจทำให้เกิดภาวะหิวเร็วหลังมื้ออาหาร' });
+          }
+
+          if (lagMins > 75) {
+            insights.push({ type: 'info', text: 'Peak ช้า (>1 ชม.): มื้อนี้อาจมีไขมัน/โปรตีนสูง หรือการย่อยช้า ทำให้อินซูลินต้องหลั่งหล่อเลี้ยงเป็นเวลานาน' });
+          }
+
           return {
-            ...meal, baseline, peakGlucose: peakData.glucose,
-            peakTime: new Date(peakData.timestamp), lagMins, delta: baseline ? peakData.glucose - baseline : null
+            ...meal,
+            valid: true,
+            baseline,
+            peakGlucose: peakData.glucose,
+            peakTime: new Date(peakData.timestamp),
+            lagMins,
+            delta,
+            hr1, hr2, hr3,
+            score, grade, insights
           };
-        }).sort((a,b) => b.timestamp - a.timestamp); // Newest meal first
-      }, [allMeals, allData, startTimestamp, endTimestamp]);
+        }).filter(m => m.valid).sort((a,b) => b.timestamp - a.timestamp); // Newest first
+      }, [allMeals, allData]);
+
+      // Meals in current Dashboard View range
+      const analyzedMealsForDashboard = useMemo(() => {
+        return fullyAnalyzedMeals.filter(m => m.timestamp >= startTimestamp && m.timestamp <= endTimestamp);
+      }, [fullyAnalyzedMeals, startTimestamp, endTimestamp]);
 
       // Initial loading state / Errors
       if (!window.Recharts) return <div className="p-10 text-center text-rose-500 font-bold">ไม่สามารถโหลดไลบรารี Recharts ได้ กรุณารีเฟรชหน้าเว็บอีกครั้ง</div>;
       
-      // Checking Supabase Config
       if (!isSupabaseConfigured) {
         return (
           <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
              <div className="bg-white p-10 rounded-3xl shadow-xl max-w-lg w-full text-center border border-slate-100">
                 <IconDatabase size={64} className="text-rose-400 mx-auto mb-4" />
                 <h1 className="text-2xl font-bold text-slate-800 mb-2">ยังไม่ได้ตั้งค่า Supabase</h1>
-                <p className="text-slate-500 text-sm mb-6">กรุณาแก้ไขโค้ดบรรทัดที่ 34 และ 35 โดยการใส่ `SUPABASE_URL` และ `SUPABASE_ANON_KEY` ของโปรเจกต์คุณ เพื่อเริ่มใช้งานฐานข้อมูล</p>
+                <p className="text-slate-500 text-sm mb-6">กรุณาแก้ไขโค้ดบรรทัดที่ `SUPABASE_URL` และ `SUPABASE_ANON_KEY` ของโปรเจกต์คุณ เพื่อเริ่มใช้งานฐานข้อมูล</p>
              </div>
           </div>
         );
@@ -432,38 +421,24 @@
           <div className="min-h-screen flex items-center justify-center p-6">
             <div className="bg-white p-10 rounded-3xl shadow-xl max-w-lg w-full text-center border border-slate-100">
               <div className="w-20 h-20 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mx-auto mb-6"><IconUser size={40} /></div>
-              <h1 className="text-2xl font-bold text-slate-800 mb-2">เข้าสู่ระบบวิเคราะห์ CGM (Supabase)</h1>
-              <p className="text-slate-500 mb-8 text-sm">สร้างโปรไฟล์ใหม่หรือเลือกโปรไฟล์ที่มีอยู่เพื่อดูข้อมูล UP Labs Metabolic Flexibility</p>
+              <h1 className="text-2xl font-bold text-slate-800 mb-2">เข้าสู่ระบบวิเคราะห์ CGM</h1>
+              <p className="text-slate-500 mb-8 text-sm">UP Labs - Metabolic Flexibility Analyzer</p>
               
               {availableProfiles.length > 0 && (
                 <>
                   <div className="mb-6 text-left">
                     <label className="block text-sm font-medium text-slate-600 mb-2">เลือกโปรไฟล์ที่มีอยู่ใน Database</label>
                     <div className="flex gap-2">
-                      <select 
-                        value={dropdownProfile} 
-                        onChange={(e) => setDropdownProfile(e.target.value)}
-                        className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50 text-slate-700"
-                      >
+                      <select value={dropdownProfile} onChange={(e) => setDropdownProfile(e.target.value)} className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50 text-slate-700">
                         <option value="">-- เลือกชื่อโปรไฟล์ของคุณ --</option>
-                        {availableProfiles.map(p => (
-                          <option key={p} value={p}>{p}</option>
-                        ))}
+                        {availableProfiles.map(p => <option key={p} value={p}>{p}</option>)}
                       </select>
-                      <button 
-                        onClick={() => setSelectedProfile(dropdownProfile)}
-                        disabled={!dropdownProfile}
-                        className="bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-300 text-white px-6 py-3 rounded-xl font-medium transition-colors"
-                      >
+                      <button onClick={() => setSelectedProfile(dropdownProfile)} disabled={!dropdownProfile} className="bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-300 text-white px-6 py-3 rounded-xl font-medium transition-colors">
                         เข้าสู่ระบบ
                       </button>
                     </div>
                   </div>
-                  <div className="my-6 flex items-center gap-3 opacity-50">
-                    <div className="h-px bg-slate-300 flex-1"></div>
-                    <span className="text-xs">หรือ</span>
-                    <div className="h-px bg-slate-300 flex-1"></div>
-                  </div>
+                  <div className="my-6 flex items-center gap-3 opacity-50"><div className="h-px bg-slate-300 flex-1"></div><span className="text-xs">หรือ</span><div className="h-px bg-slate-300 flex-1"></div></div>
                 </>
               )}
 
@@ -479,41 +454,21 @@
         );
       }
 
-      // Main Dashboard
       return (
-        <div className="min-h-screen p-4 md:p-8">
+        <div className="min-h-screen p-4 md:p-6 bg-slate-50">
           <div className="max-w-7xl mx-auto space-y-6">
             
-            {/* Header */}
+            {/* Header & Global Controls */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100">
               <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800"><IconActivity className="text-teal-500"/> Metabolic Dashboard</h1>
+                <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800"><IconActivity className="text-teal-500"/> UP Labs - Metabolic Analyzer</h1>
                 <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
                   โปรไฟล์: <strong className="text-teal-600">{selectedProfile}</strong>
-                  <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded ml-2">Supabase DB</span>
-                  <button onClick={() => { setSelectedProfile(''); setDropdownProfile(''); }} className="text-xs bg-slate-100 px-2 py-0.5 rounded ml-2">เปลี่ยน</button>
+                  <button onClick={() => { setSelectedProfile(''); setDropdownProfile(''); }} className="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded ml-2 transition-colors">เปลี่ยน</button>
                 </p>
               </div>
               
               <div className="flex flex-wrap items-center gap-3">
-                {/* Time Range Selectors */}
-                {uniqueDays.length > 0 && (
-                  <>
-                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200">
-                      <IconCalendar size={18} className="text-slate-400" />
-                      <select value={anchorDateStr} onChange={(e) => setAnchorDateStr(e.target.value)} className="bg-transparent border-none outline-none font-medium text-slate-700 cursor-pointer">
-                        {uniqueDays.map(day => <option key={day} value={day}>สิ้นสุด: {formatDate(new Date(day))}</option>)}
-                      </select>
-                    </div>
-                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200">
-                      <IconClock size={18} className="text-slate-400" />
-                      <select value={timeRangeHours} onChange={(e) => setTimeRangeHours(Number(e.target.value))} className="bg-transparent border-none outline-none font-medium text-slate-700 cursor-pointer">
-                        {RANGE_OPTIONS.map(opt => <option key={opt.hours} value={opt.hours}>ย้อนหลัง {opt.label}</option>)}
-                      </select>
-                    </div>
-                  </>
-                )}
-                
                 <label className={`cursor-pointer bg-teal-500 hover:bg-teal-600 text-white py-2.5 px-5 rounded-xl font-medium inline-flex items-center gap-2 ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}>
                   {isUploading ? <IconLoader size={18} /> : <IconUpload size={18} />}
                   {isUploading ? `กำลังโหลด ${uploadProgress}%` : 'อัปโหลด CSV'}
@@ -526,173 +481,307 @@
                <div className="bg-white p-12 rounded-2xl shadow-sm text-center">
                  <IconDatabase className="text-slate-200 mx-auto mb-4 w-16 h-16" />
                  <h3 className="text-lg font-bold text-slate-700 mb-2">ยังไม่มีข้อมูลน้ำตาลในระบบ</h3>
-                 <p className="text-slate-500">กดปุ่ม อัปโหลด CSV ด้านบนเพื่อนำเข้าข้อมูล ระบบจะบันทึกลง Supabase ทันที</p>
+                 <p className="text-slate-500">กดปุ่ม อัปโหลด CSV ด้านบนเพื่อนำเข้าข้อมูลเพื่อเริ่มการวิเคราะห์</p>
                </div>
             ) : (
               <>
-                {/* Advanced Stats */}
-                {rangeStats && (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full"></div>
-                      <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconActivity size={16}/> เฉลี่ย (Average)</div>
-                      <div className="text-3xl font-bold text-slate-800">{rangeStats.avg} <span className="text-sm font-normal text-slate-400">mg/dL</span></div>
-                    </div>
+                {/* --- Tab Navigation --- */}
+                <div className="flex gap-2 bg-slate-200/50 p-1.5 rounded-xl w-fit">
+                  <button 
+                    onClick={() => setActiveTab('dashboard')} 
+                    className={`px-5 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all ${activeTab === 'dashboard' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    <IconActivity size={18} /> ภาพรวม (Dashboard)
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('analyzer')} 
+                    className={`px-5 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all ${activeTab === 'analyzer' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    <IconChartBar size={18} /> วิเคราะห์ & จัดอันดับมื้ออาหาร (Meal Analyzer)
+                  </button>
+                </div>
 
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-50 rounded-bl-full"></div>
-                      <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconCheckCircle size={16}/> Optimal (70-110)</div>
-                      <div className="text-3xl font-bold text-slate-800">{rangeStats.optimalPct}% <span className="text-sm font-normal text-slate-400">ของเวลา</span></div>
-                    </div>
-
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-violet-50 rounded-bl-full"></div>
-                      <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2" title="Coefficient of Variation (<30% is highly stable)"><IconActivity size={16}/> ความแปรปรวน (CV)</div>
-                      <div className="text-3xl font-bold text-slate-800 flex items-center gap-2">
-                        {rangeStats.cv}% 
-                        {rangeStats.cv <= 30 ? <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">ดีมาก</span> : 
-                         rangeStats.cv <= 36 ? <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">ปานกลาง</span> :
-                         <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">แกว่งสูง</span>}
+                {/* ========================================================== */}
+                {/* VIEW 1: DASHBOARD (ภาพรวมกราฟ) */}
+                {/* ========================================================== */}
+                {activeTab === 'dashboard' && (
+                  <div className="space-y-6 animate-in fade-in duration-300">
+                    {/* Time Range Filter for Dashboard */}
+                    <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+                      <span className="text-sm font-medium text-slate-500 ml-2">แสดงผลย้อนหลัง:</span>
+                      {uniqueDays.length > 0 && (
+                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                          <IconCalendar size={16} className="text-slate-400" />
+                          <select value={anchorDateStr} onChange={(e) => setAnchorDateStr(e.target.value)} className="bg-transparent border-none outline-none font-medium text-slate-700 text-sm cursor-pointer">
+                            {uniqueDays.map(day => <option key={day} value={day}>สิ้นสุด: {formatDate(new Date(day))}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                        <IconClock size={16} className="text-slate-400" />
+                        <select value={timeRangeHours} onChange={(e) => setTimeRangeHours(Number(e.target.value))} className="bg-transparent border-none outline-none font-medium text-slate-700 text-sm cursor-pointer">
+                          {RANGE_OPTIONS.map(opt => <option key={opt.hours} value={opt.hours}>{opt.label}</option>)}
+                        </select>
                       </div>
                     </div>
 
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-amber-50 rounded-bl-full"></div>
-                      <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconClock size={16}/> สูงสุด / ต่ำสุด</div>
-                      <div className="text-3xl font-bold text-slate-800">
-                        <span className="text-amber-500">{rangeStats.max}</span> <span className="text-lg text-slate-300">/</span> <span className="text-indigo-400">{rangeStats.min}</span>
+                    {/* Stats */}
+                    {rangeStats && (
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                          <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconActivity size={16}/> เฉลี่ย (Average)</div>
+                          <div className="text-3xl font-bold text-slate-800">{rangeStats.avg} <span className="text-sm font-normal text-slate-400">mg/dL</span></div>
+                        </div>
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                          <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconCheckCircle size={16}/> Optimal (70-110)</div>
+                          <div className="text-3xl font-bold text-slate-800">{rangeStats.optimalPct}% <span className="text-sm font-normal text-slate-400">ของเวลา</span></div>
+                        </div>
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                          <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconActivity size={16}/> ความแปรปรวน (CV)</div>
+                          <div className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+                            {rangeStats.cv}% 
+                            {rangeStats.cv <= 30 ? <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">ดีมาก</span> : 
+                             rangeStats.cv <= 36 ? <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">ปานกลาง</span> :
+                             <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">แกว่งสูง</span>}
+                          </div>
+                        </div>
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                          <div className="text-slate-500 text-sm font-medium mb-2 flex items-center gap-2"><IconClock size={16}/> สูงสุด / ต่ำสุด</div>
+                          <div className="text-3xl font-bold text-slate-800">
+                            <span className="text-amber-500">{rangeStats.max}</span> <span className="text-lg text-slate-300">/</span> <span className="text-indigo-400">{rangeStats.min}</span>
+                          </div>
+                        </div>
                       </div>
+                    )}
+
+                    {/* Chart */}
+                    <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-slate-800">กราฟระดับน้ำตาล ({timeRangeHours < 24 ? `${timeRangeHours} ชั่วโมง` : `${timeRangeHours/24} วัน`})</h2>
+                        <div className="flex gap-4 text-xs font-medium text-slate-500">
+                          <span className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-100 rounded-full"></div> Optimal</span>
+                          <span className="flex items-center gap-1"><div className="w-3 h-3 bg-rose-400 rounded-full"></div> มื้ออาหาร</span>
+                        </div>
+                      </div>
+                      <div className="h-96 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart data={currentRangeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="timestamp" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={(unix) => timeRangeHours > 24 ? formatDateTime(new Date(unix)) : formatTime(new Date(unix))} stroke="#94a3b8" fontSize={11} minTickGap={40} />
+                            <YAxis domain={[40, Math.max(200, rangeStats?.max + 20 || 200)]} stroke="#94a3b8" fontSize={12} tickCount={6}/>
+                            <RechartsTooltip content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                  return (
+                                    <div className="bg-white/95 p-3 rounded-xl shadow-lg border border-slate-200">
+                                      <p className="text-slate-500 text-xs mb-1">{formatDateTime(new Date(label))}</p>
+                                      <p className="text-teal-600 font-bold text-lg">{payload[0].value} <span className="text-xs">mg/dL</span></p>
+                                    </div>
+                                  );
+                                } return null;
+                              }} />
+                            <ReferenceArea y1={70} y2={110} fill="#10b981" fillOpacity={0.06} />
+                            <ReferenceLine y={140} stroke="#f59e0b" strokeDasharray="3 3" opacity={0.5} />
+                            <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" opacity={0.3} />
+                            {analyzedMealsForDashboard.map((meal) => (
+                              <ReferenceLine key={meal.id} x={meal.timestamp} stroke="#fb7185" strokeWidth={2} strokeDasharray="4 4" label={{ position: 'insideTopLeft', value: '🍽️', fill: '#fb7185', fontSize: 16 }} />
+                            ))}
+                            <Line type="monotone" dataKey="glucose" stroke="#14b8a6" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: "#0d9488" }} />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Add Meal Simple Form */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6 items-start md:items-end">
+                       <div className="flex-1 w-full">
+                         <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><IconUtensils className="text-rose-400" /> บันทึกมื้ออาหารด่วน</h2>
+                         <form onSubmit={handleAddMeal} className="flex flex-col md:flex-row gap-4">
+                            <div className="flex-1">
+                              <label className="block text-xs font-medium text-slate-500 mb-1">วันที่</label>
+                              <input type="date" required value={anchorDateStr} onChange={(e) => setAnchorDateStr(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="block text-xs font-medium text-slate-500 mb-1">เวลาเริ่มทาน</label>
+                              <input type="time" required value={newMealTime} onChange={(e) => setNewMealTime(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+                            </div>
+                            <div className="flex-[2]">
+                              <label className="block text-xs font-medium text-slate-500 mb-1">รายละเอียด</label>
+                              <input type="text" placeholder="เช่น สลัดแซลมอน, กาแฟดำ" value={newMealDesc} onChange={(e) => setNewMealDesc(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+                            </div>
+                            <button type="submit" className="md:w-32 bg-rose-400 hover:bg-rose-500 text-white font-medium py-2.5 rounded-xl shadow-sm mt-auto h-[46px]">บันทึก</button>
+                         </form>
+                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Chart */}
-                <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-slate-800">กราฟระดับน้ำตาล ({timeRangeHours < 24 ? `${timeRangeHours} ชั่วโมง` : `${timeRangeHours/24} วัน`})</h2>
-                    <div className="flex gap-4 text-xs font-medium text-slate-500">
-                      <span className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-100 rounded-full"></div> Optimal</span>
-                      <span className="flex items-center gap-1"><div className="w-3 h-3 bg-rose-400 rounded-full"></div> มื้ออาหาร</span>
-                    </div>
-                  </div>
-                  
-                  <div className="h-96 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={currentRangeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis 
-                          dataKey="timestamp" type="number" scale="time" domain={['dataMin', 'dataMax']} 
-                          tickFormatter={(unix) => timeRangeHours > 24 ? formatDateTime(new Date(unix)) : formatTime(new Date(unix))}
-                          stroke="#94a3b8" fontSize={11} minTickGap={40}
-                        />
-                        <YAxis domain={[40, Math.max(200, rangeStats?.max + 20 || 200)]} stroke="#94a3b8" fontSize={12} tickCount={6}/>
-                        
-                        <RechartsTooltip 
-                          content={({ active, payload, label }) => {
-                            if (active && payload && payload.length) {
-                              return (
-                                <div className="bg-white/95 p-3 rounded-xl shadow-lg border border-slate-200">
-                                  <p className="text-slate-500 text-xs mb-1">{formatDateTime(new Date(label))}</p>
-                                  <p className="text-teal-600 font-bold text-lg">{payload[0].value} <span className="text-xs">mg/dL</span></p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }} 
-                        />
-                        
-                        <ReferenceArea y1={70} y2={110} fill="#10b981" fillOpacity={0.06} />
-                        <ReferenceLine y={140} stroke="#f59e0b" strokeDasharray="3 3" opacity={0.5} />
-                        <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" opacity={0.3} />
 
-                        {analyzedMeals.map((meal) => (
-                          <ReferenceLine key={meal.id} x={meal.timestamp} stroke="#fb7185" strokeWidth={2} strokeDasharray="4 4" label={{ position: 'insideTopLeft', value: '🍽️', fill: '#fb7185', fontSize: 16 }} />
-                        ))}
-
-                        <Line type="monotone" dataKey="glucose" stroke="#14b8a6" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: "#0d9488" }} />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Meals Section */}
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                  
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 xl:col-span-1 h-fit">
-                    <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><IconUtensils className="text-rose-400" /> บันทึกมื้ออาหาร</h2>
-                    <form onSubmit={handleAddMeal} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">เวลา (ในวันที่ {formatDate(new Date(anchorDateStr))})</label>
-                        <input type="time" required value={newMealTime} onChange={(e) => setNewMealTime(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">รายละเอียด (Optional)</label>
-                        <input type="text" placeholder="เช่น กาแฟดำ" value={newMealDesc} onChange={(e) => setNewMealDesc(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50" />
-                      </div>
-                      <button type="submit" className="w-full bg-rose-400 hover:bg-rose-500 text-white font-medium py-2.5 rounded-xl flex items-center justify-center gap-2"><IconSave size={18}/> บันทึกมื้อ</button>
-                    </form>
-
-                    <div className="mt-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                      <div className="flex items-center gap-2 text-blue-800 font-bold text-sm mb-2"><IconInfo size={16}/> ทำไมต้องดูค่า CV% ?</div>
-                      <p className="text-xs text-blue-700 leading-relaxed">
-                        <b>CV (Coefficient of Variation)</b> บ่งบอกความสวิงของน้ำตาล ยิ่งแกว่งมาก ยิ่งกระตุ้นอินซูลินบ่อยเป้าหมายของการสร้าง <b>Metabolic Flexibility</b> คือรักษาระดับ CV ให้อยู่ต่ำกว่า <b>30%</b>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 xl:col-span-2 overflow-hidden flex flex-col">
-                    <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><IconClock className="text-indigo-400" /> วิเคราะห์มื้ออาหาร (ช่วงเวลาที่เลือก)</h2>
+                {/* ========================================================== */}
+                {/* VIEW 2: MEAL ANALYZER (วิเคราะห์ละเอียด & จัดอันดับ) */}
+                {/* ========================================================== */}
+                {activeTab === 'analyzer' && (
+                  <div className="space-y-6 animate-in fade-in duration-300">
                     
-                    <div className="overflow-x-auto flex-1">
-                      {analyzedMeals.length > 0 ? (
-                        <table className="w-full text-left border-collapse min-w-[600px]">
-                          <thead>
-                            <tr className="border-b border-slate-100 text-slate-500 text-sm">
-                              <th className="pb-3 font-medium">วันที่-เวลา</th>
-                              <th className="pb-3 font-medium text-center">Baseline</th>
-                              <th className="pb-3 font-medium text-center">Peak</th>
-                              <th className="pb-3 font-medium text-center">Delta</th>
-                              <th className="pb-3 font-medium text-center">Lag Time</th>
-                              <th className="pb-3 font-medium"></th>
-                            </tr>
-                          </thead>
-                          <tbody className="text-sm">
-                            {analyzedMeals.map((meal) => (
-                              <tr key={meal.id} className="border-b border-slate-50 hover:bg-slate-50">
-                                <td className="py-3">
-                                  <div className="font-semibold text-slate-800">{timeRangeHours > 24 ? formatDateTime(new Date(meal.timestamp)) : formatTime(new Date(meal.timestamp))}</div>
-                                  <div className="text-slate-500 text-xs">{meal.description}</div>
-                                </td>
-                                <td className="py-3 text-center">{meal.baseline || '-'}</td>
-                                <td className="py-3 text-center">
-                                  {meal.peakGlucose ? <div className="font-bold text-slate-800">{meal.peakGlucose}</div> : '-'}
-                                  <div className="text-xs text-slate-400">{meal.peakTime ? formatTime(meal.peakTime) : ''}</div>
-                                </td>
-                                <td className="py-3 text-center">
-                                  {meal.delta !== null ? (
-                                    <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold ${meal.delta <= 30 ? 'bg-emerald-100 text-emerald-700' : meal.delta <= 50 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
-                                      +{Math.round(meal.delta)}
-                                    </span>
-                                  ) : '-'}
-                                </td>
-                                <td className="py-3 text-center">{meal.lagMins !== null ? `${meal.lagMins} นาที` : '-'}</td>
-                                <td className="py-3 text-right">
-                                  <button onClick={() => removeMeal(meal.id)} className="text-slate-300 hover:text-rose-500 text-lg">&times;</button>
-                                </td>
-                              </tr>
+                    {/* LEADERBOARD (Top 3 & Bottom 3) */}
+                    {fullyAnalyzedMeals.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* BEST MEALS */}
+                        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-2xl border border-emerald-100 shadow-sm">
+                          <h2 className="text-lg font-bold text-emerald-800 mb-4 flex items-center gap-2"><IconTrophy className="text-emerald-500" /> มื้ออาหารยอดเยี่ยม (Best Meals)</h2>
+                          <div className="space-y-3">
+                            {fullyAnalyzedMeals.filter(m => m.grade === 'A').slice(0, 3).map((meal, idx) => (
+                              <div key={meal.id} className="bg-white p-3 rounded-xl shadow-sm border border-emerald-100 flex items-center justify-between">
+                                <div>
+                                  <div className="font-bold text-slate-800 flex items-center gap-2">
+                                    <span className="bg-emerald-100 text-emerald-700 w-6 h-6 rounded-full flex items-center justify-center text-xs">{idx + 1}</span>
+                                    {meal.description}
+                                  </div>
+                                  <div className="text-xs text-slate-500 mt-1">{formatDateTime(meal.time)}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-bold text-emerald-600">+{Math.round(meal.delta)} mg/dL</div>
+                                  <div className="text-xs text-slate-400">Score: {meal.score}</div>
+                                </div>
+                              </div>
                             ))}
-                          </tbody>
-                        </table>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-slate-400 py-10">
-                          <IconUtensils size={32} className="mb-3 opacity-20" />
-                          <p>ไม่พบมื้ออาหารในช่วงเวลานี้</p>
+                            {fullyAnalyzedMeals.filter(m => m.grade === 'A').length === 0 && (
+                              <div className="text-sm text-emerald-600/70 py-4 text-center">ยังไม่มีมื้ออาหารที่ได้เกรด A</div>
+                            )}
+                          </div>
                         </div>
-                      )}
+
+                        {/* WORST MEALS */}
+                        <div className="bg-gradient-to-br from-rose-50 to-orange-50 p-6 rounded-2xl border border-rose-100 shadow-sm">
+                          <h2 className="text-lg font-bold text-rose-800 mb-4 flex items-center gap-2"><IconAlert className="text-rose-500" /> ควรปรับปรุง (Needs Improvement)</h2>
+                          <div className="space-y-3">
+                            {fullyAnalyzedMeals.filter(m => m.grade === 'C').slice(-3).reverse().map((meal, idx) => (
+                              <div key={meal.id} className="bg-white p-3 rounded-xl shadow-sm border border-rose-100 flex items-center justify-between">
+                                <div>
+                                  <div className="font-bold text-slate-800 flex items-center gap-2">
+                                    <span className="bg-rose-100 text-rose-700 w-6 h-6 rounded-full flex items-center justify-center text-xs">!</span>
+                                    {meal.description}
+                                  </div>
+                                  <div className="text-xs text-slate-500 mt-1">{formatDateTime(meal.time)}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-bold text-rose-600">+{Math.round(meal.delta)} mg/dL</div>
+                                  <div className="text-xs text-slate-400">Score: {meal.score}</div>
+                                </div>
+                              </div>
+                            ))}
+                            {fullyAnalyzedMeals.filter(m => m.grade === 'C').length === 0 && (
+                              <div className="text-sm text-rose-600/70 py-4 text-center">ไม่มีมื้ออาหารที่สวิงรุนแรง (ยอดเยี่ยม!)</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* DETAILED MEAL LIST */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                      <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <div>
+                          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><IconChartBar className="text-indigo-500" /> วิเคราะห์การตอบสนองเชิงลึก (1-3 ชม.)</h2>
+                          <p className="text-xs text-slate-500 mt-1">ประเมินภาระอินซูลินและ Metabolic Flexibility ของแต่ละมื้ออาหาร</p>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto custom-scrollbar">
+                        {fullyAnalyzedMeals.length > 0 ? (
+                          <table className="w-full text-left border-collapse min-w-[900px]">
+                            <thead>
+                              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                <th className="p-4 font-medium w-[25%]">ข้อมูลมื้ออาหาร</th>
+                                <th className="p-4 font-medium text-center border-l border-slate-200">Baseline<br/><span className="font-normal lowercase text-[10px]">(เริ่มกิน)</span></th>
+                                <th className="p-4 font-medium text-center">Peak<br/><span className="font-normal lowercase text-[10px]">(จุดสูงสุด)</span></th>
+                                <th className="p-4 font-medium text-center text-indigo-500">+1 ชม.</th>
+                                <th className="p-4 font-medium text-center text-indigo-500">+2 ชม.</th>
+                                <th className="p-4 font-medium text-center text-indigo-500">+3 ชม.</th>
+                                <th className="p-4 font-medium w-[30%] border-l border-slate-200">Metabolic Insight (UP Labs)</th>
+                                <th className="p-4"></th>
+                              </tr>
+                            </thead>
+                            <tbody className="text-sm divide-y divide-slate-100">
+                              {fullyAnalyzedMeals.map((meal) => (
+                                <tr key={meal.id} className="hover:bg-slate-50/50 transition-colors">
+                                  {/* Meal Info */}
+                                  <td className="p-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg
+                                        ${meal.grade === 'A' ? 'bg-emerald-100 text-emerald-600' : 
+                                          meal.grade === 'B' ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600'}`}>
+                                        {meal.grade}
+                                      </div>
+                                      <div>
+                                        <div className="font-bold text-slate-800 text-base">{meal.description}</div>
+                                        <div className="text-slate-500 text-xs flex items-center gap-1 mt-0.5"><IconClock size={12}/> {formatDateTime(meal.time)}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  
+                                  {/* Timeline Data */}
+                                  <td className="p-4 text-center border-l border-slate-100 font-medium text-slate-600">{meal.baseline || '-'}</td>
+                                  <td className="p-4 text-center">
+                                    <div className="font-bold text-slate-800">{meal.peakGlucose || '-'}</div>
+                                    {meal.delta !== null && (
+                                      <div className={`text-xs mt-1 font-bold ${meal.delta <= 30 ? 'text-emerald-500' : meal.delta <= 50 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                        +{Math.round(meal.delta)}
+                                      </div>
+                                    )}
+                                    <div className="text-[10px] text-slate-400 mt-0.5">Lag: {meal.lagMins}m</div>
+                                  </td>
+                                  
+                                  <td className="p-4 text-center text-slate-600">{meal.hr1 || '-'}</td>
+                                  <td className="p-4 text-center">
+                                    <span className={`font-medium ${meal.hr2 && meal.baseline && meal.hr2 > meal.baseline + 20 ? 'text-rose-500' : 'text-emerald-600'}`}>
+                                      {meal.hr2 || '-'}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    <span className={`font-medium ${meal.hr3 && meal.baseline && meal.hr3 > meal.baseline + 10 ? 'text-rose-500' : 'text-emerald-600'}`}>
+                                      {meal.hr3 || '-'}
+                                    </span>
+                                  </td>
+
+                                  {/* Insights */}
+                                  <td className="p-4 border-l border-slate-100">
+                                    <div className="space-y-2">
+                                      {meal.insights.map((insight, idx) => (
+                                        <div key={idx} className={`text-xs p-2 rounded-lg leading-relaxed border
+                                          ${insight.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 
+                                            insight.type === 'danger' ? 'bg-rose-50 text-rose-800 border-rose-100' : 
+                                            insight.type === 'warning' ? 'bg-amber-50 text-amber-800 border-amber-100' :
+                                            'bg-slate-50 text-slate-700 border-slate-200'}`}>
+                                          {insight.text}
+                                        </div>
+                                      ))}
+                                      {meal.insights.length === 0 && (
+                                        <div className="text-xs text-slate-400 italic">ข้อมูลไม่เพียงพอหรืออยู่ในเกณฑ์ปกติ</div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  
+                                  {/* Action */}
+                                  <td className="p-4 text-right">
+                                    <button onClick={() => removeMeal(meal.id)} className="text-slate-300 hover:text-rose-500 transition-colors p-2" title="ลบมื้ออาหาร">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-slate-400 py-16">
+                            <IconUtensils size={40} className="mb-4 opacity-20" />
+                            <p className="text-lg font-medium text-slate-500">ยังไม่มีบันทึกมื้ออาหารเพื่อการวิเคราะห์</p>
+                            <p className="text-sm mt-1">กลับไปที่หน้า Dashboard เพื่อเพิ่มมื้ออาหาร</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                </div>
+                )}
               </>
             )}
           </div>
