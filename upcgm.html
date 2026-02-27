@@ -78,6 +78,9 @@
     const IconDroplet = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></svg>;
     const IconSparkles = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>;
     const IconCamera = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>;
+    const IconTrendingDown = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>;
+    const IconTrendingUp = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>;
+    const IconZap = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
 
     // --- Helper Functions ---
     const parseDateString = (dateStr) => new Date(dateStr.replace(' ', 'T'));
@@ -526,6 +529,76 @@
           data.push(point);
         }
         return data;
+      }, [selectedCompareMeals]);
+
+      // --- Expert Analysis Engine (AI-Like Programmatic Analysis) ---
+      const comparisonExpertAnalysis = useMemo(() => {
+        if (selectedCompareMeals.length < 2) return null;
+        
+        // Sort by UP Labs Score (Highest is winner)
+        const sortedMeals = [...selectedCompareMeals].sort((a, b) => b.score - a.score);
+        const winner = sortedMeals[0];
+        const losers = sortedMeals.slice(1);
+        const worst = sortedMeals[sortedMeals.length - 1];
+
+        let analysis = {
+          winner: winner,
+          winnerReason: `ทำคะแนน Metabolic Flexibility ได้สูงสุด (${winner.score}/100) น้ำตาลเด้งขึ้นเพียง ${Math.round(winner.delta)} mg/dL และสามารถเคลียร์กลับเข้าสู่ภาวะปกติได้ภายใน 2 ชั่วโมง สร้างภาระต่อตับอ่อนน้อยที่สุด`,
+          comparisonPoints: []
+        };
+
+        // 1. Spike Comparison
+        const spikeDiff = Math.round(worst.delta - winner.delta);
+        if (spikeDiff > 15) {
+          let reason = "ปริมาณคาร์บหรือน้ำตาลแฝงที่มากกว่า";
+          if (worst.carbs && winner.carbs && worst.carbs > winner.carbs) reason = `มีปริมาณคาร์โบไฮเดรตสูงกว่า (${worst.carbs}g vs ${winner.carbs}g)`;
+          analysis.comparisonPoints.push({
+            title: "การดีดของน้ำตาล (Spike)",
+            icon: "IconTrendingUp",
+            color: "text-rose-500",
+            bg: "bg-rose-50",
+            text: `มื้อ [${worst.description}] ทำให้น้ำตาลพุ่งสูงกว่า [${winner.description}] ถึง ${spikeDiff} mg/dL ซึ่งอาจมาจาก ${reason} ทำให้กระตุ้นอินซูลินในปริมาณมหาศาลทันที (Insulin Surge)`
+          });
+        }
+
+        // 2. Recovery / Randle Effect Comparison
+        const worstHr2Diff = worst.hr2 ? (worst.hr2 - worst.baseline) : 0;
+        const winnerHr2Diff = winner.hr2 ? (winner.hr2 - winner.baseline) : 0;
+        if (worstHr2Diff > 20 && winnerHr2Diff <= 15) {
+          let reason = "";
+          if (worst.fat > 20) reason = `การที่มีไขมันสูงถึง ${worst.fat}g ในมื้อนี้เข้าไปขัดขวางการทำงานของอินซูลิน (Pizza Effect) `;
+          analysis.comparisonPoints.push({
+            title: "การฟื้นตัว & ภาวะ Randle Effect",
+            icon: "IconTrendingDown",
+            color: "text-amber-500",
+            bg: "bg-amber-50",
+            text: `[${worst.description}] ผ่านไป 2 ชั่วโมงแล้วน้ำตาลยังค้างสูงเหนือ Baseline ถึง +${worstHr2Diff} mg/dL ${reason}บ่งบอกถึงการเกิด 'Randle Effect' ที่ร่างกายล็อกไม่ให้เผาผลาญไขมันชั่วคราว ในขณะที่มื้อ [${winner.description}] เคลียร์น้ำตาลจบไปแล้ว`
+          });
+        }
+
+        // 3. Lag Time (Digestion Rate)
+        if (worst.lagMins > winner.lagMins + 30) {
+          analysis.comparisonPoints.push({
+            title: "เวลาออกฤทธิ์ (Delayed Peak)",
+            icon: "IconClock",
+            color: "text-indigo-500",
+            bg: "bg-indigo-50",
+            text: `[${worst.description}] ใช้เวลานานถึง ${worst.lagMins} นาทีกว่าจะขึ้นจุด Peak (เทียบกับ ${winner.lagMins} นาที) แสดงถึงการย่อยที่ล่าช้า อาจเพราะมีกากใย โปรตีน หรือไขมันเข้าไปหน่วงกระเพาะอาหาร ทำให้อินซูลินต้องหลั่งเลี้ยงไว้เป็นเวลานานกว่าปกติ`
+          });
+        }
+
+        // Fallback if no extreme differences
+        if (analysis.comparisonPoints.length === 0) {
+          analysis.comparisonPoints.push({
+            title: "ผลลัพธ์ใกล้เคียงกัน",
+            icon: "IconCheckCircle",
+            color: "text-emerald-500",
+            bg: "bg-emerald-50",
+            text: `มื้ออาหารทั้งหมดให้การตอบสนองที่ใกล้เคียงกัน ร่างกายสามารถจัดการกับระดับน้ำตาลและอินซูลินได้ดี ถือว่ามีความยืดหยุ่นของระบบเผาผลาญ (Metabolic Flexibility) อยู่ในเกณฑ์ที่ปลอดภัยครับ`
+          });
+        }
+
+        return analysis;
       }, [selectedCompareMeals]);
 
       // --- Save Image Helper ---
@@ -1062,6 +1135,45 @@
                         </h2>
                         <p className="text-slate-500 text-sm mt-1">ตารางเปรียบเทียบดัชนีชี้วัด Metabolic Flexibility รายมื้ออาหาร</p>
                       </div>
+
+                      {/* --- NEW: Expert Analysis Report Section --- */}
+                      {selectedCompareMeals.length >= 2 && comparisonExpertAnalysis && (
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-indigo-100 relative overflow-hidden">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                          <div className="flex items-center gap-2 mb-4">
+                            <IconSparkles className="text-indigo-500" size={24} />
+                            <h3 className="text-lg font-bold text-slate-800">Expert Metabolic Analysis</h3>
+                          </div>
+                          
+                          <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl mb-4 flex gap-4 items-start">
+                            <div className="bg-emerald-100 text-emerald-600 p-2 rounded-lg shrink-0">
+                              <IconTrophy size={24} />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-emerald-800 text-base mb-1">ผู้ชนะ (Best Choice): {comparisonExpertAnalysis.winner.description}</h4>
+                              <p className="text-sm text-emerald-700 leading-relaxed">{comparisonExpertAnalysis.winnerReason}</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-bold text-slate-600 mb-2">📌 ข้อสังเกตเชิงเปรียบเทียบ:</h4>
+                            {comparisonExpertAnalysis.comparisonPoints.map((point, idx) => {
+                              const IconComp = point.icon === 'IconTrendingUp' ? IconTrendingUp : 
+                                               point.icon === 'IconTrendingDown' ? IconTrendingDown : 
+                                               point.icon === 'IconClock' ? IconClock : IconCheckCircle;
+                              return (
+                                <div key={idx} className={`flex gap-3 p-3 rounded-xl border border-transparent ${point.bg}`}>
+                                  <div className={`${point.color} mt-0.5 shrink-0`}><IconComp size={18} /></div>
+                                  <div>
+                                    <div className={`font-bold text-sm mb-0.5 ${point.color}`}>{point.title}</div>
+                                    <div className="text-sm text-slate-700 leading-relaxed">{point.text}</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                       
                       {/* The Comparison Line Chart */}
                       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
