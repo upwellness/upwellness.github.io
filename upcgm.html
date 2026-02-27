@@ -155,16 +155,44 @@
         
         const loadData = async () => {
           try {
-            const [resCgm, resMeals] = await Promise.all([
-              supabase.from('cgm_readings').select('*').eq('profile_name', selectedProfile).order('reading_timestamp', { ascending: true }),
-              supabase.from('cgm_meals').select('*').eq('profile_name', selectedProfile).order('meal_timestamp', { ascending: true })
-            ]);
+            // Loop through pagination to get ALL records for the selected profile
+            // (Overcoming Supabase's default 1000-row limit)
+            let allReadings = [];
+            let hasMore = true;
+            let start = 0;
+            const step = 1000;
 
-            if (resCgm.error) throw resCgm.error;
+            while (hasMore) {
+              const { data, error } = await supabase
+                .from('cgm_readings')
+                .select('*')
+                .eq('profile_name', selectedProfile)
+                .order('reading_timestamp', { ascending: true })
+                .range(start, start + step - 1);
+                
+              if (error) throw error;
+              if (!data || data.length === 0) break;
+              
+              allReadings = [...allReadings, ...data];
+              
+              if (data.length < step) {
+                hasMore = false;
+              } else {
+                start += step;
+              }
+            }
+
+            // Fetch Meals (Usually doesn't exceed 1000 rows, so one query is fine)
+            const resMeals = await supabase
+               .from('cgm_meals')
+               .select('*')
+               .eq('profile_name', selectedProfile)
+               .order('meal_timestamp', { ascending: true });
+
             if (resMeals.error) throw resMeals.error;
 
             // Map DB format to App State format
-            const mappedData = (resCgm.data || []).map(d => ({
+            const mappedData = allReadings.map(d => ({
               profile: d.profile_name,
               originalTime: d.original_time,
               timestamp: Number(d.reading_timestamp),
