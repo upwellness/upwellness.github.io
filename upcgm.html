@@ -57,12 +57,6 @@
     const isSupabaseConfigured = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
     const supabase = isSupabaseConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-    // ==========================================
-    // 🤖 GEMINI AI CONFIGURATION
-    // ให้นำ API Key จาก https://aistudio.google.com/ มาใส่ตรงนี้
-    // ==========================================
-    const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY';
-
     // --- SVG Icons Components ---
     const IconActivity = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>;
     const IconCalendar = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
@@ -88,6 +82,7 @@
     const IconTrendingUp = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>;
     const IconZap = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
     const IconEdit = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
+    const IconSettings = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
 
     // --- Helper Functions ---
     const parseDateString = (dateStr) => new Date(dateStr.replace(' ', 'T'));
@@ -155,6 +150,11 @@
       const [isUploading, setIsUploading] = useState(false);
       const [uploadProgress, setUploadProgress] = useState(0);
       
+      // Settings / API Key State
+      const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+      const [showSettingsModal, setShowSettingsModal] = useState(false);
+      const [tempApiKey, setTempApiKey] = useState('');
+      
       // Meal Form State
       const [editingMealId, setEditingMealId] = useState(null);
       const [newMealTime, setNewMealTime] = useState('');
@@ -174,6 +174,13 @@
       // AI Comparison State
       const [compareAiResult, setCompareAiResult] = useState(null);
       const [isAnalyzingCompareAi, setIsAnalyzingCompareAi] = useState(false);
+
+      // Save API Key Function
+      const handleSaveApiKey = () => {
+        setUserApiKey(tempApiKey);
+        localStorage.setItem('gemini_api_key', tempApiKey);
+        setShowSettingsModal(false);
+      };
 
       // 1. Fetch available profiles on mount
       useEffect(() => {
@@ -347,14 +354,17 @@
 
       // --- AI API Call for Macros ---
       const handleAnalyzeAI = async () => {
+        if (!userApiKey) {
+          alert("กรุณาตั้งค่า Gemini API Key ก่อนใช้งาน AI (คลิกที่ไอคอนฟันเฟืองมุมขวาบน)");
+          return;
+        }
         if (!newMealDesc) {
           alert("กรุณาพิมพ์รายละเอียดมื้ออาหารก่อนครับ เช่น 'ข้าวมันไก่ 1 จาน'");
           return;
         }
         setIsAnalyzingAI(true);
         try {
-          const apiKey = GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY' ? GEMINI_API_KEY : ""; // ใช้ Key ที่ตั้งค่าไว้ด้านบน
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`;
           
           const payload = {
             contents: [{ parts: [{ text: `วิเคราะห์สารอาหาร (คาร์โบไฮเดรต, โปรตีน, ไขมัน) เป็นหน่วยกรัม (g) สำหรับมื้ออาหารนี้: "${newMealDesc}" หากไม่มีการระบุปริมาณ ให้ประเมินจาก 1 จาน/เสิร์ฟมาตรฐานทั่วไป` }] }],
@@ -388,7 +398,7 @@
           }
         } catch (err) {
           console.error("AI Analysis failed:", err);
-          alert("ไม่สามารถวิเคราะห์ด้วย AI ได้ในขณะนี้ กรุณาลองใหม่อีกครั้งครับ");
+          alert("ไม่สามารถวิเคราะห์ด้วย AI ได้ โปรดตรวจสอบ API Key หรือลองใหม่อีกครั้ง");
         } finally {
           setIsAnalyzingAI(false);
         }
@@ -584,6 +594,10 @@
 
       // --- AI Comparison Generator ---
       const handleGenerateCompareAI = async () => {
+        if (!userApiKey) {
+          alert("กรุณาตั้งค่า Gemini API Key ก่อนใช้งาน AI (คลิกที่ไอคอนฟันเฟืองมุมขวาบน)");
+          return;
+        }
         if (selectedCompareMeals.length < 2) {
           alert("ต้องเลือกเปรียบเทียบอย่างน้อย 2 มื้ออาหารครับ");
           return;
@@ -602,8 +616,7 @@
           - ระดับน้ำตาลที่ 3 ชม.: ${m.hr3 || 'ไม่มีข้อมูล'}
           `).join('\n');
 
-          const apiKey = GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY' ? GEMINI_API_KEY : ""; // ใช้ Key ที่ตั้งค่าไว้ด้านบน
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`;
           
           const payload = {
             contents: [{ parts: [{ text: `วิเคราะห์มื้ออาหารเหล่านี้ตามหลักการของ UP Labs:\n${mealsDataText}` }] }],
@@ -651,7 +664,7 @@
           }
         } catch (err) {
           console.error("AI Compare Analysis failed:", err);
-          alert("ไม่สามารถสร้างบทวิเคราะห์จาก AI ได้ในขณะนี้");
+          alert("ไม่สามารถสร้างบทวิเคราะห์จาก AI ได้ โปรดตรวจสอบ API Key หรือลองใหม่อีกครั้ง");
         } finally {
           setIsAnalyzingCompareAi(false);
         }
@@ -701,7 +714,7 @@
               <div className="w-20 h-20 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mx-auto mb-6"><IconUser size={40} /></div>
               <h1 className="text-2xl font-bold text-slate-800 mb-2 flex justify-center items-center gap-2">
                 เข้าสู่ระบบวิเคราะห์ CGM
-                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-normal tracking-wide">v1.2.0</span>
+                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-normal tracking-wide">v1.3.0</span>
               </h1>
               <p className="text-slate-500 mb-8 text-sm">UP Labs - Metabolic Flexibility Analyzer</p>
               
@@ -798,7 +811,7 @@
       );
 
       return (
-        <div className="min-h-screen p-4 md:p-6 bg-slate-50">
+        <div className="min-h-screen p-4 md:p-6 bg-slate-50 relative pb-24">
           <div className="max-w-7xl mx-auto space-y-6">
             
             {/* Header & Global Controls */}
@@ -806,7 +819,7 @@
               <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
                   <IconActivity className="text-teal-500"/> UP Labs - Metabolic Analyzer
-                  <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-normal tracking-wide ml-1">v1.2.0</span>
+                  <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-normal tracking-wide ml-1">v1.3.0</span>
                 </h1>
                 <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
                   โปรไฟล์: <strong className="text-teal-600">{selectedProfile}</strong>
@@ -816,7 +829,14 @@
               </div>
               
               <div className="flex flex-wrap items-center gap-3">
-                <label className={`cursor-pointer bg-teal-500 hover:bg-teal-600 text-white py-2.5 px-5 rounded-xl font-medium inline-flex items-center gap-2 ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}>
+                <button 
+                  onClick={() => { setTempApiKey(userApiKey); setShowSettingsModal(true); }} 
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-colors shadow-sm" 
+                  title="ตั้งค่าระบบ / API Key"
+                >
+                  <IconSettings size={18} />
+                </button>
+                <label className={`cursor-pointer bg-teal-500 hover:bg-teal-600 text-white py-2.5 px-5 rounded-xl font-medium inline-flex items-center gap-2 shadow-sm shadow-teal-500/30 ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}>
                   {isUploading ? <IconLoader size={18} /> : <IconUpload size={18} />}
                   {isUploading ? `กำลังโหลด ${uploadProgress}%` : 'อัปโหลด CSV'}
                   <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
@@ -1427,6 +1447,46 @@
                       </div>
 
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- Settings Modal --- */}
+            {showSettingsModal && (
+              <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="bg-white w-full max-w-md rounded-3xl shadow-xl border border-slate-200 p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                      <IconSettings className="text-teal-500" /> ตั้งค่าระบบ AI
+                    </h2>
+                    <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-2 rounded-full transition-colors">
+                      <IconX size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Gemini API Key</label>
+                      <input 
+                        type="text" 
+                        placeholder="วาง API Key ของคุณที่นี่..." 
+                        value={tempApiKey} 
+                        onChange={(e) => setTempApiKey(e.target.value)} 
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 bg-slate-50"
+                      />
+                      <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                        API Key นี้ใช้สำหรับประเมินสัดส่วน C:P:F และเขียนบทวิเคราะห์เชิงลึก<br/>
+                        รับคีย์ได้ฟรีที่ <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-teal-600 hover:underline">Google AI Studio</a> (ระบบจะจำคีย์ไว้ในเบราว์เซอร์ของคุณเท่านั้น ปลอดภัย 100%)
+                      </p>
+                    </div>
+                    
+                    <button 
+                      onClick={handleSaveApiKey} 
+                      className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 rounded-xl shadow-sm transition-colors mt-2"
+                    >
+                      บันทึกการตั้งค่า
+                    </button>
                   </div>
                 </div>
               </div>
