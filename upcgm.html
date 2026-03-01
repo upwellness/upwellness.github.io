@@ -369,7 +369,7 @@
         setIsAnalyzingAI(true);
         try {
           const apiKey = userApiKey.trim();
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
           
           const payload = {
             contents: [{ parts: [{ text: `วิเคราะห์สารอาหาร (คาร์โบไฮเดรต, โปรตีน, ไขมัน) เป็นหน่วยกรัม (g) สำหรับมื้ออาหารนี้: "${newMealDesc}" หากไม่มีการระบุปริมาณ ให้ประเมินจาก 1 จาน/เสิร์ฟมาตรฐานทั่วไป` }] }],
@@ -622,7 +622,7 @@
           `).join('\n');
 
           const apiKey = userApiKey.trim();
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
           
           const payload = {
             contents: [{ parts: [{ text: `วิเคราะห์มื้ออาหารเหล่านี้ตามหลักการของ UP Labs:\n${mealsDataText}` }] }],
