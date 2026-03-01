@@ -107,7 +107,10 @@
       for (let i = 0; i < retries; i++) {
         try {
           const response = await fetch(url, options);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          if (!response.ok) {
+            const errData = await response.json().catch(() => null);
+            throw new Error(errData?.error?.message || `HTTP error! status: ${response.status}`);
+          }
           return await response.json();
         } catch (error) {
           if (i === retries - 1) throw error;
@@ -177,8 +180,9 @@
 
       // Save API Key Function
       const handleSaveApiKey = () => {
-        setUserApiKey(tempApiKey);
-        localStorage.setItem('gemini_api_key', tempApiKey);
+        const keyToSave = tempApiKey.trim();
+        setUserApiKey(keyToSave);
+        localStorage.setItem('gemini_api_key', keyToSave);
         setShowSettingsModal(false);
       };
 
@@ -364,7 +368,8 @@
         }
         setIsAnalyzingAI(true);
         try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`;
+          const apiKey = userApiKey.trim();
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
           
           const payload = {
             contents: [{ parts: [{ text: `วิเคราะห์สารอาหาร (คาร์โบไฮเดรต, โปรตีน, ไขมัน) เป็นหน่วยกรัม (g) สำหรับมื้ออาหารนี้: "${newMealDesc}" หากไม่มีการระบุปริมาณ ให้ประเมินจาก 1 จาน/เสิร์ฟมาตรฐานทั่วไป` }] }],
@@ -398,7 +403,7 @@
           }
         } catch (err) {
           console.error("AI Analysis failed:", err);
-          alert("ไม่สามารถวิเคราะห์ด้วย AI ได้ โปรดตรวจสอบ API Key หรือลองใหม่อีกครั้ง");
+          alert(`ไม่สามารถวิเคราะห์ด้วย AI ได้ โปรดตรวจสอบ API Key ของคุณ\n(Error: ${err.message})`);
         } finally {
           setIsAnalyzingAI(false);
         }
@@ -616,7 +621,8 @@
           - ระดับน้ำตาลที่ 3 ชม.: ${m.hr3 || 'ไม่มีข้อมูล'}
           `).join('\n');
 
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`;
+          const apiKey = userApiKey.trim();
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
           
           const payload = {
             contents: [{ parts: [{ text: `วิเคราะห์มื้ออาหารเหล่านี้ตามหลักการของ UP Labs:\n${mealsDataText}` }] }],
@@ -664,7 +670,7 @@
           }
         } catch (err) {
           console.error("AI Compare Analysis failed:", err);
-          alert("ไม่สามารถสร้างบทวิเคราะห์จาก AI ได้ โปรดตรวจสอบ API Key หรือลองใหม่อีกครั้ง");
+          alert(`ไม่สามารถสร้างบทวิเคราะห์จาก AI ได้ โปรดตรวจสอบ API Key ของคุณ\n(Error: ${err.message})`);
         } finally {
           setIsAnalyzingCompareAi(false);
         }
