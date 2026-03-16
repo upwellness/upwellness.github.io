@@ -58,6 +58,20 @@
       relationship: 'รู้จักกัน', how_we_met: '', extra_notes: ''
     };
 
+    // Mapping for database integer to UI text
+    const CHILD_MAP = {
+      0: 'ไม่มี',
+      1: '1',
+      2: '2',
+      3: '3+'
+    };
+    const CHILD_VALUE_MAP = {
+      'ไม่มี': 0,
+      '1': 1,
+      '2': 2,
+      '3+': 3
+    };
+
     const App = () => {
       // Data State
       const [prospects, setProspects] = useState([]);
@@ -121,17 +135,22 @@
         const now = new Date().toISOString();
         
         // --- Data Cleaning ---
-        // แปลงค่า num_children จาก string ภาษาไทยเป็น integer
         const cleanData = { ...formData };
-        if (cleanData.num_children === 'ไม่มี') cleanData.num_children = 0;
-        else if (cleanData.num_children === '1') cleanData.num_children = 1;
-        else if (cleanData.num_children === '2') cleanData.num_children = 2;
-        else if (cleanData.num_children === '3+') cleanData.num_children = 3;
-        else cleanData.num_children = parseInt(cleanData.num_children) || 0;
+        
+        // Robust num_children conversion
+        if (typeof cleanData.num_children === 'string') {
+          cleanData.num_children = CHILD_VALUE_MAP[cleanData.num_children] ?? 0;
+        } else {
+          cleanData.num_children = parseInt(cleanData.num_children) || 0;
+        }
 
-        // ตรวจสอบ age
-        if (cleanData.age === '') cleanData.age = null;
-        else cleanData.age = parseInt(cleanData.age);
+        // Handle age (must be number or null)
+        if (cleanData.age === '' || cleanData.age === null || cleanData.age === undefined) {
+          cleanData.age = null;
+        } else {
+          const parsedAge = parseInt(cleanData.age);
+          cleanData.age = isNaN(parsedAge) ? null : parsedAge;
+        }
 
         const dataToSave = { ...cleanData, updated_at: now };
         
@@ -192,13 +211,15 @@
 
       // AI Helpers
       const buildAIContext = (lead) => {
+        // UI uses labels, but context should be clear
+        const childrenDisplay = CHILD_MAP[lead.num_children] || lead.num_children || '0';
         return `
 ชื่อ: ${lead.name} (${lead.nickname || '-'})
 อายุ: ${lead.age || '-'} ปี
 เพศ: ${lead.gender}
 --- FAMILY ---
 สถานะ: ${lead.family_status}
-ลูก: ${lead.num_children} คน
+ลูก: ${childrenDisplay} คน
 พันธะ: ${lead.family_obligations || '-'}
 --- OCCUPATION ---
 อาชีพ: ${lead.occupation || '-'}
@@ -220,7 +241,7 @@
       const callGemini = async (promptText, systemText) => {
         if (!geminiApiKey) throw new Error("ยังไม่ได้ตั้งค่า Gemini API Key");
         
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
         const payload = {
           contents: [{ parts: [{ text: promptText }] }],
           systemInstruction: { parts: [{ text: systemText }] },
@@ -269,7 +290,7 @@
 
         try {
           setAnalyzeLog(prev => [...prev, '🤖 กำลังรัน Analyse Agent...']);
-          const analyseUserPrompt = `วิเคราะห์ข้อมูลผู้มุ่งหวังนี้และประเมินโอกาส จงตอบข้อมูลทุกอย่างเป็นภาษาไทยทั้งหมด:\n\n${context}\n\n*หมายเหตุ: หากประเมินว่าเขาสนใจสุขภาพ/ปรับสมดุลร่างกาย/ลดน้ำหนัก สามารถพิจารณาแนะนำโปรแกรม UP Labs (การรีเซ็ตระบบเผาผลาญ 3 วัน, สร้าง Metabolic Flexibility, ปลดเบรกอินซูลินให้ร่างกายใช้ไขมันได้ดีขึ้น) เป็น Product Focus ได้อย่างเหมาะสม`;
+          const analyseUserPrompt = `วิเคราะห์ข้อมูลผู้มุ่งหวังนี้และประเมินโอกาส จงตอบข้อมูลทุกอย่างเป็นภาษาไทยทั้งหมด:\n\n${context}\n\n*คำแนะนำสินค้า: พิจารณาแนะนำสินค้า Amway ที่ตรงกับความต้องการจริง (เช่น Nutrilite สำหรับสุขภาพ, Artistry สำหรับผิวพรรณ, หรือแผนธุรกิจ CORE Plus สำหรับผู้ที่ต้องการรายได้) ไม่จำเป็นต้องจำกัดอยู่แค่โปรแกรม UP Labs หากไม่ตรงกับปัญหาของเขา แต่ถ้าวิเคราะห์แล้วว่าเขามีปัญหาเรื่องระบบเผาผลาญ/น้ำหนัก/น้ำตาล สามารถแนะนำ UP Labs (3-Day Reset) ได้ตามความเหมาะสม`;
           
           analyseData = await callGemini(analyseUserPrompt, analyseSystemPrompt);
           setAnalyzeLog(prev => [...prev, '✅ วิเคราะห์เสร็จสิ้น', '🤖 กำลังรัน Writer Agent...']);
@@ -450,7 +471,7 @@ Pain point: ${analyseData.pain || 'ไม่มีระบุ'}
               <input
                 type={type}
                 value={formData[name] || ''}
-                onChange={e => setFormData({...formData, [name]: type === 'number' ? e.target.value : e.target.value})}
+                onChange={e => setFormData({...formData, [name]: e.target.value})}
                 className="bg-slate-950 border border-slate-700 rounded-md p-2.5 text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
                 placeholder={placeholder}
                 required={required}
@@ -459,27 +480,35 @@ Pain point: ${analyseData.pain || 'ไม่มีระบุ'}
           </div>
         );
 
-        const renderRadioGroupField = ({ label, name, options }) => (
-          <div className="flex flex-col gap-2 mb-4" key={name}>
-            <label className="text-sm font-medium text-slate-300">{label}</label>
-            <div className="flex flex-wrap gap-2">
-              {options.map(opt => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setFormData({...formData, [name]: opt})}
-                  className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
-                    formData[name] === opt 
-                      ? 'bg-blue-600/20 border-blue-500 text-blue-400' 
-                      : 'bg-slate-950 border-slate-700 text-slate-400 hover:border-slate-500'
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
+        const renderRadioGroupField = ({ label, name, options }) => {
+          // Special handling for num_children display if it's stored as number in state
+          let currentVal = formData[name];
+          if (name === 'num_children' && typeof currentVal === 'number') {
+            currentVal = CHILD_MAP[currentVal] || currentVal.toString();
+          }
+
+          return (
+            <div className="flex flex-col gap-2 mb-4" key={name}>
+              <label className="text-sm font-medium text-slate-300">{label}</label>
+              <div className="flex flex-wrap gap-2">
+                {options.map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setFormData({...formData, [name]: opt})}
+                    className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
+                      currentVal === opt 
+                        ? 'bg-blue-600/20 border-blue-500 text-blue-400' 
+                        : 'bg-slate-950 border-slate-700 text-slate-400 hover:border-slate-500'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        );
+          );
+        };
 
         return (
           <div className="flex-1 overflow-y-auto bg-slate-950 p-6 md:p-8 custom-scrollbar relative">
@@ -592,6 +621,7 @@ Pain point: ${analyseData.pain || 'ไม่มีระบุ'}
       const renderDetail = () => {
         if (!selectedLead) return null;
         const lead = selectedLead;
+        const childrenDisplay = CHILD_MAP[lead.num_children] || lead.num_children || '0';
 
         return (
           <div className="flex-1 overflow-y-auto bg-slate-950 p-6 md:p-8 custom-scrollbar">
@@ -684,7 +714,7 @@ Pain point: ${analyseData.pain || 'ไม่มีระบุ'}
                   </h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex"><span className="w-24 text-slate-500">สถานะ:</span> <span className="text-slate-200">{lead.family_status}</span></div>
-                    <div className="flex"><span className="w-24 text-slate-500">บุตร:</span> <span className="text-slate-200">{lead.num_children} คน</span></div>
+                    <div className="flex"><span className="w-24 text-slate-500">บุตร:</span> <span className="text-slate-200">{childrenDisplay} คน</span></div>
                     <div className="flex"><span className="w-24 text-slate-500">ภาระ:</span> <span className="text-slate-200 flex-1">{lead.family_obligations || '-'}</span></div>
                     <div className="flex"><span className="w-24 text-slate-500">Note:</span> <span className="text-slate-200 flex-1">{lead.family_notes || '-'}</span></div>
                   </div>
