@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOSMTD Recovery Call Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- CONFIGURATION ---
+        const supabaseUrl = 'https://qzqvwbucjxwgtmbdkrlu.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cXZ3YnVjanh3Z3RtYmRrcmx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzgxODksImV4cCI6MjA4MDk1NDE4OX0.RYvc5kMueNhsOu---WOKcXYnOZLVnjiWklp1IiHmgS8';
+        const isSupabaseConfigured = supabaseUrl && supabaseUrl.startsWith('http');
+
+        // --- COMPONENTS & ICONS ---
+        const Icon = ({ name, className = "w-5 h-5", ...props }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} className={className} {...props}></i>;
+        };
+
+        const STATUS_OPTIONS = [
+            { value: 'not_started', label: 'Not Started', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+            { value: 'attempted', label: 'Attempted', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+            { value: 'reached', label: 'Reached', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+            { value: 'followup_needed', label: 'Follow-up Needed', color: 'bg-orange-100 text-orange-800 border-orange-200' },
+            { value: 'reactivated', label: 'Reactivated', color: 'bg-green-100 text-green-800 border-green-200' },
+            { value: 'renewal_saved', label: 'Renewal Saved', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+            { value: 'not_interested', label: 'Not Interested', color: 'bg-red-100 text-red-800 border-red-200' },
+            { value: 'paused', label: 'Paused', color: 'bg-gray-100 text-gray-600 border-gray-200' }
+        ];
+
+        const VALID_DB_COLUMNS = [
+            'account_id', 'priority', 'name', 'phone', 'email', 'province', 'category', 
+            'why_follow_up', 'last_known_pattern', 'suggested_opening', 
+            'discovery_questions', 'offer_angle', 'next_best_action', 
+            'caution_notes', 'owner', 'call_status', 'call_attempts', 
+            'last_contact_date', 'outcome', 'blocker_type', 
+            'next_followup_date', 'next_followup_action', 'notes_after_call',
+            'call_history'
+        ];
+
+        // --- UTILS ---
+        const parseCSV = (text) => {
+            const lines = text.split('\n');
+            if (lines.length === 0) return [];
+            
+            const parseLine = (line) => {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"' && line[i+1] === '"') {
+                        current += '"'; i++; 
+                    } else if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current);
+                return result.map(s => s.trim());
+            };
+
+            const headers = parseLine(lines[0]).map(h => {
+                let cleaned = h.toLowerCase().trim().replace(/ /g, '_');
+                if (['mobile_primary', 'primary_phone', 'all_phones', 'โทร', 'เบอร์โทร', 'เบอร์โทรศัพท์', 'โทรศัพท์', 'phone_number', 'telephone', 'mobile'].includes(cleaned)) return 'phone';
+                if (['email_primary', 'primary_email', 'all_emails', 'อีเมล', 'อีเมล์', 'email_address'].includes(cleaned)) return 'email';
+                if (['ชื่อ', 'ชื่อลูกค้า', 'ชื่อสมาชิก', 'customer_name', 'member_name'].includes(cleaned)) return 'name';
+                if (['จังหวัด', 'city'].includes(cleaned)) return 'province';
+                if (['รหัส', 'รหัสสมาชิก', 'รหัสลูกค้า', 'member_id', 'customer_id'].includes(cleaned)) return 'account_id';
+                if (['priority_rank', 'priority_score'].includes(cleaned)) return 'priority';
+                return cleaned;
+            });
+            
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = parseLine(lines[i]);
+                const row = {}; 
+                headers.forEach((header, index) => {
+                    if (VALID_DB_COLUMNS.includes(header)) {
+                        const val = values[index] ? values[index].trim() : '';
+                        if (val) row[header] = val; 
+                        else if (row[header] === undefined) row[header] = ''; 
+                    }
+                });
+                if (!row.account_id) continue;
+                row.call_status = row.call_status || 'not_started';
+                row.call_attempts = row.call_attempts || '0';
+                data.push(row);
+            }
+            return data;
+        };
+
+        const downloadCSV = (data) => {
+            if (!data.length) return;
+            const headers = Object.keys(data[0]).filter(k => k !== 'id' && k !== 'created_at');
+            const csvRows = [headers.join(',')];
+            for (const row of data) {
+                const values = headers.map(header => {
+                    const escaped = ('' + (row[header] || '')).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                });
+                csvRows.push(values.join(','));
+            }
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `LOSMTD_Export_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // --- SUB COMPONENTS ---
+        const StatusBadge = ({ status }) => {
+            const config = STATUS_OPTIONS.find(s => s.value === status) || STATUS_OPTIONS[0];
+            return (
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${config.color}`}>
+                    {config.label}
+                </span>
+            );
+        };
+
+        const LeadDetail = ({ lead, onBack, updateLead, today }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [editForm, setEditForm] = useState({});
+            const [outcomeText, setOutcomeText] = useState(lead.outcome || '');
+            const [notesText, setNotesText] = useState(lead.notes_after_call || '');
+
+            const historyLogs = useMemo(() => {
+                if (!lead.call_history) return [];
+                try { return JSON.parse(lead.call_history); } catch (e) { return []; }
+            }, [lead.call_history]);
+
+            const startEditing = () => {
+                setEditForm({...lead});
+                setIsEditing(true);
+            };
+
+            const saveProfile = () => {
+                updateLead(lead.id, editForm);
+                setIsEditing(false);
+            };
+
+            const saveLogAttempt = () => {
+                const attempts = parseInt(lead.call_attempts || 0) + 1;
+                const newLog = {
+                    id: Date.now(),
+                    date: new Date().toISOString(),
+                    status: lead.call_status,
+                    outcome: outcomeText,
+                    notes: notesText
+                };
+                updateLead(lead.id, { 
+                    call_attempts: attempts.toString(), 
+                    last_contact_date: today,
+                    call_history: JSON.stringify([newLog, ...historyLogs]),
+                    outcome: '', 
+                    notes_after_call: '' 
+                });
+                setOutcomeText('');
+                setNotesText('');
+            };
+
+            return (
+                <div className="animate-in pb-10">
+                    <button onClick={onBack} className="flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 mb-6 transition-all group">
+                        <Icon name="arrow-left" className="w-4 h-4 mr-1 group-hover:-translate-x-1" /> Back to List
+                    </button>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 space-y-6">
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                {isEditing ? (
+                                    <div className="space-y-4">
+                                        <input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="text-2xl font-bold border-b w-full p-1 outline-none focus:border-blue-500 bg-slate-50" />
+                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                            <input value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="border p-2 rounded w-full" placeholder="Phone" />
+                                            <input value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className="border p-2 rounded w-full" placeholder="Email" />
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={saveProfile} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Save</button>
+                                            <button onClick={() => setIsEditing(false)} className="bg-slate-100 px-4 py-2 rounded-lg text-sm">Cancel</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h1 className="text-3xl font-bold text-slate-800">{lead.name}</h1>
+                                                <div className="flex flex-wrap gap-3 mt-4 mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                                    {lead.phone && <a href={`tel:${lead.phone}`} className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg font-bold"><Icon name="phone" className="w-4 h-4 mr-2"/> {lead.phone}</a>}
+                                                    {lead.email && <a href={`mailto:${lead.email}`} className="flex items-center bg-white border px-4 py-2 rounded-lg font-medium"><Icon name="mail" className="w-4 h-4 mr-2"/> Email</a>}
+                                                </div>
+                                            </div>
+                                            <button onClick={startEditing} className="text-slate-400 hover:text-blue-600 p-2 border rounded-lg"><Icon name="edit-2" /></button>
+                                        </div>
+                                        <div className="flex gap-4 text-xs font-medium text-slate-500">
+                                            <span className="flex items-center"><Icon name="user" className="w-3 h-3 mr-1"/> {lead.account_id}</span>
+                                            <span className="flex items-center"><Icon name="map-pin" className="w-3 h-3 mr-1"/> {lead.province}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-slate-50 rounded-xl border p-6 space-y-4">
+                                <h3 className="font-bold text-slate-800 flex items-center"><Icon name="file-text" className="mr-2" /> Context & Script</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white p-3 rounded border text-sm"><label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Why Follow Up</label>{lead.why_follow_up || '-'}</div>
+                                    <div className="bg-white p-3 rounded border text-sm"><label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Pattern</label>{lead.last_known_pattern || '-'}</div>
+                                </div>
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 italic text-blue-900">"{lead.suggested_opening}"</div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                                <div className="bg-slate-800 text-white p-4 font-bold flex items-center justify-between">
+                                    <span>Call Log</span>
+                                    <select value={lead.call_status} onChange={e => updateLead(lead.id, {call_status: e.target.value})} className="bg-slate-700 text-xs p-1 rounded">
+                                        {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                                    </select>
+                                </div>
+                                <div className="p-4 space-y-4">
+                                    <textarea value={outcomeText} onChange={e => setOutcomeText(e.target.value)} className="w-full border rounded-lg p-3 text-sm h-20 bg-slate-50" placeholder="Outcome..."></textarea>
+                                    <textarea value={notesText} onChange={e => setNotesText(e.target.value)} className="w-full border rounded-lg p-3 text-sm h-32 bg-slate-50" placeholder="Notes..."></textarea>
+                                    <button onClick={saveLogAttempt} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">Save Log Entry</button>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white rounded-xl shadow-sm border p-5">
+                                <h4 className="font-bold text-slate-800 text-sm mb-4 flex items-center"><Icon name="history" className="mr-2 w-4 h-4"/> Call History</h4>
+                                <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+                                    {historyLogs.map(log => (
+                                        <div key={log.id} className="border-l-2 border-blue-500 pl-3 py-1">
+                                            <div className="flex justify-between text-[10px] text-slate-400 font-bold mb-1">
+                                                <span>{new Date(log.date).toLocaleDateString()}</span>
+                                                <span className="text-blue-600">{log.status}</span>
+                                            </div>
+                                            <p className="text-xs font-bold text-slate-700">{log.outcome}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APPLICATION ---
+        function App() {
+            const [leads, setLeads] = useState([]);
+            const [view, setView] = useState('dashboard');
+            const [selectedId, setSelectedId] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [search, setSearch] = useState('');
+
+            useEffect(() => { fetchLeads(); }, []);
+
+            const fetchLeads = async () => {
+                if (!isSupabaseConfigured) { setLoading(false); return; }
+                try {
+                    const res = await fetch(`${supabaseUrl}/rest/v1/losmtd?order=created_at.desc`, {
+                        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                    });
+                    if (res.ok) setLeads(await res.json());
+                } catch (e) { console.error(e); }
+                setLoading(false);
+            };
+
+            const updateLead = async (id, updates) => {
+                setLeads(leads.map(l => l.id === id ? {...l, ...updates} : l));
+                if (!isSupabaseConfigured) return;
+                try {
+                    await fetch(`${supabaseUrl}/rest/v1/losmtd?id=eq.${id}`, {
+                        method: 'PATCH',
+                        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updates)
+                    });
+                } catch (e) { console.error(e); }
+            };
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    const parsed = parseCSV(ev.target.result);
+                    if (!isSupabaseConfigured) { setLeads(parsed.map(p => ({...p, id: Date.now() + Math.random()}))); setView('list'); return; }
+                    setLoading(true);
+                    await fetch(`${supabaseUrl}/rest/v1/losmtd?on_conflict=account_id`, {
+                        method: 'POST',
+                        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+                        body: JSON.stringify(parsed)
+                    });
+                    fetchLeads();
+                    setView('list');
+                };
+                reader.readAsText(file);
+            };
+
+            const metrics = useMemo(() => {
+                const today = new Date().toISOString().split('T')[0];
+                return {
+                    total: leads.length,
+                    active: leads.filter(l => !['not_started', 'not_interested'].includes(l.call_status)).length,
+                    followup: leads.filter(l => l.next_followup_date && l.next_followup_date <= today).length,
+                    success: leads.filter(l => ['reactivated', 'renewal_saved'].includes(l.call_status)).length
+                };
+            }, [leads]);
+
+            const filteredLeads = leads.filter(l => 
+                l.name?.toLowerCase().includes(search.toLowerCase()) || 
+                l.account_id?.toString().includes(search)
+            );
+
+            return (
+                <div className="flex min-h-screen">
+                    {/* Sidebar */}
+                    <aside className="w-64 bg-slate-900 text-slate-400 flex flex-col hidden md:flex">
+                        <div className="p-6">
+                            <h1 className="text-white text-xl font-black italic tracking-tighter">LOSMTD TRACKER</h1>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Recovery Master</p>
+                        </div>
+                        <nav className="flex-1 px-4 space-y-2">
+                            <button onClick={() => setView('dashboard')} className={`w-full flex items-center p-3 rounded-xl transition ${view === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800'}`}>
+                                <Icon name="layout-dashboard" className="mr-3 w-5 h-5"/> Dashboard
+                            </button>
+                            <button onClick={() => setView('list')} className={`w-full flex items-center p-3 rounded-xl transition ${view === 'list' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800'}`}>
+                                <Icon name="users" className="mr-3 w-5 h-5"/> Call List
+                            </button>
+                        </nav>
+                        <div className="p-4 border-t border-slate-800">
+                            <label className="flex items-center justify-center p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700 text-xs font-bold text-white transition">
+                                <Icon name="upload" className="mr-2 w-4 h-4"/> Import CSV
+                                <input type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
+                            </label>
+                        </div>
+                    </aside>
+
+                    {/* Content Area */}
+                    <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                        {!isSupabaseConfigured && (
+                            <div className="mb-6 p-4 bg-orange-100 border-l-4 border-orange-500 text-orange-800 text-sm font-medium flex items-center">
+                                <Icon name="alert-circle" className="mr-3"/> Running in Local Session Mode (Database not connected)
+                            </div>
+                        )}
+
+                        {view === 'dashboard' && (
+                            <div className="animate-in space-y-8">
+                                <h2 className="text-3xl font-black text-slate-800">DASHBOARD</h2>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                        <label className="text-xs font-black text-slate-400 uppercase">Total Leads</label>
+                                        <div className="text-4xl font-black text-slate-800">{metrics.total}</div>
+                                    </div>
+                                    <div className="bg-blue-600 p-6 rounded-2xl shadow-xl text-white">
+                                        <label className="text-xs font-black text-blue-200 uppercase">Active Calls</label>
+                                        <div className="text-4xl font-black">{metrics.active}</div>
+                                    </div>
+                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                        <label className="text-xs font-black text-slate-400 uppercase">Follow-up Due</label>
+                                        <div className="text-4xl font-black text-orange-500">{metrics.followup}</div>
+                                    </div>
+                                    <div className="bg-emerald-500 p-6 rounded-2xl shadow-xl text-white">
+                                        <label className="text-xs font-black text-emerald-100 uppercase">Success Cases</label>
+                                        <div className="text-4xl font-black">{metrics.success}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'list' && (
+                            <div className="animate-in space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Lead Directory</h2>
+                                    <div className="relative">
+                                        <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"/>
+                                        <input type="text" placeholder="Search name, ID..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 pr-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 w-64 text-sm" />
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="bg-slate-50 border-b text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                                                <th className="p-4">Member</th>
+                                                <th className="p-4">Status</th>
+                                                <th className="p-4">Province</th>
+                                                <th className="p-4 text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {filteredLeads.map(l => (
+                                                <tr key={l.id} className="hover:bg-slate-50 transition cursor-pointer" onClick={() => { setSelectedId(l.id); setView('detail'); }}>
+                                                    <td className="p-4">
+                                                        <div className="font-bold text-slate-800">{l.name}</div>
+                                                        <div className="text-[10px] text-slate-400 font-mono">#{l.account_id}</div>
+                                                    </td>
+                                                    <td className="p-4"><StatusBadge status={l.call_status} /></td>
+                                                    <td className="p-4 text-sm font-medium text-slate-500">{l.province}</td>
+                                                    <td className="p-4 text-right">
+                                                        <button className="text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition"><Icon name="chevron-right"/></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'detail' && (
+                            <LeadDetail lead={leads.find(l => l.id === selectedId)} onBack={() => setView('list')} updateLead={updateLead} today={new Date().toISOString().split('T')[0]} />
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
