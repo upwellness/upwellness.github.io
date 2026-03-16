@@ -8,7 +8,7 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Phosphor Icons (แทนที่ Lucide React) -->
+  <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   
   <!-- React & ReactDOM -->
@@ -109,7 +109,6 @@
         if (supabaseClient) {
           fetchProspects();
         } else if (currentView !== 'settings' && (!supabaseUrl || !supabaseKey)) {
-          // แจ้งเตือนให้ตั้งค่าถ้ายังไม่มีเชื่อมต่อ
           setCurrentView('settings');
         }
       }, [supabaseClient]);
@@ -120,7 +119,21 @@
         if (!formData.name) return alert('กรุณากรอกชื่อ');
 
         const now = new Date().toISOString();
-        const dataToSave = { ...formData, updated_at: now };
+        
+        // --- Data Cleaning ---
+        // แปลงค่า num_children จาก string ภาษาไทยเป็น integer
+        const cleanData = { ...formData };
+        if (cleanData.num_children === 'ไม่มี') cleanData.num_children = 0;
+        else if (cleanData.num_children === '1') cleanData.num_children = 1;
+        else if (cleanData.num_children === '2') cleanData.num_children = 2;
+        else if (cleanData.num_children === '3+') cleanData.num_children = 3;
+        else cleanData.num_children = parseInt(cleanData.num_children) || 0;
+
+        // ตรวจสอบ age
+        if (cleanData.age === '') cleanData.age = null;
+        else cleanData.age = parseInt(cleanData.age);
+
+        const dataToSave = { ...cleanData, updated_at: now };
         
         try {
           let savedData = null;
@@ -185,7 +198,7 @@
 เพศ: ${lead.gender}
 --- FAMILY ---
 สถานะ: ${lead.family_status}
-ลูก: ${lead.num_children}
+ลูก: ${lead.num_children} คน
 พันธะ: ${lead.family_obligations || '-'}
 --- OCCUPATION ---
 อาชีพ: ${lead.occupation || '-'}
@@ -207,7 +220,6 @@
       const callGemini = async (promptText, systemText) => {
         if (!geminiApiKey) throw new Error("ยังไม่ได้ตั้งค่า Gemini API Key");
         
-        // แก้ไขโมเดลจาก gemini-1.5-flash เป็น gemini-2.5-flash-preview-09-2025 เพื่อไม่ให้ติด 404 ใน Canvas
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
         const payload = {
           contents: [{ parts: [{ text: promptText }] }],
@@ -438,7 +450,7 @@ Pain point: ${analyseData.pain || 'ไม่มีระบุ'}
               <input
                 type={type}
                 value={formData[name] || ''}
-                onChange={e => setFormData({...formData, [name]: type === 'number' ? Number(e.target.value) : e.target.value})}
+                onChange={e => setFormData({...formData, [name]: type === 'number' ? e.target.value : e.target.value})}
                 className="bg-slate-950 border border-slate-700 rounded-md p-2.5 text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
                 placeholder={placeholder}
                 required={required}
@@ -672,7 +684,7 @@ Pain point: ${analyseData.pain || 'ไม่มีระบุ'}
                   </h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex"><span className="w-24 text-slate-500">สถานะ:</span> <span className="text-slate-200">{lead.family_status}</span></div>
-                    <div className="flex"><span className="w-24 text-slate-500">บุตร:</span> <span className="text-slate-200">{lead.num_children}</span></div>
+                    <div className="flex"><span className="w-24 text-slate-500">บุตร:</span> <span className="text-slate-200">{lead.num_children} คน</span></div>
                     <div className="flex"><span className="w-24 text-slate-500">ภาระ:</span> <span className="text-slate-200 flex-1">{lead.family_obligations || '-'}</span></div>
                     <div className="flex"><span className="w-24 text-slate-500">Note:</span> <span className="text-slate-200 flex-1">{lead.family_notes || '-'}</span></div>
                   </div>
