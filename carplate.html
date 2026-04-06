@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>วิเคราะห์ทะเบียนรถมงคล</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* ซ่อน element */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-4 md:p-8 font-sans">
+    
+    <div class="max-w-4xl mx-auto space-y-6">
+        <!-- Header -->
+        <div class="text-center space-y-2">
+            <div class="inline-flex items-center justify-center p-3 bg-indigo-600 rounded-full mb-2 shadow-lg">
+                <i data-lucide="car" class="w-8 h-8 text-white"></i>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">วิเคราะห์ทะเบียนรถมงคล</h1>
+            <p class="text-gray-500">ตรวจสอบกาลกิณีตามวันเกิด และคำนวณผลรวมเลขศาสตร์ป้ายทะเบียน</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            
+            <!-- Input Section -->
+            <div class="md:col-span-5 space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <!-- 1. เลือกวันเกิด -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">1. วันเกิดผู้ใช้รถ</label>
+                    <select id="birthDay" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none">
+                        <option value="">-- เลือกวันเกิด --</option>
+                        <option value="sunday">วันอาทิตย์</option>
+                        <option value="monday">วันจันทร์</option>
+                        <option value="tuesday">วันอังคาร</option>
+                        <option value="wednesday_day">วันพุธ (กลางวัน 06:00-17:59)</option>
+                        <option value="wednesday_night">วันพุธ (กลางคืน 18:00-05:59)</option>
+                        <option value="thursday">วันพฤหัสบดี</option>
+                        <option value="friday">วันศุกร์</option>
+                        <option value="saturday">วันเสาร์</option>
+                    </select>
+                </div>
+
+                <!-- 2. กรอกทะเบียนรถ -->
+                <div class="space-y-4">
+                    <label class="block text-sm font-semibold text-gray-700">2. เลขทะเบียนรถ</label>
+                    
+                    <div class="flex gap-2">
+                        <div class="w-1/3">
+                            <label class="block text-xs text-gray-500 mb-1">เลขหน้า (ถ้ามี)</label>
+                            <input id="prefix" type="text" placeholder="เช่น 1" maxlength="1" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 text-center text-lg outline-none" />
+                        </div>
+                        <div class="w-2/3">
+                            <label class="block text-xs text-gray-500 mb-1">หมวดอักษร</label>
+                            <input id="letters" type="text" placeholder="เช่น กข" maxlength="3" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 text-center text-lg outline-none" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">หมายเลขทะเบียน</label>
+                        <input id="numbers" type="text" placeholder="เช่น 1234" maxlength="4" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 text-center text-xl tracking-widest outline-none" />
+                    </div>
+
+                    <!-- ป้ายทะเบียนจำลอง -->
+                    <div class="mt-6 flex justify-center">
+                        <div class="border-4 border-gray-800 rounded-xl overflow-hidden shadow-md w-48 bg-white">
+                            <div class="bg-yellow-400 text-center py-1 border-b border-gray-300 text-[10px] font-bold text-gray-800 uppercase tracking-widest">
+                                Thailand
+                            </div>
+                            <div class="text-center py-4 px-2 font-bold text-2xl text-gray-900 tracking-wide flex justify-center items-center gap-2">
+                                <span id="plate-prefix-letters">กข</span>
+                                <span id="plate-numbers">1234</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Result Section -->
+            <div class="md:col-span-7">
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="h-full bg-white/50 border border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center p-8 text-gray-400 min-h-[400px]">
+                    <i data-lucide="search" class="w-16 h-16 mb-4 text-gray-300"></i>
+                    <p class="text-lg">กรุณาเลือกวันเกิดและระบุทะเบียนรถ</p>
+                    <p class="text-sm">เพื่อดูผลวิเคราะห์เลขศาสตร์และกาลกิณี</p>
+                </div>
+
+                <!-- Result State -->
+                <div id="result-state" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    
+                    <!-- 1. ผลวิเคราะห์กาลกิณี -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-orange-500"></i>
+                            วิเคราะห์อักษรและเลขกาลกิณี
+                        </h3>
+                        
+                        <div class="space-y-3">
+                            <p class="text-sm text-gray-600">คนเกิด <span id="res-dayname" class="font-semibold text-indigo-600"></span></p>
+                            
+                            <!-- ผลอักษรกาลกิณี -->
+                            <div id="res-letters-forbidden"></div>
+
+                            <!-- ผลเลขกาลกิณี -->
+                            <div id="res-numbers-forbidden"></div>
+                        </div>
+                    </div>
+
+                    <!-- 2. ผลรวมเลขศาสตร์ -->
+                    <div id="res-grade-container" class="p-6 rounded-2xl shadow-sm border-2 bg-white">
+                        <div class="flex justify-between items-start mb-6">
+                            <h3 class="text-lg font-bold text-gray-800">ผลรวมเลขศาสตร์</h3>
+                            <span id="res-grade-badge" class="px-4 py-1.5 rounded-full text-sm font-bold border">
+                                --
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-center py-6">
+                            <div class="text-center">
+                                <p class="text-gray-500 text-sm mb-1">ผลรวม</p>
+                                <div id="res-total-sum" class="text-6xl font-black">0</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6 text-sm text-gray-600 font-mono">
+                            <p class="font-semibold text-gray-700 mb-2 font-sans">วิธีคำนวณ:</p>
+                            <ul id="res-breakdown" class="space-y-1">
+                                <!-- จะถูกเพิ่มด้วย JS -->
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 class="font-bold text-gray-800 flex items-center gap-2 mb-2">
+                                <i data-lucide="info" class="w-5 h-5 text-indigo-500"></i>
+                                ความหมายผลรวม <span id="res-total-sum-label"></span>
+                            </h4>
+                            <p id="res-meaning" class="text-gray-700 leading-relaxed bg-white/50 p-4 rounded-xl">
+                                --
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ข้อมูลโหราศาสตร์และเลขศาสตร์ ---
+        const letterValues = {
+            'ก': 1, 'ด': 1, 'ถ': 1, 'ท': 1, 'ภ': 1, 'ฤ': 1,
+            'ข': 2, 'บ': 2, 'ป': 2, 'ง': 2, 'ช': 2,
+            'ต': 3, 'ฒ': 3, 'ฆ': 3,
+            'ค': 4, 'ธ': 4, 'ร': 4, 'ญ': 4, 'ษ': 4,
+            'ฉ': 5, 'ณ': 5, 'ฌ': 5, 'น': 5, 'ม': 5, 'ห': 5, 'ฮ': 5, 'ฬ': 5, 'ศ': 5,
+            'จ': 6, 'ล': 6, 'ว': 6, 'อ': 6,
+            'ซ': 7, 'ส': 7,
+            'ย': 8, 'ผ': 8, 'ฝ': 8, 'พ': 8, 'ฟ': 8,
+            'ฏ': 9, 'ฐ': 9
+        };
+
+        const dayRules = {
+            'sunday': { name: 'วันอาทิตย์', forbiddenLetters: ['ศ', 'ษ', 'ส', 'ห', 'ฬ', 'ฮ'], forbiddenNumber: '6' },
+            'monday': { name: 'วันจันทร์', forbiddenLetters: ['อ'], forbiddenNumber: '1' },
+            'tuesday': { name: 'วันอังคาร', forbiddenLetters: ['ก', 'ข', 'ค', 'ฆ', 'ง'], forbiddenNumber: '2' },
+            'wednesday_day': { name: 'วันพุธ (กลางวัน)', forbiddenLetters: ['จ', 'ฉ', 'ช', 'ซ', 'ฌ', 'ญ'], forbiddenNumber: '3' },
+            'wednesday_night': { name: 'วันพุธ (กลางคืน)', forbiddenLetters: ['บ', 'ป', 'ผ', 'ฝ', 'พ', 'ฟ', 'ภ', 'ม'], forbiddenNumber: '5' },
+            'thursday': { name: 'วันพฤหัสบดี', forbiddenLetters: ['ด', 'ต', 'ถ', 'ท', 'ธ', 'น'], forbiddenNumber: '7' },
+            'friday': { name: 'วันศุกร์', forbiddenLetters: ['ย', 'ร', 'ล', 'ว'], forbiddenNumber: '8' },
+            'saturday': { name: 'วันเสาร์', forbiddenLetters: ['ฎ', 'ฏ', 'ฐ', 'ฑ', 'ฒ', 'ณ'], forbiddenNumber: '4' }
+        };
+
+        const numerologyMeanings = {
+            2: { grade: 'C', meaning: 'จินตนาการสูง อ่อนไหว บางครั้งลังเล ขาดความเด็ดขาด' },
+            4: { grade: 'B', meaning: 'เจรจาพาทีมีเสน่ห์ ช่างพูดช่างคุย เหมาะกับงานค้าขาย หรือติดต่อสื่อสาร' },
+            5: { grade: 'A', meaning: 'ปัญญาดี มีเหตุผล ผู้ใหญ่เมตตา รักความยุติธรรม' },
+            6: { grade: 'A', meaning: 'มีเสน่ห์ รสนิยมดี รักศิลปะ การเงินและคล่องตัวดี' },
+            9: { grade: 'A', meaning: 'มีสิ่งศักดิ์สิทธิ์คุ้มครอง แคล้วคลาดปลอดภัย มักมีลางสังหรณ์แม่นยำ' },
+            11: { grade: 'D', meaning: 'ขัดแย้งในตัวเองสูง ภายนอกดูแข็งกร้าวแต่ภายในอ่อนไหว ระวังเรื่องรักๆ ใคร่ๆ' },
+            12: { grade: 'D', meaning: 'อารมณ์ร้อน หงุดหงิดง่าย มักมีเรื่องให้ต้องปะทะ หรือขัดแย้ง' },
+            13: { grade: 'D', meaning: 'เลขมหาอุด มักพบการเปลี่ยนแปลงแบบฉับพลัน ระวังอุบัติเหตุและเรื่องไม่คาดฝัน' },
+            14: { grade: 'A', meaning: 'ผู้ใหญ่ให้การสนับสนุน มีความยุติธรรม สติปัญญาเฉียบแหลม ประสบความสำเร็จดีมาก' },
+            15: { grade: 'A', meaning: 'มีเสน่ห์ อัธยาศัยดี เป็นที่รักของคนทั่วไป การงานก้าวหน้า' },
+            19: { grade: 'A', meaning: 'ความสำเร็จที่ต้องผ่านอุปสรรคมาด้วยตัวเอง มีผู้ใหญ่ช่วยเหลือ แคล้วคลาด' },
+            20: { grade: 'B', meaning: 'จินตนาการกว้างไกล เหมาะกับงานศิลปะ แต่ระวังเรื่องเพ้อฝันเกินจริง' },
+            23: { grade: 'B', meaning: 'มีเสน่ห์ต่อเพศตรงข้าม ผู้หญิงมักให้ความช่วยเหลือ ทำงานเก่ง' },
+            24: { grade: 'A', meaning: 'สมบูรณ์พูนสุข มีเพื่อนมาก คนรักใคร่เอ็นดู การเงินสะพัด ประสบความสำเร็จสูง' },
+            35: { grade: 'A', meaning: 'เป็นคนกระฉับกระเฉง มีอำนาจบารมี ผู้คนเกรงใจ การงานมั่นคง' },
+            36: { grade: 'A', meaning: 'พลังแห่งความรักและความสำเร็จ สดใส มีชีวิตชีวา การเงินดีมาก' },
+            40: { grade: 'B', meaning: 'ชอบเดินทาง ไม่ชอบหยุดนิ่ง มีสิ่งศักดิ์สิทธิ์คุ้มครอง' },
+            41: { grade: 'A', meaning: 'ผู้ใหญ่ให้การสนับสนุน มีความยุติธรรม ประสบความสำเร็จได้อย่างรวดเร็ว' },
+            42: { grade: 'A', meaning: 'อุปถัมภ์ค้ำชู เป็นที่รักของคนทั่วไป ชีวิตราบรื่น มีโชคลาภ' },
+            44: { grade: 'A', meaning: 'ส่งเสริมด้านการพูด การติดต่อสื่อสาร ค้าขายดี มีโชคลาภทางการเจรจา' },
+            45: { grade: 'A', meaning: 'สติปัญญาดีมาก มีเทพคุ้มครอง ประสบความสำเร็จในชีวิตอย่างมั่นคง' },
+            46: { grade: 'A', meaning: 'มีเสน่ห์ อ่อนหวาน หารายได้เก่ง การเงินและโชคลาภดี' },
+            50: { grade: 'A', meaning: 'เดินทางไกลบ่อย มีสิ่งศักดิ์สิทธิ์คุ้มครอง รักความยุติธรรม' },
+            51: { grade: 'A', meaning: 'อำนาจบารมี มีคนเกรงใจ ผู้ใหญ่ให้ความเมตตา' },
+            54: { grade: 'A', meaning: 'พลังแห่งปัญญาและการปกป้อง ประสบความสำเร็จในชีวิตอย่างมั่นคง' },
+            55: { grade: 'A', meaning: 'ชีวิตรุ่งโรจน์ มั่นคง ก้าวหน้า มีเหตุมีผล สุขภาพแข็งแรง' },
+            56: { grade: 'A', meaning: 'ความอุดมสมบูรณ์พูนสุข มีทรัพย์สินเงินทอง โชคลาภความรักดีเยี่ยม' },
+            59: { grade: 'A', meaning: 'มีสิ่งศักดิ์สิทธิ์คุ้มครอง เป็นคนรักอิสระ มีลางสังหรณ์แม่นยำ' },
+            63: { grade: 'A', meaning: 'พลังแห่งความรักและความสำเร็จ สดใส มีชีวิตชีวา การเงินดีมาก' },
+            64: { grade: 'A', meaning: 'ชีวิตมีแต่ความสำเร็จ มีรสนิยม หาเงินเก่ง' },
+            65: { grade: 'A', meaning: 'มั่งคั่งร่ำรวย มีเสน่ห์ เป็นที่รัก ผู้ใหญ่เมตตา' },
+            95: { grade: 'A', meaning: 'มีสิ่งศักดิ์สิทธิ์คุ้มครอง เป็นคนมีเหตุผล ผู้ใหญ่ให้การสนับสนุน' },
+        };
+
+        const getMeaning = (sum) => {
+            if (numerologyMeanings[sum]) return numerologyMeanings[sum];
+            const badNumbers = [11,12,13,17,21,27,29,30,31,33,34,37,43,47,48,57,58,67,68,70,71,72,73,75,76,77,80];
+            if (badNumbers.includes(sum)) return { grade: 'D', meaning: 'ผลรวมนี้มีอุปสรรค ควรระวังเรื่องการขับขี่ อารมณ์ และอุบัติเหตุ' };
+            const neutralNumbers = [16,18,22,25,26,28,32,38,39,49];
+            if (neutralNumbers.includes(sum)) return { grade: 'C', meaning: 'ผลรวมระดับกลาง ชีวิตต้องพึ่งพาความสามารถตนเองเป็นหลัก มีขึ้นมีลง' };
+            return { grade: 'B', meaning: 'ผลรวมดี ให้ผลทางบวก ส่งเสริมให้ชีวิตมีความก้าวหน้า ราบรื่น' };
+        };
+
+        const getGradeStyle = (grade) => {
+            switch (grade) {
+                case 'A': return { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-500', numColor: 'text-indigo-600' };
+                case 'B': return { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-500', numColor: 'text-indigo-600' };
+                case 'C': return { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-500', numColor: 'text-yellow-600' };
+                case 'D': return { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-500', numColor: 'text-red-600' };
+                default: return { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-500', numColor: 'text-gray-800' };
+            }
+        };
+
+        const getGradeText = (grade) => {
+            switch (grade) {
+                case 'A': return 'ดีมาก (มงคลยิ่ง)';
+                case 'B': return 'ดี (ส่งเสริมชีวิต)';
+                case 'C': return 'ปานกลาง (มีข้อควรระวัง)';
+                case 'D': return 'ควรหลีกเลี่ยง (เหนื่อย/มีอุปสรรค)';
+                default: return '';
+            }
+        };
+
+        // DOM Elements
+        const elBirthDay = document.getElementById('birthDay');
+        const elPrefix = document.getElementById('prefix');
+        const elLetters = document.getElementById('letters');
+        const elNumbers = document.getElementById('numbers');
+        
+        const elPlatePrefixLetters = document.getElementById('plate-prefix-letters');
+        const elPlateNumbers = document.getElementById('plate-numbers');
+
+        const elEmptyState = document.getElementById('empty-state');
+        const elResultState = document.getElementById('result-state');
+
+        // Result DOM
+        const elResDayname = document.getElementById('res-dayname');
+        const elResLettersForbidden = document.getElementById('res-letters-forbidden');
+        const elResNumbersForbidden = document.getElementById('res-numbers-forbidden');
+        const elResGradeContainer = document.getElementById('res-grade-container');
+        const elResGradeBadge = document.getElementById('res-grade-badge');
+        const elResTotalSum = document.getElementById('res-total-sum');
+        const elResTotalSumLabel = document.getElementById('res-total-sum-label');
+        const elResBreakdown = document.getElementById('res-breakdown');
+        const elResMeaning = document.getElementById('res-meaning');
+
+        function updateUI() {
+            // Filter input values
+            elPrefix.value = elPrefix.value.replace(/[^0-9]/g, '');
+            elLetters.value = elLetters.value.replace(/[^ก-ฮ]/g, '');
+            elNumbers.value = elNumbers.value.replace(/[^0-9]/g, '');
+
+            const birthDay = elBirthDay.value;
+            const prefix = elPrefix.value;
+            const letters = elLetters.value;
+            const numbers = elNumbers.value;
+
+            // Update Mock Plate
+            elPlatePrefixLetters.textContent = (prefix + letters) || 'กข';
+            elPlateNumbers.textContent = numbers || '1234';
+
+            // Check if analysis should run
+            if (!birthDay || (!letters && !numbers)) {
+                elEmptyState.classList.remove('hidden');
+                elResultState.classList.add('hidden');
+                return;
+            }
+
+            // Run Analysis
+            elEmptyState.classList.add('hidden');
+            elResultState.classList.remove('hidden');
+
+            const dayRule = dayRules[birthDay];
+            elResDayname.textContent = dayRule.name;
+
+            // 1. กาลกิณี
+            let forbiddenLettersFound = [];
+            let forbiddenNumberFound = false;
+
+            letters.split('').forEach(char => {
+                if (dayRule.forbiddenLetters.includes(char) && !forbiddenLettersFound.includes(char)) {
+                    forbiddenLettersFound.push(char);
+                }
+            });
+
+            const allNumbers = prefix + numbers;
+            if (allNumbers.includes(dayRule.forbiddenNumber)) {
+                forbiddenNumberFound = true;
+            }
+
+            // Render กาลกิณี (ตัวอักษร)
+            if (forbiddenLettersFound.length > 0) {
+                elResLettersForbidden.innerHTML = `
+                    <div class="p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 flex items-start gap-3">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <p class="font-semibold">พบอักษรกาลกิณีในทะเบียน</p>
+                            <p class="text-sm mt-1">ตัวอักษร <strong>${forbiddenLettersFound.join(', ')}</strong> เป็นอักษรที่ไม่ควรมีสำหรับคนเกิด${dayRule.name}</p>
+                        </div>
+                    </div>`;
+            } else {
+                elResLettersForbidden.innerHTML = `
+                    <div class="p-3 bg-green-50 text-green-700 rounded-xl border border-green-100 flex items-center gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 flex-shrink-0"></i>
+                        <p class="font-medium">ไม่พบอักษรกาลกิณี (หมวดอักษรดี)</p>
+                    </div>`;
+            }
+
+            // Render กาลกิณี (ตัวเลข)
+            if (forbiddenNumberFound) {
+                elResNumbersForbidden.innerHTML = `
+                    <div class="p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 flex items-start gap-3">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <p class="font-semibold">พบตัวเลขกาลกิณีในทะเบียน</p>
+                            <p class="text-sm mt-1">เลข <strong>${dayRule.forbiddenNumber}</strong> เป็นเลขที่ไม่ควรมีสำหรับคนเกิด${dayRule.name}</p>
+                        </div>
+                    </div>`;
+            } else {
+                elResNumbersForbidden.innerHTML = `
+                    <div class="p-3 bg-green-50 text-green-700 rounded-xl border border-green-100 flex items-center gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 flex-shrink-0"></i>
+                        <p class="font-medium">ไม่พบตัวเลขกาลกิณี (ตัวเลขดี)</p>
+                    </div>`;
+            }
+
+            // 2. เลขศาสตร์
+            let prefixSum = 0;
+            if (prefix) prefixSum = prefix.split('').reduce((acc, curr) => acc + parseInt(curr || 0), 0);
+
+            let letterSum = 0;
+            let letterBreakdown = [];
+            letters.split('').forEach(char => {
+                const val = letterValues[char] || 0;
+                letterSum += val;
+                letterBreakdown.push(`${char}=${val}`);
+            });
+
+            let numberSum = 0;
+            let numberBreakdown = [];
+            numbers.split('').forEach(char => {
+                const num = parseInt(char);
+                if (!isNaN(num)) {
+                    numberSum += num;
+                    numberBreakdown.push(num);
+                }
+            });
+
+            const totalSum = prefixSum + letterSum + numberSum;
+            const meaningData = getMeaning(totalSum);
+            const styles = getGradeStyle(meaningData.grade);
+
+            // Update Grade Styles
+            elResGradeContainer.className = `p-6 rounded-2xl shadow-sm border-2 bg-white ${styles.border}`;
+            elResGradeBadge.className = `px-4 py-1.5 rounded-full text-sm font-bold border ${styles.bg} ${styles.text} ${styles.border}`;
+            elResGradeBadge.textContent = getGradeText(meaningData.grade);
+            
+            elResTotalSum.className = `text-6xl font-black ${styles.numColor}`;
+            elResTotalSum.textContent = totalSum;
+            elResTotalSumLabel.textContent = totalSum;
+
+            // Update Breakdown
+            let breakdownHtml = '';
+            if (prefix) breakdownHtml += `<li>• เลขหน้า: ${prefix}</li>`;
+            if (letters) breakdownHtml += `<li>• ค่าอักษร (${letters}): ${letterBreakdown.join(', ')} (รวม = ${letterSum})</li>`;
+            if (numbers) breakdownHtml += `<li>• ผลบวกเลข (${numbers}): ${numberBreakdown.join('+')} (รวม = ${numberSum})</li>`;
+            breakdownHtml += `<li class="pt-2 mt-2 border-t border-gray-200 font-bold text-gray-800 text-base font-sans">รวมทั้งหมด = ${totalSum}</li>`;
+            elResBreakdown.innerHTML = breakdownHtml;
+
+            // Update Meaning
+            elResMeaning.textContent = meaningData.meaning;
+
+            // Re-initialize icons inside dynamic HTML
+            lucide.createIcons();
+        }
+
+        // Event Listeners
+        elBirthDay.addEventListener('change', updateUI);
+        elPrefix.addEventListener('input', updateUI);
+        elLetters.addEventListener('input', updateUI);
+        elNumbers.addEventListener('input', updateUI);
+
+        // Initial setup for icons
+        lucide.createIcons();
+
+    </script>
+</body>
+</html>
