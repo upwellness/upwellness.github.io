@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chaiwat Phuwanonjirakawin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bc-ivory:      #F5F0E8;
+      --bc-linen:      #EDE7D9;
+      --bc-charcoal:   #2C2A27;
+      --bc-slate:      #7A7469;
+      --bc-fog:        #D4CEC4;
+      --bc-terracotta: #B8896E;
+      --bc-sage:       #8A9C85;
+      --bc-indigo:     #3D4A5C;
+      --bc-alabaster:  #FAF8F4;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bc-ivory);
+      color: var(--bc-charcoal);
+      font-family: 'Lora', Georgia, serif;
+      font-size: 1.05rem;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 4rem;
+      background: rgba(245, 240, 232, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--bc-fog);
+    }
+
+    .nav-brand {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 300;
+      font-size: 1rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--bc-charcoal);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--bc-slate);
+      text-decoration: none;
+      transition: color 0.25s;
+    }
+
+    .nav-links a:hover { color: var(--bc-terracotta); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 10rem 2rem 6rem;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(184,137,110,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 30%, rgba(138,156,133,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--bc-terracotta);
+      margin-bottom: 2rem;
+      font-family: 'Lora', Georgia, serif;
+    }
+
+    .hero-name {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 300;
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      letter-spacing: 0.06em;
+      line-height: 1.1;
+      color: var(--bc-charcoal);
+      margin-bottom: 0.4rem;
+    }
+
+    .hero-sub {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 300;
+      font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+      letter-spacing: 0.12em;
+      color: var(--bc-slate);
+      margin-bottom: 3rem;
+      font-style: italic;
+    }
+
+    .hero-divider {
+      width: 60px;
+      height: 1px;
+      background: var(--bc-terracotta);
+      margin: 0 auto 3rem;
+    }
+
+    .hero-statement {
+      max-width: 580px;
+      font-size: 1.05rem;
+      line-height: 1.9;
+      color: var(--bc-slate);
+      font-style: italic;
+    }
+
+    .hero-cta {
+      margin-top: 4rem;
+      display: inline-block;
+      padding: 0.85rem 3rem;
+      border: 1px solid var(--bc-charcoal);
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--bc-charcoal);
+      text-decoration: none;
+      transition: all 0.35s ease;
+      font-family: 'Lora', Georgia, serif;
+    }
+
+    .hero-cta:hover {
+      background: var(--bc-charcoal);
+      color: var(--bc-ivory);
+    }
+
+    /* ── SECTION SHARED ── */
+    .section {
+      padding: 7rem 2rem;
+      border-top: 1px solid var(--bc-fog);
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--bc-terracotta);
+      margin-bottom: 1.2rem;
+      font-family: 'Lora', Georgia, serif;
+    }
+
+    .section-heading {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 300;
+      font-size: clamp(1.9rem, 4vw, 2.8rem);
+      letter-spacing: 0.05em;
+      line-height: 1.25;
+      color: var(--bc-charcoal);
+      margin-bottom: 2.5rem;
+    }
+
+    .section-body {
+      font-size: 1.02rem;
+      line-height: 1.9;
+      color: var(--bc-charcoal);
+      max-width: 680px;
+    }
+
+    .section-body p + p {
+      margin-top: 1.4rem;
+    }
+
+    /* ── ABOUT ── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: start;
+    }
+
+    .about-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      padding-top: 0.5rem;
+    }
+
+    .stat-item {
+      border-left: 2px solid var(--bc-terracotta);
+      padding-left: 1.5rem;
+    }
+
+    .stat-number {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 300;
+      font-size: 2.8rem;
+      letter-spacing: 0.03em;
+      color: var(--bc-charcoal);
+      line-height: 1;
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--bc-slate);
+    }
+
+    /* ── WHAT I DO ── */
+    .work-section {
+      background: var(--bc-linen);
+    }
+
+    .work-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.5rem;
+      margin-top: 3rem;
+    }
+
+    .work-card {
+      background: var(--bc-alabaster);
+      padding: 2.5rem 2rem;
+      border: 1px solid var(--bc-fog);
+      border-radius: 4px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .work-card:hover {
+      box-shadow: 0 8px 30px rgba(44,42,39,0.08);
+    }
+
+    .work-card-icon {
+      font-size: 1.4rem;
+      margin-bottom: 1.2rem;
+      display: block;
+      opacity: 0.7;
+    }
+
+    .work-card-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 400;
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+      color: var(--bc-charcoal);
+      margin-bottom: 0.8rem;
+    }
+
+    .work-card-body {
+      font-size: 0.9rem;
+      line-height: 1.75;
+      color: var(--bc-slate);
+    }
+
+    /* ── PHILOSOPHY ── */
+    .philosophy-quote {
+      border-left: 2px solid var(--bc-terracotta);
+      padding: 0.8rem 0 0.8rem 2.5rem;
+      margin: 3rem 0;
+      font-style: italic;
+      font-size: 1.2rem;
+      line-height: 1.8;
+      color: var(--bc-slate);
+      max-width: 620px;
+    }
+
+    /* ── TRACK RECORD ── */
+    .timeline {
+      margin-top: 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 2rem;
+      padding: 2.5rem 0;
+      border-bottom: 1px solid var(--bc-fog);
+    }
+
+    .timeline-item:first-child { padding-top: 0; }
+
+    .timeline-period {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--bc-terracotta);
+      padding-top: 0.3rem;
+      font-family: 'Lora', Georgia, serif;
+    }
+
+    .timeline-content-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 400;
+      font-size: 1.2rem;
+      letter-spacing: 0.03em;
+      color: var(--bc-charcoal);
+      margin-bottom: 0.4rem;
+    }
+
+    .timeline-content-org {
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--bc-slate);
+      margin-bottom: 0.8rem;
+    }
+
+    .timeline-content-body {
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: var(--bc-slate);
+    }
+
+    /* ── CONTACT ── */
+    .contact-section {
+      background: var(--bc-indigo);
+      color: var(--bc-ivory);
+    }
+
+    .contact-section .section-label {
+      color: var(--bc-terracotta);
+    }
+
+    .contact-section .section-heading {
+      color: var(--bc-ivory);
+      max-width: 520px;
+    }
+
+    .contact-section .section-body {
+      color: rgba(245,240,232,0.7);
+    }
+
+    .contact-links {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 3rem;
+      flex-wrap: wrap;
+    }
+
+    .contact-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.85rem 2rem;
+      border: 1px solid rgba(245,240,232,0.35);
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--bc-ivory);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-family: 'Lora', Georgia, serif;
+      border-radius: 2px;
+    }
+
+    .contact-btn:hover {
+      background: rgba(245,240,232,0.1);
+      border-color: var(--bc-terracotta);
+    }
+
+    .contact-btn .btn-icon {
+      font-size: 1rem;
+      opacity: 0.8;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bc-charcoal);
+      color: var(--bc-slate);
+      text-align: center;
+      padding: 3rem 2rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+    }
+
+    footer span {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-size: 0.9rem;
+      color: rgba(245,240,232,0.35);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 1.2rem 1.5rem; }
+      .nav-links { gap: 1.5rem; }
+      .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+      .work-grid { grid-template-columns: 1fr; }
+      .timeline-item { grid-template-columns: 1fr; gap: 0.3rem; }
+      .contact-links { flex-direction: column; }
+      .hero-name { font-size: 2.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-brand" href="#">C · P</a>
+    <ul class="nav-links">
+      <li><a href="#about">About</a></li>
+      <li><a href="#work">Work</a></li>
+      <li><a href="#record">Track Record</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <p class="eyebrow">CEO &nbsp;·&nbsp; Wellness &nbsp;·&nbsp; AI Builder</p>
+    <h1 class="hero-name">Chaiwat<br>Phuwanonjirakawin</h1>
+    <p class="hero-sub">Building ventures that serve human flourishing</p>
+    <div class="hero-divider"></div>
+    <p class="hero-statement">
+      There is a kind of ambition that is not loud — one that moves through patience,
+      through craft, through a deep belief that business, at its finest,
+      improves the lives it touches.
+    </p>
+    <a href="#about" class="hero-cta">Discover more</a>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="section" id="about">
+    <div class="container">
+      <div class="about-grid">
+        <div>
+          <p class="section-label">About</p>
+          <h2 class="section-heading">A builder who believes in the dignity of good work</h2>
+          <div class="section-body">
+            <p>
+              My name is Chaiwat — known to most simply as Ton. I hold a degree in Computer
+              Engineering and spent fifteen years as a Project Manager, navigating the quiet
+              complexity of Banking, Telecommunications, and Government transformation.
+            </p>
+            <p>
+              Today, I lead UP Wellness — a health and wellness venture focused on weight
+              loss and sustainable wellbeing, built in partnership with Amway Thailand.
+              Alongside it, I am building a new chapter: an AI-powered business that uses
+              agentic tools to create value, automate intelligently, and reclaim time.
+            </p>
+            <p>
+              I am calm by nature and deliberate by practice. I believe that freedom is
+              not a reward for finishing — it is the foundation from which good work begins.
+            </p>
+          </div>
+        </div>
+        <div class="about-stats">
+          <div class="stat-item">
+            <div class="stat-number">15</div>
+            <div class="stat-label">Years in Project Management</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Industries — Banking, Telecom, Government</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">∞</div>
+            <div class="stat-label">Ideas in progress — four AI ventures building</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT I DO -->
+  <section class="section work-section" id="work">
+    <div class="container">
+      <p class="section-label">What I do</p>
+      <h2 class="section-heading">Ventures built with intention</h2>
+      <div class="work-grid">
+        <div class="work-card">
+          <span class="work-card-icon">◆</span>
+          <h3 class="work-card-title">UP Wellness</h3>
+          <p class="work-card-body">
+            A wellness business focused on sustainable weight loss and preventive health,
+            delivered through structured programs and human connection.
+            Partner of Amway Thailand.
+          </p>
+        </div>
+        <div class="work-card">
+          <span class="work-card-icon">◇</span>
+          <h3 class="work-card-title">AI Business</h3>
+          <p class="work-card-body">
+            Building agentic AI tools — a Personal Assistant, Content Creator,
+            Investment Analyzer, and Chatbot — designed for autonomy and passive leverage.
+            No-code. High craft.
+          </p>
+        </div>
+        <div class="work-card">
+          <span class="work-card-icon">○</span>
+          <h3 class="work-card-title">Consulting &amp; Strategy</h3>
+          <p class="work-card-body">
+            Drawing on fifteen years of delivering large-scale projects for banks,
+            telecoms, and government — I bring structured thinking and calm execution
+            to complex challenges.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHILOSOPHY -->
+  <section class="section" id="philosophy">
+    <div class="container">
+      <p class="section-label">Philosophy</p>
+      <h2 class="section-heading">On freedom, work, and the long game</h2>
+      <div class="section-body">
+        <p>
+          I came to understand early that money, in itself, is not the destination —
+          it is the vehicle. What I am truly building toward is a life of freedom:
+          the freedom to move, to choose, to create without asking permission.
+        </p>
+        <blockquote class="philosophy-quote">
+          "Passive income is the only income that buys back time.
+          And time, unlike capital, cannot be compounded — only reclaimed."
+        </blockquote>
+        <p>
+          I simplify by instinct. Every system I touch, I reduce to its essential
+          form. Every venture I build, I ask: does this create value that outlasts
+          my direct involvement? That question is my compass.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRACK RECORD -->
+  <section class="section" id="record">
+    <div class="container">
+      <p class="section-label">Track Record</p>
+      <h2 class="section-heading">A life's work, in stages</h2>
+      <div class="timeline">
+
+        <div class="timeline-item">
+          <div class="timeline-period">2024 — Present</div>
+          <div>
+            <h3 class="timeline-content-title">CEO &amp; Founder</h3>
+            <p class="timeline-content-org">UP Wellness · Thailand</p>
+            <p class="timeline-content-body">
+              Leading a wellness and weight-loss program focused on lasting transformation.
+              Building AI-powered tools to support and scale the business. Exploring passive
+              income structures to fund a life on one's own terms.
+            </p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-period">2009 — 2024</div>
+          <div>
+            <h3 class="timeline-content-title">Senior Project Manager</h3>
+            <p class="timeline-content-org">Banking, Telecom &amp; Government Sector · Thailand</p>
+            <p class="timeline-content-body">
+              Fifteen years navigating the careful art of large-scale transformation —
+              system integrations, digital banking rollouts, government platforms.
+              Calm under pressure. Precise in delivery. Trusted by stakeholders who
+              valued a steady hand over a loud voice.
+            </p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-period">Foundation</div>
+          <div>
+            <h3 class="timeline-content-title">B.Eng. Computer Engineering</h3>
+            <p class="timeline-content-org">Thailand</p>
+            <p class="timeline-content-body">
+              A technical foundation that informs how I read systems, trust data,
+              and build with precision — even when the tools are entirely new.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="section contact-section" id="contact">
+    <div class="container">
+      <p class="section-label">Contact</p>
+      <h2 class="section-heading">Let us begin a conversation worth having</h2>
+      <p class="section-body">
+        <p style="color:rgba(245,240,232,0.65); line-height:1.9; font-size:1rem;">
+          I am open to meaningful collaborations — in wellness, AI, and the slow,
+          deliberate work of building something that lasts. If what you read here
+          resonates, I welcome the conversation.
+        </p>
+      </p>
+      <div class="contact-links">
+        <a class="contact-btn" href="mailto:ckawin1184@gmail.com">
+          <span class="btn-icon">✉</span>
+          Email
+        </a>
+        <a class="contact-btn" href="https://line.me/ti/p/~ckawin" target="_blank" rel="noopener">
+          <span class="btn-icon">◈</span>
+          LINE · ckawin
+        </a>
+        <a class="contact-btn" href="https://linkedin.com/in/ckawin" target="_blank" rel="noopener">
+          <span class="btn-icon">◉</span>
+          LinkedIn
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>"Find a way — or make one."</span>
+    © 2026 Chaiwat Phuwanonjirakawin &nbsp;·&nbsp; All rights reserved
+  </footer>
+
+</body>
+</html>
