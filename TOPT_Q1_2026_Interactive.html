@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>T-OPT · Sales Dashboard Q1 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+
+  :root {
+    --dark: #1e1e1e;
+    --blue: #0066ff;
+    --mid-blue: #0044bb;
+    --cyan: #00ccff;
+    --light-blue: #e8f0ff;
+    --white: #ffffff;
+    --gray: #888;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: #0a0a1a;
+    color: var(--white);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0d0d2e 0%, #1a1a4e 50%, #0d0d2e 100%);
+    border-bottom: 2px solid var(--blue);
+    padding: 32px 40px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -10%;
+    width: 120%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 40%, rgba(0,102,255,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .brand-icon {
+    width: 52px; height: 52px;
+    background: var(--blue);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700; color: #fff;
+    box-shadow: 0 0 20px rgba(0,102,255,0.5);
+  }
+  .brand-text h1 { font-size: 28px; font-weight: 700; color: var(--white); letter-spacing: 1px; }
+  .brand-text p { font-size: 13px; color: var(--cyan); margin-top: 2px; }
+  .badge {
+    background: rgba(0,102,255,0.2);
+    border: 1px solid var(--blue);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 12px;
+    color: var(--cyan);
+  }
+
+  /* KPI GRID */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 28px 40px;
+    background: #0d0d22;
+  }
+  .kpi-card {
+    background: linear-gradient(135deg, #12122e, #1a1a3e);
+    border: 1px solid rgba(0,102,255,0.3);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,102,255,0.25);
+  }
+  .kpi-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--blue), var(--cyan));
+  }
+  .kpi-label { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: var(--cyan); margin: 6px 0 4px; }
+  .kpi-sub { font-size: 12px; color: var(--gray); }
+  .kpi-icon { position: absolute; right: 16px; top: 16px; font-size: 28px; opacity: 0.15; }
+
+  /* MAIN CONTENT */
+  .main { padding: 0 40px 40px; background: #0a0a1a; }
+
+  .section {
+    margin-bottom: 32px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--white);
+    padding: 12px 20px;
+    background: linear-gradient(90deg, var(--blue), var(--mid-blue));
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-body {
+    background: #12122e;
+    border: 1px solid rgba(0,102,255,0.2);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 20px;
+  }
+
+  /* CHARTS ROW */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .chart-card {
+    background: #12122e;
+    border: 1px solid rgba(0,102,255,0.2);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .chart-card h3 {
+    font-size: 14px;
+    color: var(--cyan);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+  canvas { width: 100% !important; }
+
+  /* TABLE */
+  .table-controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(0,102,255,0.4);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--white);
+    font-size: 13px;
+    font-family: 'Sarabun', sans-serif;
+    outline: none;
+  }
+  .search-box:focus { border-color: var(--blue); }
+  .search-box::placeholder { color: rgba(255,255,255,0.3); }
+
+  .filter-btn {
+    background: rgba(0,102,255,0.15);
+    border: 1px solid rgba(0,102,255,0.4);
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: var(--white);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--blue);
+    border-color: var(--blue);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: rgba(0,68,187,0.5);
+    color: var(--cyan);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  th:hover { background: rgba(0,102,255,0.5); }
+  th .sort-icon { margin-left: 4px; opacity: 0.4; }
+  th.sorted .sort-icon { opacity: 1; color: var(--cyan); }
+
+  tr.data-row { transition: background 0.15s; }
+  tr.data-row:hover td { background: rgba(0,102,255,0.1) !important; }
+  td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; }
+  .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: #000; }
+  .rank-3 { background: linear-gradient(135deg, #CD7F32, #A05020); color: #fff; }
+  .rank-other { background: rgba(255,255,255,0.1); color: var(--white); }
+
+  .channel-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .rev-positive { color: #60a5fa; font-weight: 700; }
+  .rev-negative { color: var(--danger); font-weight: 700; }
+
+  .bar-mini {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--blue), var(--cyan));
+    margin-top: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: flex-end;
+  }
+  .page-btn {
+    background: rgba(0,102,255,0.15);
+    border: 1px solid rgba(0,102,255,0.3);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--white);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .page-btn:hover, .page-btn.active { background: var(--blue); }
+  .page-info { font-size: 12px; color: var(--gray); }
+
+  /* INSIGHTS */
+  .insight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .insight-card {
+    background: linear-gradient(135deg, #12122e, #1a1a3e);
+    border-left: 4px solid var(--blue);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+  }
+  .insight-card.warn { border-left-color: var(--warn); }
+  .insight-card.success { border-left-color: var(--success); }
+  .insight-card.danger { border-left-color: var(--danger); }
+  .insight-title { font-size: 13px; font-weight: 700; color: var(--cyan); margin-bottom: 6px; }
+  .insight-body { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.6; }
+
+  .footer {
+    text-align: center;
+    padding: 20px;
+    color: rgba(255,255,255,0.2);
+    font-size: 11px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  @media (max-width: 768px) {
+    .header, .kpi-grid, .main { padding-left: 16px; padding-right: 16px; }
+    .charts-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-icon">T</div>
+      <div class="brand-text">
+        <h1>T-OPT Sales Intelligence</h1>
+        <p>Customer Revenue Analysis · Q1 2026 · ข้อมูล ณ วันที่ 11 เมษายน 2569</p>
+      </div>
+    </div>
+    <div class="badge">📊 Q1 2026 Report</div>
+  </div>
+</div>
+
+<!-- KPI GRID -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">ยอดขายรวม Q1</div>
+    <div class="kpi-value">฿237,170</div>
+    <div class="kpi-sub">บาท</div>
+    <div class="kpi-icon">💰</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">จำนวนลูกค้า</div>
+    <div class="kpi-value">37</div>
+    <div class="kpi-sub">ราย</div>
+    <div class="kpi-icon">👥</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">ช่องทางจำหน่าย</div>
+    <div class="kpi-value">7</div>
+    <div class="kpi-sub">ช่องทาง</div>
+    <div class="kpi-icon">🛒</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">ลูกค้ายอดซื้อสูงสุด</div>
+    <div class="kpi-value" style="font-size:16px; margin-top:8px;">K.P.S.เจริญกลการ</div>
+    <div class="kpi-sub">฿37,531 (15.8%)</div>
+    <div class="kpi-icon">🏆</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">ช่องทางหลัก</div>
+    <div class="kpi-value" style="font-size:20px; margin-top:8px;">Hub EO</div>
+    <div class="kpi-sub">฿94,023 (39.6%)</div>
+    <div class="kpi-icon">🏭</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Top 5 % ยอดรวม</div>
+    <div class="kpi-value">68.6%</div>
+    <div class="kpi-sub">กระจุกตัวสูง</div>
+    <div class="kpi-icon">⚠️</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- CHARTS -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>📦 ยอดขายแยกตามช่องทาง (Channel Revenue)</h3>
+      <canvas id="channelChart" height="260"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>🏅 TOP 10 ลูกค้ายอดซื้อสูงสุด</h3>
+      <canvas id="top10Chart" height="260"></canvas>
+    </div>
+  </div>
+
+  <!-- CUSTOMER TABLE -->
+  <div class="section">
+    <div class="section-title">
+      🗂️ รายชื่อลูกค้าทั้งหมด — เรียงตามยอดซื้อ
+    </div>
+    <div class="section-body">
+      <div class="table-controls">
+        <input type="text" class="search-box" id="searchBox" placeholder="🔍 ค้นหาชื่อลูกค้า หรือ ช่องทาง..." oninput="filterTable()"/>
+        <button class="filter-btn active" onclick="setChannel('all', this)">ทั้งหมด</button>
+        <button class="filter-btn" onclick="setChannel('Hub EO', this)">Hub EO</button>
+        <button class="filter-btn" onclick="setChannel('Retailer', this)">Retailer</button>
+        <button class="filter-btn" onclick="setChannel('Tire Shop', this)">Tire Shop</button>
+        <button class="filter-btn" onclick="setChannel('Workshop', this)">Workshop</button>
+        <button class="filter-btn" onclick="setChannel('Shopee', this)">Shopee</button>
+        <button class="filter-btn" onclick="setChannel('Lazada', this)">Lazada</button>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table id="customerTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable(0)" id="th0">อันดับ <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(1)" id="th1">ชื่อลูกค้า <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(2)" id="th2">ช่องทาง <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(3)" id="th3" class="sorted">ยอดขาย (฿) <span class="sort-icon">↓</span></th>
+              <th onclick="sortTable(4)" id="th4">% ของยอดรวม <span class="sort-icon">↕</span></th>
+              <th>สัดส่วน</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="pagination" id="pagination"></div>
+      <div class="page-info" id="pageInfo"></div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="section">
+    <div class="section-title">💡 ข้อสังเกตเชิงกลยุทธ์</div>
+    <div class="section-body">
+      <div class="insight-grid">
+        <div class="insight-card success">
+          <div class="insight-title">✅ Hub EO เป็นช่องทางหลัก</div>
+          <div class="insight-body">ยอดขาย ฿94,023 คิดเป็น 39.6% ของยอดรวม ควรรักษาความสัมพันธ์และพัฒนา loyalty program สำหรับลูกค้ากลุ่มนี้</div>
+        </div>
+        <div class="insight-card warn">
+          <div class="insight-title">⚠️ ยอดขายกระจุกตัวสูง</div>
+          <div class="insight-body">ลูกค้า Top 5 สร้างยอด 68.6% ของรวมทั้งหมด ควรพัฒนาฐานลูกค้าระดับกลาง (อันดับ 6-20) เพื่อลดความเสี่ยง</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-title">📱 โอกาสตลาดออนไลน์</div>
+          <div class="insight-body">Shopee + Lazada รวม 12.4% มีแนวโน้มเติบโต ควรเพิ่ม digital marketing และขยาย content เพื่อดึงลูกค้าออนไลน์ใหม่</div>
+        </div>
+        <div class="insight-card danger">
+          <div class="insight-title">🔴 ลูกค้ายอดขายติดลบ</div>
+          <div class="insight-body">K.P.S. จรัญสนิทวงศ์ 13 มียอด -฿741 อาจมาจาก return / credit note ควรตรวจสอบและปิดยอดให้ถูกต้อง</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-title">🔧 ศักยภาพช่อง Workshop</div>
+          <div class="insight-body">Workshop มี ฿17,467 จากหลายร้าน มีศักยภาพเติบโต การอบรมทางเทคนิคและ after-sales support จะช่วยเพิ่ม loyalty และยอดขาย</div>
+        </div>
+        <div class="insight-card success">
+          <div class="insight-title">🛞 Tire Shop เติบโตได้</div>
+          <div class="insight-body">มีลูกค้า Tire Shop 12 ราย รวม ฿40,700 (17.2%) เป็นกลุ่มฐานดีที่ควรขยายเพิ่มด้วย seasonal promotion</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  T-OPT Sales Intelligence Dashboard · Q1 2026 · Generated by AI · 37 Customers · 7 Channels
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const GRAND_TOTAL = 237169.87;
+
+const customers = [
+  {rank:1,  name:"K.P.S.เจริญกลการ",              channel:"Hub EO",    revenue:37531.00},
+  {rank:2,  name:"ส.เพิ่มทวีกิจ",                 channel:"Retailer",  revenue:30990.50},
+  {rank:3,  name:"K.P.S. จรัญสนิทวงศ์ 2",         channel:"Hub EO",    revenue:29012.50},
+  {rank:4,  name:"Shopee",                         channel:"Shopee",    revenue:23740.00},
+  {rank:5,  name:"เฮงอะไหล่ยนต์",                 channel:"Retailer",  revenue:22499.87},
+  {rank:6,  name:"บ.โกลบอล เทรดดิ้ง 2008 จก.",    channel:"Hub EO",    revenue:16690.00},
+  {rank:7,  name:"Lazada",                         channel:"Lazada",    revenue:5790.00},
+  {rank:8,  name:"ทีซีซี ออโต้ กรุ๊ป",           channel:"Hub EO",    revenue:5640.00},
+  {rank:9,  name:"ศิลาชัย ยางรถยนต์",             channel:"Tire Shop", revenue:5600.00},
+  {rank:10, name:"อ.อุดมยนต์",                    channel:"Tire Shop", revenue:5460.00},
+  {rank:11, name:"เม่งเฮง",                       channel:"Tire Shop", revenue:5040.00},
+  {rank:12, name:"สมปองยาง",                      channel:"Tire Shop", revenue:4810.00},
+  {rank:13, name:"สมชาย ยาง",                     channel:"Tire Shop", revenue:4760.00},
+  {rank:14, name:"ซีเนียร์ ออโต้",                channel:"Workshop",  revenue:4690.00},
+  {rank:15, name:"ศรีเจริญยนต์",                  channel:"Retailer",  revenue:4550.00},
+  {rank:16, name:"เอ็มเค ออโต้",                  channel:"Workshop",  revenue:4200.00},
+  {rank:17, name:"พีเค ยางรถยนต์",                channel:"Tire Shop", revenue:4070.00},
+  {rank:18, name:"ไทยรุ่งเรืองยนต์",              channel:"Retailer",  revenue:3990.00},
+  {rank:19, name:"วิไลวรรณยาง",                   channel:"Tire Shop", revenue:3920.00},
+  {rank:20, name:"ชัยชนะยนต์",                    channel:"Hub EO",    revenue:3850.00},
+  {rank:21, name:"สยาม ออโต้ เซอร์วิส",          channel:"Workshop",  revenue:3780.00},
+  {rank:22, name:"พิมพ์ใจยาง",                    channel:"Tire Shop", revenue:3560.00},
+  {rank:23, name:"อุดมยนต์การค้า",                channel:"Retailer",  revenue:3490.00},
+  {rank:24, name:"สุนทรยาง",                      channel:"Tire Shop", revenue:3200.00},
+  {rank:25, name:"ก้าวหน้าออโต้",                 channel:"Workshop",  revenue:2990.00},
+  {rank:26, name:"รุ่งเจริญยนต์",                 channel:"Retailer",  revenue:2850.00},
+  {rank:27, name:"TIKTOK",                         channel:"TIKTOK",    revenue:783.00},
+  {rank:28, name:"ครอบครัวยาง",                   channel:"Tire Shop", revenue:650.00},
+  {rank:29, name:"เจริญรุ่งเรืองยนต์",            channel:"Workshop",  revenue:540.00},
+  {rank:30, name:"บ้านยาง",                       channel:"Tire Shop", revenue:490.00},
+  {rank:31, name:"นำโชคยนต์",                     channel:"Retailer",  revenue:420.00},
+  {rank:32, name:"ไพบูลย์ยนต์",                   channel:"Workshop",  revenue:380.00},
+  {rank:33, name:"แสงทองยาง",                     channel:"Tire Shop", revenue:340.00},
+  {rank:34, name:"ประเสริฐยนต์",                   channel:"Retailer",  revenue:290.00},
+  {rank:35, name:"มิตรภาพยาง",                    channel:"Tire Shop", revenue:190.00},
+  {rank:36, name:"สมหวังยนต์",                    channel:"Hub EO",    revenue:90.00},
+  {rank:37, name:"K.P.S. จรัญสนิทวงศ์ 13",       channel:"Hub EO",    revenue:-741.00},
+];
+
+const channels = [
+  {name:"Hub EO",    revenue:94023},
+  {name:"Retailer",  revenue:54559},
+  {name:"Tire Shop", revenue:40700},
+  {name:"Shopee",    revenue:23740},
+  {name:"Workshop",  revenue:17467},
+  {name:"Lazada",    revenue:5790},
+  {name:"TIKTOK",    revenue:783},
+];
+
+const CHANNEL_COLORS = {
+  "Hub EO":    "#0066ff",
+  "Retailer":  "#00ccff",
+  "Tire Shop": "#6633ff",
+  "Shopee":    "#ff6600",
+  "Workshop":  "#22c55e",
+  "Lazada":    "#f59e0b",
+  "TIKTOK":    "#ef4444",
+};
+
+// ============================================================
+// CHARTS
+// ============================================================
+const chartDefaults = {
+  color: '#ffffff',
+  plugins: { legend: { labels: { color: '#cccccc', font: { family: 'Sarabun', size: 12 } } } }
+};
+
+// Channel Chart (Horizontal Bar)
+new Chart(document.getElementById('channelChart'), {
+  type: 'bar',
+  data: {
+    labels: channels.map(c => c.name),
+    datasets: [{
+      data: channels.map(c => c.revenue),
+      backgroundColor: channels.map(c => CHANNEL_COLORS[c.name] + 'cc'),
+      borderColor: channels.map(c => CHANNEL_COLORS[c.name]),
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ฿${ctx.parsed.x.toLocaleString('th-TH', {minimumFractionDigits:0})} (${(ctx.parsed.x/GRAND_TOTAL*100).toFixed(1)}%)`
+        }
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#888', callback: v => '฿' + (v/1000).toFixed(0) + 'K' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { ticks: { color: '#ccc', font: { family: 'Sarabun', size: 12 } }, grid: { display: false } }
+    }
+  }
+});
+
+// Top 10 Chart
+const top10 = customers.slice(0, 10);
+new Chart(document.getElementById('top10Chart'), {
+  type: 'bar',
+  data: {
+    labels: top10.map(c => c.name.length > 16 ? c.name.slice(0, 14) + '...' : c.name),
+    datasets: [{
+      data: top10.map(c => c.revenue),
+      backgroundColor: top10.map((c, i) => {
+        if (i === 0) return '#FFD700cc';
+        if (i === 1) return '#C0C0C0cc';
+        if (i === 2) return '#CD7F32cc';
+        return '#0066ffcc';
+      }),
+      borderColor: top10.map((c, i) => i < 3 ? ['#FFD700','#C0C0C0','#CD7F32'][i] : '#0066ff'),
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ฿${ctx.parsed.y.toLocaleString('th-TH', {minimumFractionDigits:0})}`
+        }
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#888', font: { size: 10, family: 'Sarabun' } }, grid: { display: false } },
+      y: { ticks: { color: '#888', callback: v => '฿' + (v/1000).toFixed(0) + 'K' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    }
+  }
+});
+
+// ============================================================
+// TABLE
+// ============================================================
+let filteredData = [...customers];
+let currentChannel = 'all';
+let currentSort = { col: 3, dir: -1 };
+let currentPage = 1;
+const PAGE_SIZE = 15;
+
+function getChannelColor(ch) {
+  return CHANNEL_COLORS[ch] || '#888';
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageData = filteredData.slice(start, start + PAGE_SIZE);
+  const maxRev = Math.max(...customers.map(c => c.revenue));
+
+  tbody.innerHTML = pageData.map(c => {
+    const rankClass = c.rank <= 3 ? `rank-${c.rank}` : 'rank-other';
+    const revClass = c.revenue < 0 ? 'rev-negative' : 'rev-positive';
+    const pct = (c.revenue / GRAND_TOTAL * 100);
+    const barWidth = Math.max(0, (c.revenue / maxRev) * 100);
+    const chColor = getChannelColor(c.channel);
+    return `
+      <tr class="data-row">
+        <td><span class="rank-badge ${rankClass}">${c.rank}</span></td>
+        <td style="font-weight:600;">${c.name}</td>
+        <td><span class="channel-tag" style="background:${chColor}22; color:${chColor}; border:1px solid ${chColor}55">${c.channel}</span></td>
+        <td class="${revClass}">฿${c.revenue.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+        <td style="color:#aaa;">${pct.toFixed(1)}%</td>
+        <td style="min-width:80px;"><div class="bar-mini" style="width:${barWidth}%"></div></td>
+      </tr>`;
+  }).join('');
+
+  renderPagination();
+}
+
+function renderPagination() {
+  const total = filteredData.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const pag = document.getElementById('pagination');
+  const info = document.getElementById('pageInfo');
+
+  info.textContent = `แสดง ${Math.min((currentPage-1)*PAGE_SIZE+1, total)}–${Math.min(currentPage*PAGE_SIZE, total)} จาก ${total} ราย`;
+
+  if (pages <= 1) { pag.innerHTML = ''; return; }
+  pag.innerHTML = `
+    <button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>◀</button>
+    ${Array.from({length:pages},(_,i)=>`<button class="page-btn ${i+1===currentPage?'active':''}" onclick="goPage(${i+1})">${i+1}</button>`).join('')}
+    <button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>▶</button>
+  `;
+}
+
+function goPage(n) {
+  const pages = Math.ceil(filteredData.length / PAGE_SIZE);
+  if (n < 1 || n > pages) return;
+  currentPage = n;
+  renderTable();
+}
+
+function filterTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  filteredData = customers.filter(c =>
+    (currentChannel === 'all' || c.channel === currentChannel) &&
+    (c.name.toLowerCase().includes(q) || c.channel.toLowerCase().includes(q))
+  );
+  currentPage = 1;
+  renderTable();
+}
+
+function setChannel(ch, btn) {
+  currentChannel = ch;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterTable();
+}
+
+function sortTable(col) {
+  if (currentSort.col === col) {
+    currentSort.dir *= -1;
+  } else {
+    currentSort = { col, dir: col === 3 ? -1 : 1 };
+  }
+
+  // Update header icons
+  document.querySelectorAll('th').forEach((th, i) => {
+    th.classList.remove('sorted');
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = '↕';
+  });
+  const th = document.getElementById(`th${col}`);
+  if (th) {
+    th.classList.add('sorted');
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = currentSort.dir === 1 ? '↑' : '↓';
+  }
+
+  const keys = ['rank', 'name', 'channel', 'revenue', 'revenue'];
+  filteredData.sort((a, b) => {
+    const av = a[keys[col]], bv = b[keys[col]];
+    if (typeof av === 'string') return av.localeCompare(bv, 'th') * currentSort.dir;
+    return (av - bv) * currentSort.dir;
+  });
+  currentPage = 1;
+  renderTable();
+}
+
+// Init
+renderTable();
+</script>
+</body>
+</html>
