@@ -1,0 +1,207 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Download, Share2, Type, Link as LinkIcon, Palette, Settings, QrCode } from 'lucide-react';
+
+const App = () => {
+  const [text, setText] = useState('https://www.google.com');
+  const [fgColor, setFgColor] = useState('#000000');
+  const [bgColor, setBgColor] = useState('#ffffff');
+  const [size, setSize] = useState(256);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const qrRef = useRef(null);
+
+  // Load QRCode library
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+    script.async = true;
+    script.onload = () => generateQR();
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  // Re-generate QR when parameters change
+  useEffect(() => {
+    if (window.QRCode) {
+      generateQR();
+    }
+  }, [text, fgColor, bgColor, size]);
+
+  const generateQR = () => {
+    if (!qrRef.current || !window.QRCode) return;
+    
+    // Clear previous QR
+    qrRef.current.innerHTML = "";
+    
+    try {
+      new window.QRCode(qrRef.current, {
+        text: text || " ",
+        width: size,
+        height: size,
+        colorDark: fgColor,
+        colorLight: bgColor,
+        correctLevel: window.QRCode.CorrectLevel.H
+      });
+    } catch (error) {
+      console.error("QR Generation failed", error);
+    }
+  };
+
+  const downloadQR = () => {
+    const img = qrRef.current.querySelector('img');
+    if (!img) return;
+
+    const canvas = qrRef.current.querySelector('canvas');
+    const link = document.createElement('a');
+    
+    // If browser uses canvas to render
+    if (canvas) {
+      link.href = canvas.toDataURL("image/png");
+    } else {
+      link.href = img.src;
+    }
+    
+    link.download = `qrcode-${Date.now()}.png`;
+    link.click();
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <header className="flex items-center gap-3 mb-8">
+          <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg">
+            <QrCode size={32} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Pro QR Generator</h1>
+            <p className="text-slate-500 text-sm">สร้าง QR Code ระดับมืออาชีพได้ในไม่กี่วินาที</p>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Controls Section */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Input Card */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <div className="flex items-center gap-2 mb-4 text-slate-700 font-semibold">
+                <LinkIcon size={18} />
+                <span>ข้อมูลที่ต้องการสร้าง</span>
+              </div>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="พิมพ์ข้อความหรือวาง URL ที่นี่..."
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none resize-none h-32"
+              />
+            </div>
+
+            {/* Customization Card */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <div className="flex items-center gap-2 mb-6 text-slate-700 font-semibold">
+                <Settings size={18} />
+                <span>ปรับแต่งดีไซน์</span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="text-sm text-slate-600 mb-1 block">สีของ QR Code</span>
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="color" 
+                        value={fgColor}
+                        onChange={(e) => setFgColor(e.target.value)}
+                        className="h-10 w-20 rounded cursor-pointer border-none"
+                      />
+                      <span className="text-sm font-mono text-slate-500 uppercase">{fgColor}</span>
+                    </div>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm text-slate-600 mb-1 block">สีพื้นหลัง</span>
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="color" 
+                        value={bgColor}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="h-10 w-20 rounded cursor-pointer border-none shadow-inner"
+                      />
+                      <span className="text-sm font-mono text-slate-500 uppercase">{bgColor}</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="text-sm text-slate-600 mb-1 block">ขนาด (พิกเซล): {size}px</span>
+                    <input 
+                      type="range" 
+                      min="128" 
+                      max="512" 
+                      step="32"
+                      value={size}
+                      onChange={(e) => setSize(parseInt(e.target.value))}
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                      <span>128px</span>
+                      <span>512px</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Preview Section */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8 space-y-4">
+              <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 flex flex-col items-center justify-center min-h-[400px]">
+                <div className="mb-6 font-semibold text-slate-400 text-sm tracking-widest uppercase">Live Preview</div>
+                
+                <div 
+                  ref={qrRef} 
+                  className="bg-white p-4 rounded-lg shadow-inner transition-transform hover:scale-105 duration-300"
+                  style={{ backgroundColor: bgColor }}
+                >
+                  {/* QR Code will be injected here */}
+                </div>
+                
+                <div className="mt-8 w-full space-y-3">
+                  <button
+                    onClick={downloadQR}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all transform active:scale-95 shadow-lg shadow-indigo-200"
+                  >
+                    <Download size={20} />
+                    ดาวน์โหลด PNG
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(text);
+                    }}
+                    className="w-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Share2 size={18} />
+                    คัดลอกข้อความ
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl">
+                <p className="text-xs text-indigo-700 leading-relaxed text-center">
+                  <strong>เคล็ดลับ:</strong> เลือกสีที่ตัดกัน (เช่น พื้นเข้ม-ตัวอ่อน หรือ พื้นอ่อน-ตัวเข้ม) เพื่อให้สแกนได้ง่ายขึ้น
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
