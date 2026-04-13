@@ -5,651 +5,782 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🗺️ สุโขทัย–ศรีสัชนาลัย | 20–21 พ.ค. 2568</title>
 <style>
-  :root {
-    --blue: #1A5276; --lblue: #D6EAF8; --sky: #AED6F1;
-    --green: #27AE60; --lgreen: #D5F5E3;
-    --orange: #E67E22; --lorange: #FAD7A0;
-    --gold: #D4AC0D; --lgold: #FEF9E7;
-    --pink: #FDEDEC; --red: #C0392B;
-    --gray: #F4F6F7; --darkgray: #566573;
-    --white: #fff; --shadow: 0 4px 20px rgba(0,0,0,0.08);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #EBF5FB; color: #2C3E50; }
+:root {
+  --blue:#1A5276; --lblue:#D6EAF8; --sky:#AED6F1;
+  --green:#27AE60; --lgreen:#D5F5E3;
+  --orange:#E67E22; --lorange:#FAD7A0;
+  --gold:#D4AC0D; --lgold:#FEF9E7;
+  --pink:#FDEDEC; --red:#C0392B;
+  --gray:#F4F6F7; --dgray:#566573;
+  --white:#fff; --shadow:0 4px 20px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#EBF5FB;color:#2C3E50;}
 
-  /* HERO */
-  .hero {
-    background: linear-gradient(135deg, var(--blue) 0%, #2E86C1 50%, #1A8A72 100%);
-    color: white; text-align: center; padding: 60px 20px 40px;
-    position: relative; overflow: hidden;
-  }
-  .hero::before {
-    content: ''; position: absolute; inset: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff10" d="M0,128L60,138.7C120,149,240,171,360,165.3C480,160,600,128,720,128C840,128,960,160,1080,160C1200,160,1320,128,1380,112L1440,96V320H0Z"/></svg>') bottom/cover;
-  }
-  .hero h1 { font-size: 2.6em; font-weight: 800; margin-bottom: 8px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-  .hero h2 { font-size: 1.4em; opacity: 0.9; margin-bottom: 16px; }
-  .hero-meta { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
-  .hero-badge {
-    background: rgba(255,255,255,0.2); backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.3); border-radius: 30px;
-    padding: 8px 20px; font-size: 0.9em; font-weight: 600;
-  }
+/* ─── STICKY NAV ─── */
+.sticky-nav{
+  position:sticky;top:0;z-index:200;
+  background:var(--blue);
+  display:flex;justify-content:center;gap:2px;flex-wrap:wrap;
+  padding:6px 12px;box-shadow:0 2px 12px rgba(0,0,0,.25);
+}
+.sticky-nav a{
+  color:rgba(255,255,255,.75);text-decoration:none;
+  padding:8px 14px;border-radius:6px;font-size:.82em;font-weight:600;
+  transition:all .2s;white-space:nowrap;
+}
+.sticky-nav a:hover{background:rgba(255,255,255,.15);color:#fff;}
 
-  /* NAV */
-  .nav {
-    background: var(--blue); position: sticky; top: 0; z-index: 100;
-    display: flex; justify-content: center; gap: 4px; padding: 0 20px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-  }
-  .nav button {
-    background: none; border: none; color: rgba(255,255,255,0.7);
-    padding: 14px 18px; cursor: pointer; font-size: 0.9em; font-weight: 600;
-    border-bottom: 3px solid transparent; transition: all 0.2s;
-    white-space: nowrap;
-  }
-  .nav button:hover, .nav button.active { color: white; border-bottom-color: var(--gold); }
+/* ─── HERO ─── */
+.hero{
+  background:linear-gradient(135deg,var(--blue) 0%,#2E86C1 55%,#1A8A72 100%);
+  color:#fff;text-align:center;padding:64px 20px 48px;
+}
+.hero h1{font-size:2.8em;font-weight:800;margin-bottom:8px;text-shadow:0 2px 8px rgba(0,0,0,.3);}
+.hero h2{font-size:1.3em;opacity:.9;margin-bottom:20px;}
+.hero-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
+.badge{
+  background:rgba(255,255,255,.18);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.3);border-radius:30px;
+  padding:7px 18px;font-size:.85em;font-weight:700;
+}
 
-  /* SECTIONS */
-  .section { display: none; padding: 30px 20px; max-width: 1100px; margin: 0 auto; }
-  .section.active { display: block; }
+/* ─── SECTION BLOCKS ─── */
+.block{max-width:1080px;margin:40px auto;padding:0 20px;}
+.section-title{
+  font-size:1.5em;font-weight:800;color:var(--blue);
+  display:flex;align-items:center;gap:10px;margin-bottom:6px;
+}
+.section-sub{font-size:.88em;color:var(--dgray);margin-bottom:20px;}
+.divider{height:3px;background:linear-gradient(90deg,var(--blue),var(--green),transparent);
+  border-radius:4px;margin-bottom:24px;}
 
-  /* CARDS */
-  .card {
-    background: white; border-radius: 16px; box-shadow: var(--shadow);
-    overflow: hidden; margin-bottom: 24px;
-  }
-  .card-header {
-    padding: 18px 24px; font-size: 1.1em; font-weight: 700;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .card-body { padding: 0 24px 24px; }
+/* ─── SUMMARY STRIP ─── */
+.summary-strip{
+  display:flex;gap:14px;flex-wrap:wrap;
+  background:white;border-radius:16px;box-shadow:var(--shadow);
+  padding:20px 24px;margin-bottom:32px;
+}
+.sum-item{flex:1;min-width:120px;text-align:center;}
+.sum-num{font-size:1.7em;font-weight:800;color:var(--blue);}
+.sum-label{font-size:.75em;color:var(--dgray);margin-top:2px;}
 
-  /* TIMELINE */
-  .timeline { position: relative; padding-left: 28px; }
-  .timeline::before {
-    content: ''; position: absolute; left: 10px; top: 0; bottom: 0;
-    width: 2px; background: linear-gradient(to bottom, var(--blue), var(--green));
-    border-radius: 2px;
-  }
-  .tl-item {
-    position: relative; margin-bottom: 12px; padding: 14px 16px;
-    border-radius: 12px; border-left: 4px solid transparent;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .tl-item:hover { transform: translateX(4px); box-shadow: var(--shadow); }
-  .tl-item::before {
-    content: ''; position: absolute; left: -22px; top: 18px;
-    width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;
-    box-shadow: 0 0 0 2px currentColor;
-  }
-  .tl-ev { background: var(--lorange); border-color: var(--orange); color: var(--orange); }
-  .tl-ev::before { background: var(--orange); }
-  .tl-food { background: var(--pink); border-color: #E74C3C; color: #E74C3C; }
-  .tl-food::before { background: #E74C3C; }
-  .tl-hotel { background: var(--lblue); border-color: var(--blue); color: var(--blue); }
-  .tl-hotel::before { background: var(--blue); }
-  .tl-place { background: var(--lgold); border-color: var(--gold); color: var(--gold); }
-  .tl-place::before { background: var(--gold); }
-  .tl-drive { background: var(--gray); border-color: var(--darkgray); color: var(--darkgray); }
-  .tl-drive::before { background: var(--darkgray); }
-  .tl-end { background: var(--lgreen); border-color: var(--green); color: var(--green); }
-  .tl-end::before { background: var(--green); }
-  .tl-time { font-weight: 700; font-size: 0.85em; margin-bottom: 4px; }
-  .tl-title { font-weight: 600; font-size: 1em; color: #2C3E50; margin-bottom: 4px; }
-  .tl-note { font-size: 0.85em; color: var(--darkgray); }
-  .tl-cost { font-size: 0.85em; font-weight: 700; color: var(--red); margin-top: 4px; }
+/* ─── CARD ─── */
+.card{background:white;border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:28px;}
+.card-head{
+  padding:14px 22px;font-size:1em;font-weight:700;
+  display:flex;align-items:center;gap:8px;color:white;
+}
+.card-body{padding:20px 22px;}
 
-  /* GRID */
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  @media (max-width: 700px) {
-    .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    .hero h1 { font-size: 1.8em; }
-  }
+/* ─── TIMELINE ─── */
+.timeline{position:relative;padding-left:26px;}
+.timeline::before{
+  content:'';position:absolute;left:9px;top:4px;bottom:4px;
+  width:2px;background:linear-gradient(to bottom,var(--blue),var(--green));border-radius:2px;
+}
+.tl{
+  position:relative;margin-bottom:10px;padding:12px 14px;
+  border-radius:10px;border-left:4px solid transparent;
+  transition:transform .15s,box-shadow .15s;
+}
+.tl:hover{transform:translateX(3px);box-shadow:var(--shadow);}
+.tl::before{
+  content:'';position:absolute;left:-21px;top:16px;
+  width:10px;height:10px;border-radius:50%;border:2px solid white;
+  box-shadow:0 0 0 2px currentColor;
+}
+.tl-ev  {background:var(--lorange);border-color:var(--orange);color:var(--orange);}
+.tl-ev::before{background:var(--orange);}
+.tl-food{background:var(--pink);border-color:var(--red);color:var(--red);}
+.tl-food::before{background:var(--red);}
+.tl-hotel{background:var(--lblue);border-color:var(--blue);color:var(--blue);}
+.tl-hotel::before{background:var(--blue);}
+.tl-place{background:var(--lgold);border-color:var(--gold);color:var(--gold);}
+.tl-place::before{background:var(--gold);}
+.tl-drive{background:var(--gray);border-color:var(--dgray);color:var(--dgray);}
+.tl-drive::before{background:var(--dgray);}
+.tl-end  {background:var(--lgreen);border-color:var(--green);color:var(--green);}
+.tl-end::before{background:var(--green);}
+.tl-time{font-weight:700;font-size:.8em;margin-bottom:2px;}
+.tl-title{font-weight:600;font-size:.95em;color:#2C3E50;margin-bottom:3px;}
+.tl-note{font-size:.82em;color:var(--dgray);}
+.tl-cost{font-size:.82em;font-weight:700;color:var(--red);margin-top:3px;}
 
-  /* PLACE CARDS */
-  .place-card {
-    background: white; border-radius: 14px; overflow: hidden;
-    box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s;
-    cursor: default;
-  }
-  .place-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.15); }
-  .place-img {
-    height: 180px; display: flex; align-items: center; justify-content: center;
-    font-size: 4em; position: relative; overflow: hidden;
-  }
-  .place-img img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
-  .place-img .emoji-bg {
-    width: 100%; height: 100%; display: flex; align-items: center;
-    justify-content: center; font-size: 4em; position: absolute; inset: 0;
-  }
-  .place-badge {
-    position: absolute; top: 10px; right: 10px;
-    background: rgba(0,0,0,0.6); color: white;
-    border-radius: 20px; padding: 4px 12px; font-size: 0.75em; font-weight: 700;
-  }
-  .must-badge { background: var(--red) !important; }
-  .place-info { padding: 14px 16px; }
-  .place-name { font-weight: 700; font-size: 1em; margin-bottom: 6px; }
-  .place-desc { font-size: 0.82em; color: var(--darkgray); line-height: 1.5; margin-bottom: 8px; }
-  .place-meta { display: flex; gap: 8px; flex-wrap: wrap; }
-  .tag {
-    font-size: 0.75em; padding: 3px 10px; border-radius: 20px;
-    font-weight: 600; background: var(--gray); color: var(--darkgray);
-  }
-  .tag-time { background: var(--lblue); color: var(--blue); }
-  .tag-free { background: var(--lgreen); color: var(--green); }
-  .tag-must { background: #FDEDEC; color: var(--red); }
+/* ─── 2-col grid ─── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media(max-width:700px){
+  .grid2,.grid3{grid-template-columns:1fr;}
+  .hero h1{font-size:1.9em;}
+  .sticky-nav a{padding:6px 10px;font-size:.78em;}
+}
 
-  /* BUDGET */
-  .budget-table { width: 100%; border-collapse: collapse; }
-  .budget-table th {
-    background: var(--blue); color: white; padding: 12px 16px;
-    text-align: left; font-size: 0.9em;
-  }
-  .budget-table td { padding: 10px 16px; font-size: 0.9em; border-bottom: 1px solid #eee; }
-  .budget-table tr:nth-child(even) td { background: var(--gray); }
-  .budget-table tr:last-child td { background: var(--blue); color: white; font-weight: 700; }
-  .amt { font-weight: 700; color: var(--blue); }
-  .total-amt { color: var(--gold) !important; font-size: 1.1em; }
+/* ─── PLACE CARDS ─── */
+.place-card{
+  background:white;border-radius:14px;overflow:hidden;
+  box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;
+}
+.place-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.13);}
+.place-img{
+  height:160px;display:flex;align-items:center;justify-content:center;
+  font-size:3.5em;position:relative;overflow:hidden;
+}
+.place-img .emoji-bg{
+  position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:3.5em;
+}
+.p-badge{
+  position:absolute;top:8px;right:8px;
+  background:rgba(0,0,0,.6);color:white;
+  border-radius:20px;padding:3px 10px;font-size:.72em;font-weight:700;
+}
+.p-must{background:var(--red)!important;}
+.place-info{padding:12px 14px;}
+.place-name{font-weight:700;font-size:.95em;margin-bottom:5px;}
+.place-desc{font-size:.8em;color:var(--dgray);line-height:1.5;margin-bottom:8px;}
+.tags{display:flex;gap:6px;flex-wrap:wrap;}
+.tag{font-size:.72em;padding:2px 9px;border-radius:20px;font-weight:600;background:var(--gray);color:var(--dgray);}
+.tag-t{background:var(--lblue);color:var(--blue);}
+.tag-m{background:var(--pink);color:var(--red);}
+.tag-f{background:var(--lgreen);color:var(--green);}
 
-  /* EV */
-  .ev-route { position: relative; padding: 20px 0; }
-  .ev-stop {
-    display: flex; align-items: flex-start; gap: 16px;
-    padding: 14px 0; border-bottom: 1px dashed #ddd;
-  }
-  .ev-stop:last-child { border-bottom: none; }
-  .ev-dot {
-    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.3em; font-weight: 700;
-  }
-  .ev-dot.charge { background: var(--lorange); color: var(--orange); }
-  .ev-dot.start { background: var(--lgreen); color: var(--green); }
-  .ev-dot.end { background: var(--lgreen); color: var(--green); }
-  .ev-dot.hotel { background: var(--lblue); color: var(--blue); }
-  .ev-info { flex: 1; }
-  .ev-name { font-weight: 700; margin-bottom: 4px; }
-  .ev-detail { font-size: 0.85em; color: var(--darkgray); }
-  .ev-bar { width: 100%; height: 8px; background: #eee; border-radius: 4px; margin: 6px 0; overflow: hidden; }
-  .ev-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
-  .ev-pct { font-size: 0.8em; font-weight: 700; }
+/* ─── EV ROUTE ─── */
+.ev-stop{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px dashed #ddd;}
+.ev-stop:last-child{border-bottom:none;}
+.ev-dot{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.2em;}
+.ev-c{background:var(--lorange);color:var(--orange);}
+.ev-s{background:var(--lgreen);color:var(--green);}
+.ev-h{background:var(--lblue);color:var(--blue);}
+.ev-info .ev-name{font-weight:700;margin-bottom:3px;font-size:.95em;}
+.ev-info .ev-detail{font-size:.82em;color:var(--dgray);margin-bottom:6px;}
+.ev-bar-wrap{margin-bottom:3px;}
+.ev-bar{width:100%;height:8px;background:#eee;border-radius:4px;overflow:hidden;}
+.ev-fill{height:100%;border-radius:4px;transition:width .8s ease;}
+.ev-pct{font-size:.78em;font-weight:700;}
 
-  /* TIPS */
-  .tip-box {
-    background: var(--lgold); border-left: 4px solid var(--gold);
-    border-radius: 0 12px 12px 0; padding: 16px 20px; margin-bottom: 12px;
-  }
-  .tip-box.warn { background: #FDEDEC; border-color: var(--red); }
-  .tip-box.info { background: var(--lblue); border-color: var(--blue); }
-  .tip-title { font-weight: 700; margin-bottom: 6px; font-size: 0.95em; }
-  .tip-text { font-size: 0.88em; color: var(--darkgray); line-height: 1.6; }
+/* ─── TIP BOX ─── */
+.tip{padding:14px 18px;border-radius:0 12px 12px 0;margin-bottom:12px;border-left:4px solid var(--gold);background:var(--lgold);}
+.tip.warn{background:var(--pink);border-color:var(--red);}
+.tip.info{background:var(--lblue);border-color:var(--blue);}
+.tip-title{font-weight:700;margin-bottom:5px;font-size:.9em;}
+.tip-text{font-size:.83em;color:var(--dgray);line-height:1.65;}
 
-  /* SUMMARY BAR */
-  .summary-bar {
-    display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px;
-  }
-  .sum-item {
-    flex: 1; min-width: 140px; background: white; border-radius: 14px;
-    padding: 16px 20px; box-shadow: var(--shadow); text-align: center;
-    border-top: 4px solid var(--blue);
-  }
-  .sum-num { font-size: 1.8em; font-weight: 800; color: var(--blue); }
-  .sum-label { font-size: 0.8em; color: var(--darkgray); margin-top: 4px; }
+/* ─── PROG BAR ─── */
+.prog-wrap{margin-bottom:14px;}
+.prog-label{display:flex;justify-content:space-between;font-size:.83em;margin-bottom:4px;}
+.prog-bar{height:9px;background:#eee;border-radius:5px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:5px;transition:width 1s ease;}
 
-  /* PROGRESS */
-  .prog-label { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.85em; }
-  .prog-bar { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin-bottom: 12px; }
-  .prog-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
+/* ─── BUDGET INTERACTIVE ─── */
+.budget-wrap{overflow-x:auto;}
+.budget-tbl{width:100%;border-collapse:collapse;min-width:600px;}
+.budget-tbl th{background:var(--blue);color:white;padding:11px 14px;text-align:left;font-size:.88em;}
+.budget-tbl td{padding:9px 14px;font-size:.88em;border-bottom:1px solid #eee;vertical-align:middle;}
+.budget-tbl tr:nth-child(even) td{background:var(--gray);}
+.budget-tbl tr:hover td{background:var(--lblue);}
+.total-row td{background:var(--blue)!important;color:white!important;font-weight:700;}
+.amt-col{font-weight:700;color:var(--blue);text-align:center;}
+.per-col{font-weight:600;text-align:center;color:#333;}
+.del-btn{
+  background:none;border:none;cursor:pointer;color:#ccc;font-size:1.1em;
+  padding:2px 6px;border-radius:4px;transition:color .2s,background .2s;
+}
+.del-btn:hover{color:var(--red);background:var(--pink);}
 
-  .day-header {
-    background: linear-gradient(90deg, var(--blue), #2E86C1);
-    color: white; padding: 12px 24px; font-size: 1.1em; font-weight: 700;
-    border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;
-  }
+.budget-controls{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  margin-bottom:16px;
+}
+.add-row-form{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  background:var(--gray);border-radius:10px;padding:10px 14px;width:100%;
+  margin-bottom:16px;
+}
+.add-row-form input{
+  border:1px solid #ccc;border-radius:6px;padding:7px 10px;
+  font-size:.86em;font-family:inherit;
+}
+.add-row-form input[name="label"]{flex:2;min-width:160px;}
+.add-row-form input[name="total"]{width:100px;}
+.add-row-form input[name="note"]{flex:1;min-width:120px;}
+.btn{
+  padding:8px 16px;border:none;border-radius:8px;cursor:pointer;
+  font-size:.85em;font-weight:700;font-family:inherit;transition:all .2s;
+}
+.btn-add{background:var(--green);color:white;}
+.btn-add:hover{background:#1e8449;}
+.btn-reset{background:var(--gray);color:var(--dgray);border:1px solid #ccc;}
+.btn-reset:hover{background:#ddd;}
+
+.budget-totals{
+  display:flex;gap:16px;flex-wrap:wrap;
+  background:var(--blue);border-radius:12px;padding:16px 20px;margin-top:16px;color:white;
+}
+.btotal-item{flex:1;min-width:120px;text-align:center;}
+.btotal-num{font-size:1.6em;font-weight:800;}
+.btotal-label{font-size:.78em;opacity:.8;margin-top:2px;}
+.btotal-status{font-size:.82em;margin-top:6px;font-weight:700;}
+.status-ok{color:#58D68D;}
+.status-over{color:#F1948A;}
+
+/* ─── INLINE EDITABLE ─── */
+.editable-cell{
+  border:none;background:transparent;font-family:inherit;
+  font-size:.88em;text-align:center;font-weight:700;
+  color:var(--blue);width:80px;cursor:pointer;
+  border-bottom:1px dashed var(--sky);
+  transition:background .2s;
+  padding:2px 4px;border-radius:4px;
+}
+.editable-cell:focus{
+  outline:none;background:var(--lblue);border-bottom:2px solid var(--blue);
+}
+
+/* ─── PERSONS SLIDER ─── */
+.slider-wrap{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.slider-wrap label{font-weight:700;font-size:.9em;white-space:nowrap;}
+.slider-wrap input[type=range]{flex:1;accent-color:var(--blue);}
+.slider-val{
+  background:var(--blue);color:white;border-radius:8px;
+  padding:4px 12px;font-weight:700;font-size:.88em;min-width:60px;text-align:center;
+}
+
+/* ─── SCROLL-TO-TOP ─── */
+#topbtn{
+  position:fixed;bottom:28px;right:24px;z-index:999;
+  background:var(--blue);color:white;border:none;
+  width:44px;height:44px;border-radius:50%;cursor:pointer;
+  font-size:1.1em;box-shadow:0 4px 16px rgba(0,0,0,.25);
+  display:none;transition:background .2s;
+}
+#topbtn:hover{background:#154360;}
 </style>
 </head>
 <body>
 
-<!-- HERO -->
-<div class="hero">
-  <h1>🗺️ สุโขทัย–ศรีสัชนาลัย</h1>
-  <h2>โปรแกรมท่องเที่ยว 2 วัน 1 คืน | 20–21 พฤษภาคม 2568</h2>
-  <div class="hero-meta">
-    <span class="hero-badge">👥 4 ท่าน</span>
-    <span class="hero-badge">⚡ EV Trip</span>
-    <span class="hero-badge">💰 ~2,658฿/คน</span>
-    <span class="hero-badge">🏛️ ประวัติศาสตร์ + ชิลล์</span>
-    <span class="hero-badge">🏨 Sukhothai Heritage</span>
-  </div>
-</div>
-
-<!-- NAV -->
-<nav class="nav">
-  <button class="active" onclick="showSection('overview')">📋 ภาพรวม</button>
-  <button onclick="showSection('day1')">📅 วันที่ 1</button>
-  <button onclick="showSection('day2')">📅 วันที่ 2</button>
-  <button onclick="showSection('sisatch')">🏛️ ศรีสัชนาลัย</button>
-  <button onclick="showSection('budget')">💰 งบประมาณ</button>
-  <button onclick="showSection('ev')">⚡ EV Plan</button>
-  <button onclick="showSection('tips')">💡 เคล็ดลับ</button>
+<!-- STICKY NAV -->
+<nav class="sticky-nav">
+  <a href="#hero">🏠 หน้าแรก</a>
+  <a href="#overview">📋 ภาพรวม</a>
+  <a href="#day1">📅 วัน 1</a>
+  <a href="#day2">📅 วัน 2</a>
+  <a href="#sisatch">🏛️ ศรีสัชนาลัย</a>
+  <a href="#budget">💰 งบประมาณ</a>
+  <a href="#ev">⚡ EV Plan</a>
+  <a href="#tips">💡 เคล็ดลับ</a>
 </nav>
 
-<!-- OVERVIEW -->
-<div id="overview" class="section active">
-  <div class="summary-bar">
-    <div class="sum-item" style="border-top-color: var(--blue);">
-      <div class="sum-num">2</div><div class="sum-label">วัน 1 คืน</div>
-    </div>
-    <div class="sum-item" style="border-top-color: var(--green);">
-      <div class="sum-num">~900</div><div class="sum-label">กม. รวมทั้งเส้นทาง</div>
-    </div>
-    <div class="sum-item" style="border-top-color: var(--orange);">
-      <div class="sum-num">4</div><div class="sum-label">จุดชาร์จ EV</div>
-    </div>
-    <div class="sum-item" style="border-top-color: var(--gold);">
-      <div class="sum-num">2,658฿</div><div class="sum-label">ต่อคน (รวมทุกอย่าง)</div>
-    </div>
+<!-- HERO -->
+<div class="hero" id="hero">
+  <h1>🗺️ สุโขทัย–ศรีสัชนาลัย</h1>
+  <h2>โปรแกรมท่องเที่ยว 2 วัน 1 คืน &nbsp;|&nbsp; 20–21 พฤษภาคม 2568</h2>
+  <div class="hero-badges">
+    <span class="badge">👥 4 ท่าน</span>
+    <span class="badge">⚡ EV Trip</span>
+    <span class="badge">💰 ~2,658฿/คน</span>
+    <span class="badge">🏛️ ประวัติศาสตร์ + ชิลล์</span>
+    <span class="badge">🏨 Sukhothai Heritage</span>
+  </div>
+</div>
+
+<!-- ══════════ OVERVIEW ══════════ -->
+<div class="block" id="overview">
+  <div class="section-title">📋 ภาพรวมทริป</div>
+  <div class="section-sub">สรุปตัวเลขสำคัญและ timeline ย่อทั้งสองวัน</div>
+  <div class="divider"></div>
+
+  <div class="summary-strip">
+    <div class="sum-item"><div class="sum-num">2</div><div class="sum-label">วัน 1 คืน</div></div>
+    <div class="sum-item"><div class="sum-num">~900</div><div class="sum-label">กม. รวมเส้นทาง</div></div>
+    <div class="sum-item"><div class="sum-num">4</div><div class="sum-label">จุดชาร์จ EV</div></div>
+    <div class="sum-item"><div class="sum-num" id="ov-total">2,658฿</div><div class="sum-label">ต่อคน (รวมทุกอย่าง)</div></div>
+    <div class="sum-item"><div class="sum-num">7</div><div class="sum-label">วัด/จุดไฮไลต์</div></div>
   </div>
 
-  <div class="grid-2">
+  <div class="grid2">
     <div class="card">
-      <div class="card-header" style="background: var(--lblue); color: var(--blue);">
-        📅 วันที่ 1 — อังคาร 20 พ.ค.
-      </div>
-      <div class="card-body" style="padding-top: 16px;">
-        <div class="tl-drive tl-item"><div class="tl-time">05:00–05:10</div><div class="tl-title">🚗 ออกเดินทางจาก กทม.</div><div class="tl-note">เจอกัน Terminal 21 พระราม 3</div></div>
-        <div class="tl-ev tl-item"><div class="tl-time">07:40</div><div class="tl-title">⚡ ชาร์จ PTT นครสวรรค์</div><div class="tl-note">60 นาที | กินเช้าที่ปั๊ม</div><div class="tl-cost">~155฿/คน</div></div>
-        <div class="tl-ev tl-item"><div class="tl-time">10:40</div><div class="tl-title">⚡ ชาร์จ PTT สุโขทัย</div><div class="tl-note">Top-up 30 นาที</div><div class="tl-cost">~40฿/คน</div></div>
-        <div class="tl-place tl-item"><div class="tl-time">13:00–15:30</div><div class="tl-title">🏛️ อุทยานฯ ศรีสัชนาลัย</div><div class="tl-note">ขับรถวนชม วัดช้างล้อม วัดเจดีย์เจ็ดแถว</div><div class="tl-cost">150฿/คน</div></div>
-        <div class="tl-place tl-item"><div class="tl-time">15:30–16:00</div><div class="tl-title">🥈 ร้านเครื่องเงิน เกาะน้อย</div><div class="tl-note">ต่อรองราคาได้</div></div>
-        <div class="tl-hotel tl-item"><div class="tl-time">16:50</div><div class="tl-title">🏨 Check-in Sukhothai Heritage</div><div class="tl-note">Breakfast ฟรี | สระว่ายน้ำ</div><div class="tl-cost">1,000฿/คน</div></div>
-        <div class="tl-food tl-item"><div class="tl-time">17:30</div><div class="tl-title">🍜 สิบสองหน่วยตัด</div><div class="tl-note">ก๋วยเตี๋ยวสุโขทัยแท้</div><div class="tl-cost">250฿/คน</div></div>
+      <div class="card-head" style="background:var(--blue);">📅 วันที่ 1 — อังคาร 20 พ.ค.</div>
+      <div class="card-body" style="padding-top:14px;">
+        <div class="timeline">
+          <div class="tl tl-drive"><div class="tl-time">05:00</div><div class="tl-title">🚗 ออกจาก Terminal 21 พระราม 3</div></div>
+          <div class="tl tl-ev"><div class="tl-time">07:40</div><div class="tl-title">⚡ ชาร์จ PTT นครสวรรค์</div><div class="tl-cost">~155฿/คน</div></div>
+          <div class="tl tl-ev"><div class="tl-time">10:40</div><div class="tl-title">⚡ ชาร์จ PTT สุโขทัย</div><div class="tl-cost">~40฿/คน</div></div>
+          <div class="tl tl-food"><div class="tl-time">12:00</div><div class="tl-title">🍽️ อาหารกลางวัน ศรีสัชฯ</div><div class="tl-cost">70฿/คน</div></div>
+          <div class="tl tl-place"><div class="tl-time">13:00–15:30</div><div class="tl-title">🏛️ อุทยานฯ ศรีสัชนาลัย</div><div class="tl-cost">150฿/คน</div></div>
+          <div class="tl tl-place"><div class="tl-time">15:30</div><div class="tl-title">🥈 ร้านเครื่องเงิน เกาะน้อย</div></div>
+          <div class="tl tl-hotel"><div class="tl-time">16:50</div><div class="tl-title">🏨 Check-in Sukhothai Heritage</div><div class="tl-cost">1,000฿/คน</div></div>
+          <div class="tl tl-food"><div class="tl-time">17:30</div><div class="tl-title">🍜 สิบสองหน่วยตัด</div><div class="tl-cost">250฿/คน</div></div>
+        </div>
       </div>
     </div>
     <div class="card">
-      <div class="card-header" style="background: var(--lgreen); color: var(--green);">
-        📅 วันที่ 2 — พุธ 21 พ.ค.
-      </div>
-      <div class="card-body" style="padding-top: 16px;">
-        <div class="tl-place tl-item"><div class="tl-time">06:30–08:00</div><div class="tl-title">🚲 ขี่จักรยานอุทยานฯ สุโขทัย</div><div class="tl-note">วัดมหาธาตุ วัดศรีชุม วัดสระศรี</div><div class="tl-cost">~40฿/คน</div></div>
-        <div class="tl-food tl-item"><div class="tl-time">08:00–11:00</div><div class="tl-title">🍳 Breakfast + ว่ายน้ำ + พักผ่อน</div><div class="tl-note">Breakfast ฟรี รวม package</div><div class="tl-cost">ฟรี!</div></div>
-        <div class="tl-food tl-item"><div class="tl-time">12:00</div><div class="tl-title">🍜 ก๋วยเตี๋ยวห้อยขา พิษณุโลก</div><div class="tl-note">ร้านดังริมน้ำน่าน</div><div class="tl-cost">70฿/คน</div></div>
-        <div class="tl-place tl-item"><div class="tl-time">13:00</div><div class="tl-title">⛪ วัดพระพุทธชินราช</div><div class="tl-note">พระพุทธรูปงามสุดในไทย</div><div class="tl-cost">ฟรี!</div></div>
-        <div class="tl-ev tl-item"><div class="tl-time">14:00</div><div class="tl-title">⚡ ชาร์จเต็ม PTT พิษณุโลก</div><div class="tl-note">60 นาที ก่อนกลับ กทม.</div><div class="tl-cost">~90฿/คน</div></div>
-        <div class="tl-ev tl-item"><div class="tl-time">17:30</div><div class="tl-title">⚡ ชาร์จกลางทาง นครสวรรค์</div><div class="tl-note">30-45 นาที</div><div class="tl-cost">~45฿/คน</div></div>
-        <div class="tl-end tl-item"><div class="tl-time">20:30</div><div class="tl-title">✅ ถึง กทม. ปลอดภัย!</div></div>
+      <div class="card-head" style="background:var(--green);">📅 วันที่ 2 — พุธ 21 พ.ค.</div>
+      <div class="card-body" style="padding-top:14px;">
+        <div class="timeline">
+          <div class="tl tl-place"><div class="tl-time">06:30–08:00</div><div class="tl-title">🚲 ขี่จักรยาน อุทยานฯ สุโขทัย</div><div class="tl-cost">~40฿/คน</div></div>
+          <div class="tl tl-food"><div class="tl-time">08:00–11:00</div><div class="tl-title">🍳 Breakfast (ฟรี) + ว่ายน้ำ</div><div class="tl-cost">ฟรี!</div></div>
+          <div class="tl tl-food"><div class="tl-time">12:00</div><div class="tl-title">🍜 ก๋วยเตี๋ยวห้อยขา พิษณุโลก</div><div class="tl-cost">70฿/คน</div></div>
+          <div class="tl tl-place"><div class="tl-time">13:00</div><div class="tl-title">⛪ วัดพระพุทธชินราช</div><div class="tl-cost">ฟรี!</div></div>
+          <div class="tl tl-ev"><div class="tl-time">14:00</div><div class="tl-title">⚡ ชาร์จเต็ม PTT พิษณุโลก</div><div class="tl-cost">~90฿/คน</div></div>
+          <div class="tl tl-ev"><div class="tl-time">17:30</div><div class="tl-title">⚡ ชาร์จ นครสวรรค์/ชัยนาท</div><div class="tl-cost">~45฿/คน</div></div>
+          <div class="tl tl-end"><div class="tl-time">20:30</div><div class="tl-title">✅ ถึง กทม. ปลอดภัย!</div></div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- DAY 1 -->
-<div id="day1" class="section">
+<!-- ══════════ DAY 1 ══════════ -->
+<div class="block" id="day1">
+  <div class="section-title">📅 วันที่ 1 — อังคาร 20 พฤษภาคม 2568</div>
+  <div class="section-sub">กทม. → นครสวรรค์ (ชาร์จ) → สุโขทัย (ชาร์จ) → ศรีสัชนาลัย → เครื่องเงิน → สุโขทัย</div>
+  <div class="divider"></div>
   <div class="card">
-    <div class="day-header">📅 วันที่ 1 — อังคาร 20 พฤษภาคม 2568 | กทม. → นครสวรรค์ → สุโขทัย → ศรีสัชนาลัย</div>
-    <div class="card-body" style="padding-top: 20px;">
+    <div class="card-body">
       <div class="timeline">
-        <div class="tl-drive tl-item"><div class="tl-time">05:00</div><div class="tl-title">🚗 เจอกัน Terminal 21 พระราม 3</div><div class="tl-note">รวมกลุ่ม ออกเดินทาง | เส้นทาง: ทางด่วน → ทล.1 → ทล.32</div></div>
-        <div class="tl-ev tl-item"><div class="tl-time">07:40 — 08:40</div><div class="tl-title">⚡ PTT จันเสนออยล์ EV Hub นครสวรรค์</div><div class="tl-note">DC Fast Charge 50-60kW | ชาร์จ 60 นาที | กินข้าวเช้าที่ปั๊ม ≈ 70฿</div><div class="tl-cost">ค่าไฟ ~85฿ + อาหาร ~70฿ = 155฿/คน</div></div>
-        <div class="tl-drive tl-item"><div class="tl-time">08:40 — 10:40</div><div class="tl-title">🚗 ขับมุ่งหน้าสุโขทัย</div><div class="tl-note">~170 กม. ทล.117 | ผ่านพิษณุโลก</div></div>
-        <div class="tl-ev tl-item"><div class="tl-time">10:40 — 11:10</div><div class="tl-title">⚡ PTT นครปิโตรเลียม สุโขทัย</div><div class="tl-note">Top-up ชาร์จ 30 นาที เพื่อเข้าศรีสัชฯ</div><div class="tl-cost">~40฿/คน</div></div>
-        <div class="tl-drive tl-item"><div class="tl-time">11:10 — 12:00</div><div class="tl-title">🚗 สุโขทัย → ศรีสัชนาลัย</div><div class="tl-note">~55 กม. / ~50 นาที</div></div>
-        <div class="tl-food tl-item"><div class="tl-time">12:00 — 13:00</div><div class="tl-title">🍽️ อาหารกลางวัน ตลาดศรีสัชนาลัย</div><div class="tl-note">ข้าวมันไก่ / ก๋วยเตี๋ยว / ข้าวราดแกง ท้องถิ่น</div><div class="tl-cost">~70฿/คน</div></div>
-        <div class="tl-place tl-item"><div class="tl-time">13:00 — 15:30</div><div class="tl-title">🏛️ อุทยานประวัติศาสตร์ศรีสัชนาลัย</div><div class="tl-note">ขับรถวนชม: วัดช้างล้อม → วัดเจดีย์เจ็ดแถว → วัดนางพญา | มรดกโลก UNESCO</div><div class="tl-cost">ค่าเข้า 150฿/คน</div></div>
-        <div class="tl-place tl-item"><div class="tl-time">15:30 — 16:00</div><div class="tl-title">🥈 ร้านเครื่องเงิน ย่านเกาะน้อย</div><div class="tl-note">เครื่องเงินลายสุโขทัยดั้งเดิม ฝีมือชาวบ้าน ราคาต่อรองได้ | ออกก่อน 16:00</div><div class="tl-cost">ตามใจ</div></div>
-        <div class="tl-drive tl-item"><div class="tl-time">16:00 — 16:50</div><div class="tl-title">🚗 ศรีสัชฯ → สุโขทัย</div><div class="tl-note">~55 กม. / ~50 นาที</div></div>
-        <div class="tl-hotel tl-item"><div class="tl-time">16:50</div><div class="tl-title">🏨 Check-in Sukhothai Heritage Resort</div><div class="tl-note">แชร์ 4 คน | Breakfast รวม | สระว่ายน้ำ | บรรยากาศดีมาก</div><div class="tl-cost">1,000฿/คน/คืน</div></div>
-        <div class="tl-food tl-item"><div class="tl-time">17:30 — 19:30</div><div class="tl-title">🍜 ร้านสิบสองหน่วยตัด</div><div class="tl-note">ก๋วยเตี๋ยวสุโขทัยแท้ดั้งเดิม | ต้นเคยไปมาแล้ว | 1,000฿/4 คน</div><div class="tl-cost">250฿/คน</div></div>
-        <div class="tl-drive tl-item"><div class="tl-time">19:30</div><div class="tl-title">🌙 กลับที่พัก พักผ่อน</div><div class="tl-note">เตรียมตัวสำหรับเช้าพรุ่งนี้ ขี่จักรยานอุทยาน</div></div>
+        <div class="tl tl-drive"><div class="tl-time">05:00</div><div class="tl-title">🚗 เจอกัน Terminal 21 พระราม 3</div><div class="tl-note">รวมกลุ่มทั้ง 4 คน | ออกเส้น: ทางด่วน → ทล.1 → ทล.32</div></div>
+        <div class="tl tl-ev"><div class="tl-time">07:40 — 08:40</div><div class="tl-title">⚡ PTT จันเสนออยล์ EV Hub นครสวรรค์</div><div class="tl-note">DC Fast Charge 50-60 kW | ชาร์จ 60 นาที | กินข้าวเช้าที่ปั๊ม ~70฿</div><div class="tl-cost">ค่าไฟ ~85฿ + อาหาร ~70฿ = 155฿/คน</div></div>
+        <div class="tl tl-drive"><div class="tl-time">08:40 — 10:40</div><div class="tl-title">🚗 มุ่งหน้าสุโขทัย</div><div class="tl-note">~170 กม. | ทล.117 ผ่านพิษณุโลก</div></div>
+        <div class="tl tl-ev"><div class="tl-time">10:40 — 11:10</div><div class="tl-title">⚡ PTT นครปิโตรเลียม สุโขทัย</div><div class="tl-note">Top-up 30 นาที ก่อนเข้าศรีสัชฯ</div><div class="tl-cost">~40฿/คน</div></div>
+        <div class="tl tl-drive"><div class="tl-time">11:10 — 12:00</div><div class="tl-title">🚗 สุโขทัย → ศรีสัชนาลัย</div><div class="tl-note">~55 กม. / ~50 นาที</div></div>
+        <div class="tl tl-food"><div class="tl-time">12:00 — 13:00</div><div class="tl-title">🍽️ อาหารกลางวัน ตลาดศรีสัชนาลัย</div><div class="tl-note">ข้าวมันไก่ / ก๋วยเตี๋ยว / ข้าวราดแกง ท้องถิ่น</div><div class="tl-cost">~70฿/คน</div></div>
+        <div class="tl tl-place"><div class="tl-time">13:00 — 15:30</div><div class="tl-title">🏛️ อุทยานประวัติศาสตร์ศรีสัชนาลัย</div><div class="tl-note">ขับรถวน: วัดช้างล้อม → วัดเจดีย์เจ็ดแถว → วัดนางพญา | มรดกโลก UNESCO</div><div class="tl-cost">ค่าเข้า 150฿/คน</div></div>
+        <div class="tl tl-place"><div class="tl-time">15:30 — 16:00</div><div class="tl-title">🥈 ร้านเครื่องเงิน ย่านเกาะน้อย</div><div class="tl-note">เครื่องเงินดั้งเดิม ลายสุโขทัย ต่อรองราคาได้</div><div class="tl-cost">ตามใจ</div></div>
+        <div class="tl tl-drive"><div class="tl-time">16:00 — 16:50</div><div class="tl-title">🚗 ศรีสัชฯ → สุโขทัย</div><div class="tl-note">~55 กม. / ~50 นาที</div></div>
+        <div class="tl tl-hotel"><div class="tl-time">16:50</div><div class="tl-title">🏨 Check-in Sukhothai Heritage Resort</div><div class="tl-note">แชร์ 4 คน | Breakfast รวม | สระว่ายน้ำ</div><div class="tl-cost">1,000฿/คน/คืน</div></div>
+        <div class="tl tl-food"><div class="tl-time">17:30 — 19:30</div><div class="tl-title">🍜 ร้านสิบสองหน่วยตัด</div><div class="tl-note">ก๋วยเตี๋ยวสุโขทัยแท้ดั้งเดิม | ต้นเคยไปมาแล้ว | 1,000฿/4 คน</div><div class="tl-cost">250฿/คน</div></div>
+        <div class="tl tl-drive"><div class="tl-time">19:30</div><div class="tl-title">🌙 กลับที่พัก พักผ่อน</div><div class="tl-note">เตรียมพร้อมสำหรับเช้าพรุ่งนี้</div></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- DAY 2 -->
-<div id="day2" class="section">
+<!-- ══════════ DAY 2 ══════════ -->
+<div class="block" id="day2">
+  <div class="section-title">📅 วันที่ 2 — พุธ 21 พฤษภาคม 2568</div>
+  <div class="section-sub">สุโขทัย (ขี่จักรยาน + พักผ่อน) → พิษณุโลก (ก๋วยเตี๋ยว + ไหว้พระ) → กทม.</div>
+  <div class="divider"></div>
   <div class="card">
-    <div class="day-header" style="background: linear-gradient(90deg, var(--green), #1A8A72);">📅 วันที่ 2 — พุธ 21 พฤษภาคม 2568 | สุโขทัย → พิษณุโลก → กทม.</div>
-    <div class="card-body" style="padding-top: 20px;">
+    <div class="card-body">
       <div class="timeline">
-        <div class="tl-place tl-item"><div class="tl-time">06:30 — 08:00</div><div class="tl-title">🚲 เช่าจักรยาน เที่ยวอุทยานประวัติศาสตร์สุโขทัย</div><div class="tl-note">เช้ามืดอากาศเย็น สบาย | วัดมหาธาตุ → วัดศรีชุม → วัดสระศรี → วัดพระพาย</div><div class="tl-cost">~40฿/คัน/คน</div></div>
-        <div class="tl-food tl-item"><div class="tl-time">08:00 — 11:00</div><div class="tl-title">🍳 Breakfast + ว่ายน้ำ + พักผ่อน</div><div class="tl-note">Breakfast ฟรี รวมใน package | ว่ายน้ำสระโรงแรม | ชิลล์ก่อน Check-out</div><div class="tl-cost">ฟรี (รวม package)</div></div>
-        <div class="tl-drive tl-item"><div class="tl-time">11:00</div><div class="tl-title">🚗 Check-out → มุ่งหน้าพิษณุโลก</div><div class="tl-note">~65 กม. / ~1 ชั่วโมง</div></div>
-        <div class="tl-food tl-item"><div class="tl-time">12:00</div><div class="tl-title">🍜 ก๋วยเตี๋ยวห้อยขา พิษณุโลก</div><div class="tl-note">ร้านดังระดับตำนาน ริมน้ำน่าน | เส้นใหญ่ ลูกชิ้นหมู น้ำซุปข้น</div><div class="tl-cost">70฿/คน</div></div>
-        <div class="tl-place tl-item"><div class="tl-time">13:00</div><div class="tl-title">⛪ วัดพระศรีรัตนมหาธาตุ — พระพุทธชินราช</div><div class="tl-note">พระพุทธรูปงามที่สุดในประเทศไทย | เข้าฟรี | สักการะก่อนกลับบ้าน</div><div class="tl-cost">ฟรี</div></div>
-        <div class="tl-ev tl-item"><div class="tl-time">14:00 — 15:00</div><div class="tl-title">⚡ ชาร์จเต็ม PTT พิษณุโลก</div><div class="tl-note">DC Fast Charge 60 นาที | ชาร์จเต็มก่อนกลับ กทม. ~380 กม.</div><div class="tl-cost">~90฿/คน</div></div>
-        <div class="tl-drive tl-item"><div class="tl-time">15:00 — 17:30</div><div class="tl-title">🚗 พิษณุโลก → กทม. (ขาแรก)</div><div class="tl-note">~190 กม. ทล.117 → ทล.32</div></div>
-        <div class="tl-ev tl-item"><div class="tl-time">17:30 — 18:15</div><div class="tl-title">⚡ ชาร์จกลางทาง นครสวรรค์ / ชัยนาท</div><div class="tl-note">DC Fast Charge 30-45 นาที | พักห้องน้ำ กินขนม</div><div class="tl-cost">~45฿/คน</div></div>
-        <div class="tl-drive tl-item"><div class="tl-time">18:15 — 20:30</div><div class="tl-title">🚗 → กทม. (ขาสอง)</div><div class="tl-note">~190 กม. เข้าทางด่วน</div></div>
-        <div class="tl-end tl-item"><div class="tl-time">~20:30</div><div class="tl-title">✅ ถึง กทม. ปลอดภัย!</div><div class="tl-note">จบทริปสุโขทัย มรดกโลก!</div></div>
+        <div class="tl tl-place"><div class="tl-time">06:30 — 08:00</div><div class="tl-title">🚲 เช่าจักรยาน เที่ยวอุทยานฯ สุโขทัย</div><div class="tl-note">เช้ามืด อากาศเย็น | วัดมหาธาตุ → วัดศรีชุม → วัดสระศรี → วัดพระพาย</div><div class="tl-cost">~40฿/คัน/คน</div></div>
+        <div class="tl tl-food"><div class="tl-time">08:00 — 11:00</div><div class="tl-title">🍳 Breakfast + ว่ายน้ำ + พักผ่อน</div><div class="tl-note">Breakfast ฟรีรวม package | ว่ายน้ำสระโรงแรม | ชิลล์ก่อน Check-out</div><div class="tl-cost">ฟรี (รวม package)</div></div>
+        <div class="tl tl-drive"><div class="tl-time">11:00</div><div class="tl-title">🚗 Check-out → มุ่งหน้าพิษณุโลก</div><div class="tl-note">~65 กม. / ~1 ชั่วโมง</div></div>
+        <div class="tl tl-food"><div class="tl-time">12:00</div><div class="tl-title">🍜 ก๋วยเตี๋ยวห้อยขา พิษณุโลก</div><div class="tl-note">ร้านดังริมน้ำน่าน | เส้นใหญ่ ลูกชิ้นหมู เนื้อตุ๋น น้ำซุปข้น</div><div class="tl-cost">70฿/คน</div></div>
+        <div class="tl tl-place"><div class="tl-time">13:00</div><div class="tl-title">⛪ วัดพระศรีรัตนมหาธาตุ — พระพุทธชินราช</div><div class="tl-note">พระพุทธรูปงามที่สุดในไทย | สักการะก่อนกลับบ้าน</div><div class="tl-cost">ฟรี</div></div>
+        <div class="tl tl-ev"><div class="tl-time">14:00 — 15:00</div><div class="tl-title">⚡ ชาร์จเต็ม PTT พิษณุโลก</div><div class="tl-note">DC Fast Charge 60 นาที | ชาร์จเต็มก่อนกลับ กทม. 380 กม.</div><div class="tl-cost">~90฿/คน</div></div>
+        <div class="tl tl-drive"><div class="tl-time">15:00 — 17:30</div><div class="tl-title">🚗 พิษณุโลก → กทม. (ขาแรก)</div><div class="tl-note">~190 กม.</div></div>
+        <div class="tl tl-ev"><div class="tl-time">17:30 — 18:15</div><div class="tl-title">⚡ แวะชาร์จ นครสวรรค์ / ชัยนาท</div><div class="tl-note">DC Fast Charge 30-45 นาที | พักห้องน้ำ</div><div class="tl-cost">~45฿/คน</div></div>
+        <div class="tl tl-drive"><div class="tl-time">18:15 — 20:30</div><div class="tl-title">🚗 → กทม. (ขาสอง)</div><div class="tl-note">~190 กม. เข้าทางด่วน</div></div>
+        <div class="tl tl-end"><div class="tl-time">~20:30</div><div class="tl-title">✅ ถึง กทม. ปลอดภัย! 🎉</div><div class="tl-note">จบทริปสุโขทัย มรดกโลก</div></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- SI SATCHANALAI -->
-<div id="sisatch" class="section">
-  <div style="margin-bottom: 16px;">
-    <h2 style="color: var(--blue); margin-bottom: 8px;">🏛️ สถานที่ท่องเที่ยวในศรีสัชนาลัย</h2>
-    <p style="color: var(--darkgray); font-size: 0.9em;">เวลาที่มี: 13:00–16:00 (3 ชั่วโมง) | ขับรถวนได้ทั้งหมด | ค่าเข้า 150฿ รวมทุกวัด</p>
-  </div>
-  <div class="grid-3">
+<!-- ══════════ SI SATCH ══════════ -->
+<div class="block" id="sisatch">
+  <div class="section-title">🏛️ สถานที่ท่องเที่ยว ศรีสัชนาลัย</div>
+  <div class="section-sub">เวลาที่มี: 13:00–16:00 (3 ชั่วโมง) | ขับรถวนได้ทั้งหมด | ค่าเข้า 150฿ รวมทุกวัด</div>
+  <div class="divider"></div>
+  <div class="grid3">
 
     <div class="place-card">
-      <div class="place-img" style="background: linear-gradient(135deg, #8B6914, #D4AC0D);">
+      <div class="place-img" style="background:linear-gradient(135deg,#8B6914,#D4AC0D);">
         <div class="emoji-bg">🐘</div>
-        <span class="place-badge must-badge">🔥 ต้องแวะ</span>
+        <span class="p-badge p-must">🔥 ต้องแวะ</span>
       </div>
       <div class="place-info">
         <div class="place-name">⭐ วัดช้างล้อม</div>
-        <div class="place-desc">เจดีย์ฐานช้างล้อมรอบสมบูรณ์ที่สุดในประเทศไทย มีช้างปูนปั้นล้อมรอบฐาน สวยงามมาก ถ่ายรูปได้มุมดี</div>
-        <div class="place-meta">
-          <span class="tag tag-time">⏱ 15–20 นาที</span>
-          <span class="tag tag-must">🏆 ห้ามพลาด</span>
-          <span class="tag">~0.5 กม. จากทางเข้า</span>
-        </div>
+        <div class="place-desc">เจดีย์ฐานช้างล้อมรอบสมบูรณ์ที่สุดในไทย ช้างปูนปั้นล้อมรอบฐาน ถ่ายรูปได้มุมดีมาก</div>
+        <div class="tags"><span class="tag tag-t">⏱ 15–20 นาที</span><span class="tag tag-m">ห้ามพลาด</span></div>
       </div>
     </div>
 
     <div class="place-card">
-      <div class="place-img" style="background: linear-gradient(135deg, #1A5276, #2E86C1);">
+      <div class="place-img" style="background:linear-gradient(135deg,#1A5276,#2E86C1);">
         <div class="emoji-bg">🏯</div>
-        <span class="place-badge must-badge">🔥 ต้องแวะ</span>
+        <span class="p-badge p-must">🔥 ต้องแวะ</span>
       </div>
       <div class="place-info">
         <div class="place-name">⭐ วัดเจดีย์เจ็ดแถว</div>
-        <div class="place-desc">เจดีย์ลังกาเรียงกัน 7 แถว ทรงงดงามมากช่วงแดดบ่าย บรรยากาศสงบ ร่มรื่น เหมาะถ่ายรูปมาก</div>
-        <div class="place-meta">
-          <span class="tag tag-time">⏱ 15–20 นาที</span>
-          <span class="tag tag-must">🏆 ห้ามพลาด</span>
-          <span class="tag">~0.3 กม. จากทางเข้า</span>
-        </div>
+        <div class="place-desc">เจดีย์ลังกา 7 แถว ทรงงดงามมาก บรรยากาศสงบ ร่มรื่น สวยมากช่วงแดดบ่าย</div>
+        <div class="tags"><span class="tag tag-t">⏱ 15–20 นาที</span><span class="tag tag-m">ห้ามพลาด</span></div>
       </div>
     </div>
 
     <div class="place-card">
-      <div class="place-img" style="background: linear-gradient(135deg, #922B21, #E74C3C);">
+      <div class="place-img" style="background:linear-gradient(135deg,#922B21,#E74C3C);">
         <div class="emoji-bg">🎨</div>
-        <span class="place-badge" style="background: rgba(39,174,96,0.8);">👍 แนะนำ</span>
+        <span class="p-badge" style="background:rgba(39,174,96,.85);">👍 แนะนำ</span>
       </div>
       <div class="place-info">
         <div class="place-name">วัดนางพญา</div>
         <div class="place-desc">ลวดลายปูนปั้นบนผนังสวยที่สุดในสุโขทัย ลายดอกไม้พันกิ่งก้าน ฝีมือประณีตสุดยอด</div>
-        <div class="place-meta">
-          <span class="tag tag-time">⏱ 10–15 นาที</span>
-          <span class="tag">~0.4 กม. จากทางเข้า</span>
-        </div>
+        <div class="tags"><span class="tag tag-t">⏱ 10–15 นาที</span></div>
       </div>
     </div>
 
     <div class="place-card">
-      <div class="place-img" style="background: linear-gradient(135deg, #1A6B3C, #27AE60);">
+      <div class="place-img" style="background:linear-gradient(135deg,#1A6B3C,#27AE60);">
         <div class="emoji-bg">🏺</div>
-        <span class="place-badge" style="background: rgba(0,0,0,0.5);">ถ้ามีเวลา</span>
+        <span class="p-badge" style="background:rgba(0,0,0,.45);">ถ้ามีเวลา</span>
       </div>
       <div class="place-info">
         <div class="place-name">ศูนย์เตาสังคโลก</div>
-        <div class="place-desc">ดูเตาเผาเครื่องปั้นดินเผาสังคโลกของแท้โบราณ ศิลปะเฉพาะตัวของศรีสัชนาลัย ไม่มีที่ไหนเหมือน</div>
-        <div class="place-meta">
-          <span class="tag tag-time">⏱ 15 นาที</span>
-          <span class="tag">ริมอุทยาน</span>
-        </div>
+        <div class="place-desc">ดูเตาเผาเครื่องปั้นดินเผาสังคโลกของแท้โบราณ ศิลปะเฉพาะตัวของศรีสัชนาลัย</div>
+        <div class="tags"><span class="tag tag-t">⏱ 15 นาที</span></div>
       </div>
     </div>
 
     <div class="place-card">
-      <div class="place-img" style="background: linear-gradient(135deg, #717D7E, #AAB7B8);">
-        <div class="emoji-bg">🏛️</div>
-        <span class="place-badge" style="background: rgba(0,0,0,0.5);">ถ้ามีเวลา</span>
-      </div>
-      <div class="place-info">
-        <div class="place-name">วัดสวนแก้วอุทยานใหญ่</div>
-        <div class="place-desc">เจดีย์ทรงพุ่มข้าวบิณฑ์ สมัยสุโขทัย บรรยากาศเงียบสงบ ไม่ค่อยมีนักท่องเที่ยว ชอบชิลล์ชอบ</div>
-        <div class="place-meta">
-          <span class="tag tag-time">⏱ 10 นาที</span>
-          <span class="tag">~1 กม. จากทางเข้า</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="place-card">
-      <div class="place-img" style="background: linear-gradient(135deg, #6C3483, #9B59B6);">
+      <div class="place-img" style="background:linear-gradient(135deg,#6C3483,#9B59B6);">
         <div class="emoji-bg">🥈</div>
-        <span class="place-badge must-badge">🔥 ต้องแวะ</span>
+        <span class="p-badge p-must">🔥 ต้องแวะ</span>
       </div>
       <div class="place-info">
         <div class="place-name">🥈 ร้านเครื่องเงิน เกาะน้อย</div>
-        <div class="place-desc">เครื่องเงินลายสุโขทัยดั้งเดิม ฝีมือชาวบ้านแท้ ราคาต่อรองได้ ของดีราคาดีกว่าในเมืองมาก</div>
-        <div class="place-meta">
-          <span class="tag tag-time">⏱ 30–45 นาที</span>
-          <span class="tag">นอกอุทยาน ~3 กม.</span>
-          <span class="tag tag-must">ต่อรองได้</span>
-        </div>
+        <div class="place-desc">เครื่องเงินลายสุโขทัยดั้งเดิม ฝีมือชาวบ้าน ต่อรองราคาได้ ถูกกว่าในเมืองมาก</div>
+        <div class="tags"><span class="tag tag-t">⏱ 30–45 นาที</span><span class="tag tag-m">ต่อรองได้</span></div>
       </div>
     </div>
 
     <div class="place-card">
-      <div class="place-img" style="background: linear-gradient(135deg, #1A6B3C, #2E86C1);">
+      <div class="place-img" style="background:linear-gradient(135deg,#1A6B3C,#2E86C1);">
         <div class="emoji-bg">📸</div>
-        <span class="place-badge" style="background: rgba(52,73,94,0.7);">📸 ถ่ายรูป</span>
+        <span class="p-badge" style="background:rgba(52,73,94,.65);">📸 ถ่ายรูป</span>
       </div>
       <div class="place-info">
-        <div class="place-name">📸 วิวแม่น้ำยม</div>
-        <div class="place-desc">จุดชมวิวแม่น้ำยมด้านหลังอุทยาน ถ่ายรูปสวยโดยเฉพาะช่วงบ่าย แสงดี สะท้อนน้ำสวย</div>
-        <div class="place-meta">
-          <span class="tag tag-time">⏱ 10 นาที</span>
-          <span class="tag tag-free">ฟรี</span>
-          <span class="tag">ด้านหลังอุทยาน</span>
-        </div>
+        <div class="place-name">วิวแม่น้ำยม</div>
+        <div class="place-desc">จุดชมวิวริมน้ำยม ด้านหลังอุทยาน ถ่ายรูปสวยตอนบ่าย แสงดี สะท้อนน้ำสวย</div>
+        <div class="tags"><span class="tag tag-t">⏱ 10 นาที</span><span class="tag tag-f">ฟรี</span></div>
       </div>
     </div>
 
   </div>
-
-  <div class="tip-box" style="margin-top: 20px;">
+  <div class="tip" style="margin-top:8px;">
     <div class="tip-title">💡 เส้นทางแนะนำใน 3 ชั่วโมง (13:00–16:00)</div>
-    <div class="tip-text">วัดช้างล้อม (20 นาที) → วัดเจดีย์เจ็ดแถว (20 นาที) → วัดนางพญา (15 นาที) → วิวแม่น้ำยม (10 นาที) → ร้านเครื่องเงินเกาะน้อย (45 นาที) → ออกก่อน 16:00 ✅</div>
+    <div class="tip-text">วัดช้างล้อม (20 นาที) → วัดเจดีย์เจ็ดแถว (20 นาที) → วัดนางพญา (15 นาที) → วิวแม่น้ำยม (10 นาที) → ร้านเครื่องเงินเกาะน้อย (45 นาที) → ออกก่อน 16:00 ✅ เหลือเวลา buffer ~10 นาที</div>
   </div>
 </div>
 
-<!-- BUDGET -->
-<div id="budget" class="section">
-  <div class="card">
-    <div class="card-header" style="background: var(--blue); color: white;">💰 สรุปค่าใช้จ่ายทั้งหมด</div>
-    <div class="card-body" style="padding-top: 16px;">
-      <table class="budget-table">
-        <thead>
-          <tr>
-            <th>รายการ</th>
-            <th style="text-align:center">รวม 4 คน (฿)</th>
-            <th style="text-align:center">ต่อคน (฿)</th>
-            <th>หมายเหตุ</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>🚗 ค่าเช่ารถ EV</td><td style="text-align:center" class="amt">2,000</td><td style="text-align:center">500</td><td>1,000฿/วัน × 2 วัน ÷ 4 คน</td></tr>
-          <tr><td>⚡ ค่าไฟ EV (~900 กม.)</td><td style="text-align:center" class="amt">1,350</td><td style="text-align:center">338</td><td>900 กม. × 1.5฿ ÷ 4 คน</td></tr>
-          <tr><td>🏛️ ค่าเข้าอุทยานฯ ศรีสัชฯ</td><td style="text-align:center" class="amt">600</td><td style="text-align:center">150</td><td>150฿/คน</td></tr>
-          <tr><td>🏛️ ค่าเข้าอุทยานฯ สุโขทัย</td><td style="text-align:center" class="amt">400</td><td style="text-align:center">100</td><td>100฿/คน</td></tr>
-          <tr><td>🚲 เช่าจักรยาน อุทยานสุโขทัย</td><td style="text-align:center" class="amt">160</td><td style="text-align:center">40</td><td>~40฿/คัน/คน</td></tr>
-          <tr><td>🏨 Sukhothai Heritage (1 คืน)</td><td style="text-align:center" class="amt">4,000</td><td style="text-align:center">1,000</td><td>แชร์ 4 คน | Breakfast ฟรีรวม</td></tr>
-          <tr><td>🍜 สิบสองหน่วยตัด</td><td style="text-align:center" class="amt">1,000</td><td style="text-align:center">250</td><td>1,000฿ ÷ 4 คน</td></tr>
-          <tr><td>🍽️ อาหารกลางวัน ศรีสัชฯ</td><td style="text-align:center" class="amt">280</td><td style="text-align:center">70</td><td>~70฿/คน</td></tr>
-          <tr><td>🍜 ก๋วยเตี๋ยวห้อยขา พิษณุโลก</td><td style="text-align:center" class="amt">280</td><td style="text-align:center">70</td><td>70฿/คน</td></tr>
-          <tr><td>🍱 อาหารที่ปั๊ม (~3 มื้อ)</td><td style="text-align:center" class="amt">840</td><td style="text-align:center">210</td><td>~70฿/มื้อ × 3</td></tr>
-          <tr><td>✅ รวมทั้งหมด</td><td style="text-align:center" class="total-amt">10,910</td><td style="text-align:center" class="total-amt">2,658</td><td>เป้าหมาย ≤ 3,000฿/คน ✅ เหลือ buffer 342฿</td></tr>
-        </tbody>
-      </table>
+<!-- ══════════ BUDGET (INTERACTIVE) ══════════ -->
+<div class="block" id="budget">
+  <div class="section-title">💰 งบประมาณ — แบบ Interactive</div>
+  <div class="section-sub">แก้ไขยอดเงินได้โดยตรง เพิ่ม/ลบรายการได้ | ยอดรวมอัปเดตอัตโนมัติ</div>
+  <div class="divider"></div>
+
+  <div class="slider-wrap">
+    <label>👥 จำนวนคน:</label>
+    <input type="range" id="personSlider" min="1" max="8" value="4" oninput="updatePersons(this.value)">
+    <div class="slider-val" id="personVal">4 คน</div>
+  </div>
+
+  <!-- ADD ROW FORM -->
+  <div class="add-row-form">
+    <input name="label" id="newLabel" placeholder="ชื่อรายการ เช่น ค่าของฝาก" />
+    <input name="total" id="newTotal" type="number" placeholder="รวม 4 คน (฿)" min="0" />
+    <input name="note" id="newNote" placeholder="หมายเหตุ (ไม่บังคับ)" />
+    <button class="btn btn-add" onclick="addBudgetRow()">+ เพิ่มรายการ</button>
+    <button class="btn btn-reset" onclick="resetBudget()">🔄 Reset</button>
+  </div>
+
+  <div class="budget-wrap">
+    <table class="budget-tbl" id="budgetTable">
+      <thead>
+        <tr>
+          <th style="width:36px;"></th>
+          <th>รายการ</th>
+          <th style="text-align:center;width:130px;">รวม <span id="hdr-persons">4</span> คน (฿)</th>
+          <th style="text-align:center;width:110px;">ต่อคน (฿)</th>
+          <th>หมายเหตุ</th>
+        </tr>
+      </thead>
+      <tbody id="budgetBody"></tbody>
+    </table>
+  </div>
+
+  <div class="budget-totals">
+    <div class="btotal-item">
+      <div class="btotal-num" id="totalAll">฿0</div>
+      <div class="btotal-label">รวม <span id="totalPersonsLabel">4</span> คน</div>
+    </div>
+    <div class="btotal-item">
+      <div class="btotal-num" id="totalPer">฿0</div>
+      <div class="btotal-label">ต่อคน</div>
+      <div class="btotal-status" id="budgetStatus"></div>
+    </div>
+    <div class="btotal-item">
+      <div class="btotal-num" id="totalBuffer">฿0</div>
+      <div class="btotal-label">Buffer เหลือ (จากงบ 3,000฿/คน)</div>
     </div>
   </div>
-  <div class="card" style="margin-top: 20px;">
-    <div class="card-header" style="background: var(--lgold); color: var(--blue);">📊 สัดส่วนค่าใช้จ่าย/คน</div>
-    <div class="card-body" style="padding-top: 16px;">
-      <div class="prog-label"><span>🏨 ที่พัก</span><span>1,000฿ (37.6%)</span></div>
-      <div class="prog-bar"><div class="prog-fill" style="width:37.6%; background: var(--blue);"></div></div>
-      <div class="prog-label"><span>🍽️ อาหารทุกมื้อ</span><span>600฿ (22.6%)</span></div>
-      <div class="prog-bar"><div class="prog-fill" style="width:22.6%; background: var(--red);"></div></div>
-      <div class="prog-label"><span>🚗 ค่าเช่ารถ</span><span>500฿ (18.8%)</span></div>
-      <div class="prog-bar"><div class="prog-fill" style="width:18.8%; background: var(--darkgray);"></div></div>
-      <div class="prog-label"><span>⚡ ค่าไฟ EV</span><span>338฿ (12.7%)</span></div>
-      <div class="prog-bar"><div class="prog-fill" style="width:12.7%; background: var(--orange);"></div></div>
-      <div class="prog-label"><span>🏛️ ค่าเข้าและเช่า</span><span>290฿ (10.9%)</span></div>
-      <div class="prog-bar"><div class="prog-fill" style="width:10.9%; background: var(--gold);"></div></div>
-    </div>
+
+  <!-- Budget breakdown chart -->
+  <div class="card" style="margin-top:24px;">
+    <div class="card-head" style="background:var(--blue);">📊 สัดส่วนค่าใช้จ่าย/คน</div>
+    <div class="card-body" id="budgetChart"></div>
   </div>
 </div>
 
-<!-- EV PLAN -->
-<div id="ev" class="section">
+<!-- ══════════ EV PLAN ══════════ -->
+<div class="block" id="ev">
+  <div class="section-title">⚡ แผนชาร์จ EV ตลอดเส้นทาง</div>
+  <div class="section-sub">รถวิ่งได้ ~350 กม./ชาร์จ | DC Fast Charge 50-60 kW | ค่าไฟ 1.5฿/กม.</div>
+  <div class="divider"></div>
   <div class="card">
-    <div class="card-header" style="background: var(--orange); color: white;">⚡ แผนชาร์จ EV ทั้งเส้นทาง | DC Fast Charge 50-60 kW | 1.5฿/กม.</div>
-    <div class="card-body" style="padding-top: 16px;">
-      <div class="ev-route">
-
-        <div class="ev-stop">
-          <div class="ev-dot start">🏠</div>
-          <div class="ev-info">
-            <div class="ev-name">กทม. (ราชพฤกษ์/พระราม 3) — จุดเริ่มต้น</div>
-            <div class="ev-detail">ชาร์จเต็ม 100% ก่อนออกเดินทางคืนก่อนหน้า | 05:10 ออก</div>
-            <div class="ev-bar"><div class="ev-fill" style="width:100%; background: var(--green);"></div></div>
-            <div class="ev-pct" style="color: var(--green);">🔋 100%</div>
-          </div>
+    <div class="card-body">
+      <div class="ev-stop">
+        <div class="ev-dot ev-s">🏠</div>
+        <div class="ev-info">
+          <div class="ev-name">กทม. (ราชพฤกษ์/พระราม 3) — จุดเริ่มต้น</div>
+          <div class="ev-detail">ชาร์จเต็ม 100% คืนวันที่ 19 พ.ค. ก่อนออกเดินทาง | 05:10 ออก</div>
+          <div class="ev-bar-wrap"><div class="ev-bar"><div class="ev-fill" style="width:100%;background:var(--green);"></div></div><div class="ev-pct" style="color:var(--green);">🔋 100%</div></div>
         </div>
-
-        <div class="ev-stop">
-          <div class="ev-dot charge">⚡</div>
-          <div class="ev-info">
-            <div class="ev-name">PTT จันเสนออยล์ EV Hub — นครสวรรค์</div>
-            <div class="ev-detail">~230 กม. | เหลือ ~34% | ชาร์จ 60 นาที | ค่าไฟ ~85฿ | กินเช้าที่ปั๊มด้วย</div>
-            <div class="ev-bar"><div class="ev-fill" style="width:34%; background: #E74C3C;"></div></div>
-            <div class="ev-pct" style="color: var(--red);">🔋 ~34% ก่อนชาร์จ → ชาร์จจนเต็ม 100%</div>
-          </div>
-        </div>
-
-        <div class="ev-stop">
-          <div class="ev-dot charge">⚡</div>
-          <div class="ev-info">
-            <div class="ev-name">PTT นครปิโตรเลียม — สุโขทัย</div>
-            <div class="ev-detail">~170 กม. จากนครสวรรค์ | เหลือ ~51% | Top-up 30 นาที | ค่าไฟ ~40฿</div>
-            <div class="ev-bar"><div class="ev-fill" style="width:51%; background: var(--orange);"></div></div>
-            <div class="ev-pct" style="color: var(--orange);">🔋 ~51% → Top-up ก่อนเข้าศรีสัชฯ</div>
-          </div>
-        </div>
-
-        <div class="ev-stop">
-          <div class="ev-dot hotel">🏨</div>
-          <div class="ev-info">
-            <div class="ev-name">Sukhothai Heritage Resort — ชาร์จข้ามคืน</div>
-            <div class="ev-detail">~110 กม. | เหลือ ~19% | ชาร์จ AC ข้ามคืนที่โรงแรม | รวมในค่าที่พัก</div>
-            <div class="ev-bar"><div class="ev-fill" style="width:19%; background: var(--red);"></div></div>
-            <div class="ev-pct" style="color: var(--red);">🔋 ~19% → ชาร์จ AC ข้ามคืน → 100%</div>
-          </div>
-        </div>
-
-        <div class="ev-stop">
-          <div class="ev-dot charge">⚡</div>
-          <div class="ev-info">
-            <div class="ev-name">PTT พิษณุโลก — ก่อนกลับ กทม.</div>
-            <div class="ev-detail">~65 กม. จากสุโขทัย | เหลือ ~81% | ชาร์จ 60 นาที ให้เต็ม | ค่าไฟ ~90฿</div>
-            <div class="ev-bar"><div class="ev-fill" style="width:81%; background: var(--green);"></div></div>
-            <div class="ev-pct" style="color: var(--green);">🔋 ~81% → ชาร์จเต็ม 100% ก่อนกลับ</div>
-          </div>
-        </div>
-
-        <div class="ev-stop">
-          <div class="ev-dot charge">⚡</div>
-          <div class="ev-info">
-            <div class="ev-name">PTT นครสวรรค์ / ชัยนาท — กลางทาง</div>
-            <div class="ev-detail">~190 กม. จากพิษณุโลก | เหลือ ~46% | ชาร์จ 30-45 นาที | ค่าไฟ ~45฿</div>
-            <div class="ev-bar"><div class="ev-fill" style="width:46%; background: var(--orange);"></div></div>
-            <div class="ev-pct" style="color: var(--orange);">🔋 ~46% → ชาร์จก่อนถึง กทม.</div>
-          </div>
-        </div>
-
-        <div class="ev-stop">
-          <div class="ev-dot end">✅</div>
-          <div class="ev-info">
-            <div class="ev-name">✅ กทม. — ถึงบ้านปลอดภัย!</div>
-            <div class="ev-detail">~190 กม. | เหลือ ~0-10% | ชาร์จที่บ้านคืนนี้</div>
-            <div class="ev-bar"><div class="ev-fill" style="width:5%; background: var(--green);"></div></div>
-            <div class="ev-pct" style="color: var(--darkgray);">🔋 เหลือนิดหน่อย จบทริป!</div>
-          </div>
-        </div>
-
       </div>
-      <div class="tip-box" style="margin-top: 16px;">
-        <div class="tip-title">📊 สรุป EV ทั้งทริป</div>
-        <div class="tip-text">ระยะทางรวม ~900 กม. | ชาร์จ 4 จุด | เวลาชาร์จรวม ~3.5-4 ชั่วโมง | ค่าไฟรวม ~1,350฿ (338฿/คน)</div>
+      <div class="ev-stop">
+        <div class="ev-dot ev-c">⚡</div>
+        <div class="ev-info">
+          <div class="ev-name">PTT จันเสนออยล์ EV Hub — นครสวรรค์</div>
+          <div class="ev-detail">~230 กม. | เหลือ ~34% | ชาร์จ 60 นาที | ค่าไฟ ~85฿ | กินเช้าที่ปั๊มด้วย</div>
+          <div class="ev-bar-wrap"><div class="ev-bar"><div class="ev-fill" style="width:34%;background:var(--red);"></div></div><div class="ev-pct" style="color:var(--red);">🔋 ~34% ก่อนชาร์จ → 100%</div></div>
+        </div>
+      </div>
+      <div class="ev-stop">
+        <div class="ev-dot ev-c">⚡</div>
+        <div class="ev-info">
+          <div class="ev-name">PTT นครปิโตรเลียม — สุโขทัย</div>
+          <div class="ev-detail">~170 กม. จากนครสวรรค์ | เหลือ ~51% | Top-up 30 นาที | ค่าไฟ ~40฿</div>
+          <div class="ev-bar-wrap"><div class="ev-bar"><div class="ev-fill" style="width:51%;background:var(--orange);"></div></div><div class="ev-pct" style="color:var(--orange);">🔋 ~51% → Top-up ก่อนเข้าศรีสัชฯ</div></div>
+        </div>
+      </div>
+      <div class="ev-stop">
+        <div class="ev-dot ev-h">🏨</div>
+        <div class="ev-info">
+          <div class="ev-name">Sukhothai Heritage Resort — ชาร์จข้ามคืน</div>
+          <div class="ev-detail">~110 กม. | เหลือ ~19% | ชาร์จ AC ข้ามคืนที่โรงแรม | รวมในค่าที่พัก</div>
+          <div class="ev-bar-wrap"><div class="ev-bar"><div class="ev-fill" style="width:19%;background:var(--red);"></div></div><div class="ev-pct" style="color:var(--red);">🔋 ~19% → ชาร์จ AC ข้ามคืน → 100%</div></div>
+        </div>
+      </div>
+      <div class="ev-stop">
+        <div class="ev-dot ev-c">⚡</div>
+        <div class="ev-info">
+          <div class="ev-name">PTT พิษณุโลก — ก่อนกลับ กทม.</div>
+          <div class="ev-detail">~65 กม. จากสุโขทัย | เหลือ ~81% | ชาร์จเต็ม 60 นาที | ค่าไฟ ~90฿</div>
+          <div class="ev-bar-wrap"><div class="ev-bar"><div class="ev-fill" style="width:81%;background:var(--green);"></div></div><div class="ev-pct" style="color:var(--green);">🔋 ~81% → ชาร์จเต็ม 100%</div></div>
+        </div>
+      </div>
+      <div class="ev-stop">
+        <div class="ev-dot ev-c">⚡</div>
+        <div class="ev-info">
+          <div class="ev-name">PTT นครสวรรค์ / ชัยนาท — กลางทาง</div>
+          <div class="ev-detail">~190 กม. จากพิษณุโลก | เหลือ ~46% | ชาร์จ 30-45 นาที | ค่าไฟ ~45฿</div>
+          <div class="ev-bar-wrap"><div class="ev-bar"><div class="ev-fill" style="width:46%;background:var(--orange);"></div></div><div class="ev-pct" style="color:var(--orange);">🔋 ~46% → ชาร์จก่อนถึง กทม.</div></div>
+        </div>
+      </div>
+      <div class="ev-stop">
+        <div class="ev-dot ev-s">✅</div>
+        <div class="ev-info">
+          <div class="ev-name">✅ กทม. — ถึงบ้านปลอดภัย!</div>
+          <div class="ev-detail">~190 กม. | เหลือ ~0-10% | ชาร์จที่บ้านคืนนี้</div>
+          <div class="ev-bar-wrap"><div class="ev-bar"><div class="ev-fill" style="width:5%;background:var(--green);"></div></div><div class="ev-pct" style="color:var(--dgray);">🔋 เหลือนิดหน่อย จบทริป!</div></div>
+        </div>
       </div>
     </div>
   </div>
+  <div class="tip">
+    <div class="tip-title">📊 สรุป EV ทั้งทริป</div>
+    <div class="tip-text">ระยะทางรวม ~900 กม. | ชาร์จ 4 จุด | เวลาชาร์จรวม ~3.5-4 ชั่วโมง | ค่าไฟรวม ~1,350฿ (338฿/คน)</div>
+  </div>
 </div>
 
-<!-- TIPS -->
-<div id="tips" class="section">
-  <h2 style="color: var(--blue); margin-bottom: 20px;">💡 เคล็ดลับและสิ่งที่ต้องเตรียม</h2>
-  <div class="grid-2">
+<!-- ══════════ TIPS ══════════ -->
+<div class="block" id="tips">
+  <div class="section-title">💡 เคล็ดลับและสิ่งที่ต้องเตรียม</div>
+  <div class="section-sub">เช็คก่อนออกเดินทาง + apps + อากาศ + ร้านที่ต้องลอง</div>
+  <div class="divider"></div>
+  <div class="grid2">
     <div>
-      <div class="tip-box warn">
+      <div class="tip warn">
         <div class="tip-title">⚠️ เช็คก่อนออกเดินทาง</div>
         <div class="tip-text">
           • ร้านสิบสองหน่วยตัด — เปิดวันอังคาร 20 พ.ค. ไหม? บางร้านหยุดกลางสัปดาห์<br>
-          • PTT จันเสนออยล์ + PTT นครปิโตรเลียม — ยืนยัน DC Fast Charge มีจริง เปิดใช้<br>
-          • จองห้อง Sukhothai Heritage ล่วงหน้า ช่วง พ.ค. เป็นช่วงโรงเรียนปิดเทอม<br>
-          • ชาร์จรถให้เต็ม 100% คืนวันที่ 19 พ.ค. ก่อนออกเดินทาง
+          • PTT จันเสนออยล์ + นครปิโตรเลียม — ยืนยัน DC Fast Charge มีจริง เปิดใช้<br>
+          • จองห้อง Sukhothai Heritage ล่วงหน้า ช่วง พ.ค. ปิดเทอม มีคนไปเยอะ<br>
+          • ชาร์จรถเต็ม 100% คืน 19 พ.ค. ก่อนออกเดินทาง
         </div>
       </div>
-      <div class="tip-box info">
+      <div class="tip info">
         <div class="tip-title">📱 Apps ที่ควรมีติดมือ</div>
         <div class="tip-text">
           • <b>PTT EV Station</b> — แผนที่จุดชาร์จ PTT ทั่วไทย<br>
-          • <b>PlugShare</b> — จุดชาร์จ EV ทุกค่ายแบบ real-time<br>
-          • <b>Google Maps</b> — navigate + ดู review<br>
-          • <b>Wongnai</b> — เช็คร้านอาหาร รีวิว เวลาเปิดปิด
+          • <b>PlugShare</b> — จุดชาร์จ EV ทุกค่าย real-time<br>
+          • <b>Google Maps</b> — navigate + รีวิว<br>
+          • <b>Wongnai</b> — เช็คร้านอาหาร เวลาเปิดปิด
         </div>
       </div>
-      <div class="tip-box">
+      <div class="tip">
         <div class="tip-title">🌤️ สภาพอากาศ พฤษภาคม</div>
         <div class="tip-text">ต้นฤดูฝน อุณหภูมิ 30-36°C อาจมีฝนบ่ายๆ แนะนำออกเที่ยวเช้า เสื้อกันฝนเบาๆ ครีมกันแดด SPF50+ น้ำเยอะๆ</div>
       </div>
     </div>
     <div>
-      <div class="tip-box info">
+      <div class="tip info">
         <div class="tip-title">🏛️ เคล็ดลับอุทยานประวัติศาสตร์</div>
         <div class="tip-text">
           • เปิด 06:00–18:00 ทุกวัน<br>
-          • ตรงกลางวัน (11:00–13:00) ร้อนมาก แนะนำพักในรถหรือร้านอาหาร<br>
-          • ศรีสัชนาลัย — ขับรถวนได้สบาย ไม่ต้องจอดไกล<br>
-          • สุโขทัย — ขี่จักรยานเช้าตรู่ 06:30 อากาศเย็นสบาย ไม่ร้อน
+          • ช่วง 11:00–13:00 ร้อนมาก แนะนำพักในรถ<br>
+          • ศรีสัชนาลัย — ขับรถวนได้สะดวก<br>
+          • สุโขทัย — ขี่จักรยานเช้าตรู่ 06:30 อากาศเย็น
         </div>
       </div>
-      <div class="tip-box">
+      <div class="tip">
         <div class="tip-title">🍜 ร้านอาหารที่ต้องลอง</div>
         <div class="tip-text">
-          • <b>สิบสองหน่วยตัด</b> — ก๋วยเตี๋ยวสุโขทัยแท้ น้ำซุปหวานใส ต้นเคยไปมาแล้ว<br>
+          • <b>สิบสองหน่วยตัด</b> — ก๋วยเตี๋ยวสุโขทัยแท้ น้ำซุปหวานใส ต้นเคยไปแล้ว ดี!<br>
           • <b>ก๋วยเตี๋ยวห้อยขา พิษณุโลก</b> — ลูกชิ้นหมู เนื้อตุ๋น น้ำซุปข้น ริมน้ำน่าน<br>
-          • ศรีสัชฯ — หาร้านในตลาด ข้าวมันไก่ท้องถิ่นอร่อย
+          • ศรีสัชฯ — ตลาดท้องถิ่น ข้าวมันไก่อร่อยไม่แพง
         </div>
       </div>
-      <div class="tip-box">
+      <div class="tip">
         <div class="tip-title">🥈 เครื่องเงินเกาะน้อย</div>
-        <div class="tip-text">สินค้าดีกว่าและถูกกว่าร้านในเมืองมาก ลายสุโขทัยดั้งเดิม ต่อรองราคาได้ ของขวัญที่ดีมากสำหรับคนรู้ใจ</div>
+        <div class="tip-text">ราคาถูกกว่าร้านในเมืองมาก ลายสุโขทัยดั้งเดิม ต่อรองได้ ซื้อเป็นของขวัญดีมาก ลองต่อราคาก่อนซื้อเสมอ</div>
       </div>
     </div>
   </div>
+  <div style="height:40px;"></div>
 </div>
 
+<!-- SCROLL TO TOP -->
+<button id="topbtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">▲</button>
+
 <script>
-function showSection(id) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  event.target.classList.add('active');
-  window.scrollTo({ top: 80, behavior: 'smooth' });
+// ─── SCROLL TO TOP BTN ───
+window.onscroll = function(){
+  document.getElementById('topbtn').style.display = window.scrollY > 400 ? 'block' : 'none';
+};
+
+// ─── BUDGET DATA ───
+const DEFAULT_ITEMS = [
+  {label:'🚗 ค่าเช่ารถ EV', total:2000, note:'1,000฿/วัน × 2 วัน ÷ 4 คน'},
+  {label:'⚡ ค่าไฟ EV (~900 กม.)', total:1350, note:'900 × 1.5฿ ÷ 4 คน'},
+  {label:'🏛️ ค่าเข้าอุทยานฯ ศรีสัชฯ', total:600, note:'150฿/คน'},
+  {label:'🏛️ ค่าเข้าอุทยานฯ สุโขทัย', total:400, note:'100฿/คน'},
+  {label:'🚲 เช่าจักรยาน สุโขทัย', total:160, note:'~40฿/คน'},
+  {label:'🏨 Sukhothai Heritage (1 คืน)', total:4000, note:'แชร์ 4 คน | Breakfast ฟรี'},
+  {label:'🍜 สิบสองหน่วยตัด', total:1000, note:'1,000฿ ÷ 4 คน'},
+  {label:'🍽️ อาหารกลางวัน ศรีสัชฯ', total:280, note:'~70฿/คน'},
+  {label:'🍜 ก๋วยเตี๋ยวห้อยขา', total:280, note:'70฿/คน'},
+  {label:'🍱 อาหารที่ปั๊ม (~3 มื้อ)', total:840, note:'~70฿/มื้อ × 3'},
+];
+
+let persons = 4;
+let budgetItems = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+
+function renderBudget() {
+  const tbody = document.getElementById('budgetBody');
+  tbody.innerHTML = '';
+  budgetItems.forEach((item, i) => {
+    const perPerson = Math.round(item.total / persons);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><button class="del-btn" onclick="deleteBudgetRow(${i})" title="ลบรายการ">✕</button></td>
+      <td>${item.label}</td>
+      <td class="amt-col">
+        ฿<input class="editable-cell" value="${item.total}"
+          onchange="updateTotal(${i}, this.value)"
+          onclick="this.select()" title="คลิกเพื่อแก้ไข">
+      </td>
+      <td class="per-col">฿${perPerson.toLocaleString()}</td>
+      <td style="color:var(--dgray);font-size:.83em;">${item.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  updateTotals();
 }
+
+function updateTotal(idx, val) {
+  const v = parseInt(val) || 0;
+  budgetItems[idx].total = v;
+  renderBudget();
+}
+
+function deleteBudgetRow(idx) {
+  budgetItems.splice(idx, 1);
+  renderBudget();
+}
+
+function addBudgetRow() {
+  const label = document.getElementById('newLabel').value.trim();
+  const total = parseInt(document.getElementById('newTotal').value) || 0;
+  const note  = document.getElementById('newNote').value.trim();
+  if (!label) { alert('กรุณาใส่ชื่อรายการ'); return; }
+  budgetItems.push({label, total, note});
+  document.getElementById('newLabel').value = '';
+  document.getElementById('newTotal').value = '';
+  document.getElementById('newNote').value  = '';
+  renderBudget();
+}
+
+function resetBudget() {
+  budgetItems = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+  renderBudget();
+}
+
+function updatePersons(val) {
+  persons = parseInt(val);
+  document.getElementById('personVal').textContent = persons + ' คน';
+  document.getElementById('hdr-persons').textContent = persons;
+  document.getElementById('totalPersonsLabel').textContent = persons;
+  renderBudget();
+}
+
+function updateTotals() {
+  const total4 = budgetItems.reduce((s, i) => s + (i.total || 0), 0);
+  const perPerson = Math.round(total4 / persons);
+  const budget = 3000;
+  const buffer = budget - perPerson;
+
+  document.getElementById('totalAll').textContent = '฿' + total4.toLocaleString();
+  document.getElementById('totalPer').textContent  = '฿' + perPerson.toLocaleString();
+  document.getElementById('totalBuffer').textContent = (buffer >= 0 ? '+฿' : '-฿') + Math.abs(buffer).toLocaleString();
+
+  const statusEl = document.getElementById('budgetStatus');
+  if (buffer >= 0) {
+    statusEl.innerHTML = `<span class="status-ok">✅ อยู่ในงบ 3,000฿/คน</span>`;
+  } else {
+    statusEl.innerHTML = `<span class="status-over">⚠️ เกินงบ ${Math.abs(buffer).toLocaleString()}฿/คน</span>`;
+  }
+
+  // Update overview total
+  document.getElementById('ov-total').textContent = '฿' + perPerson.toLocaleString();
+
+  // Chart
+  renderChart(total4, perPerson);
+}
+
+function renderChart(total4, perPerson) {
+  const chartEl = document.getElementById('budgetChart');
+  if (!budgetItems.length) { chartEl.innerHTML = '<p style="color:var(--dgray);padding:8px;">ไม่มีรายการ</p>'; return; }
+  const sorted = [...budgetItems].sort((a,b) => b.total - a.total);
+  const colors = ['var(--blue)','var(--green)','var(--orange)','var(--red)','var(--gold)','#8E44AD','#17A589','#E74C3C','#5D6D7E','#F39C12'];
+  let html = '';
+  sorted.forEach((item, i) => {
+    const pp = Math.round(item.total / persons);
+    const pct = total4 > 0 ? ((item.total / total4)*100).toFixed(1) : 0;
+    html += `
+      <div class="prog-wrap">
+        <div class="prog-label"><span>${item.label}</span><span>฿${pp.toLocaleString()} (${pct}%)</span></div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${colors[i % colors.length]};"></div></div>
+      </div>`;
+  });
+  chartEl.innerHTML = html;
+}
+
+// ─── INIT ───
+renderBudget();
 </script>
 </body>
 </html>
