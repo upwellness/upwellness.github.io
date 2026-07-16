@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>🐉 ทริปทำบุญสายมู คำชะโนด–หนองคาย | 20–23 ก.ค. 2569</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ---------- Theme tokens ---------- */
+  :root {
+    --bg: #f5f3ec;
+    --text: #1f2937;
+    --muted: #57606e;
+    --dim: #8a93a3;
+    --card: rgba(255,255,255,0.78);
+    --card-bd: rgba(31,41,55,0.10);
+    --shadow: 0 8px 30px rgba(31,41,55,0.08);
+    --soft: rgba(31,41,55,0.05);
+    --soft-bd: rgba(31,41,55,0.10);
+    --gold: #a16207;
+    --emer: #047857;
+    --sky: #0369a1;
+    --orange: #c2410c;
+    --violet: #6d28d9;
+    --pink: #be185d;
+    --rose: #be123c;
+    --orb1: rgba(16,185,129,0.16);
+    --orb2: rgba(139,92,246,0.13);
+    --orb3: rgba(245,158,11,0.16);
+    --track: rgba(31,41,55,0.10);
+  }
+  :root[data-theme="dark"] {
+    --bg: #060814;
+    --text: #e9edf6;
+    --muted: #aeb7c6;
+    --dim: #7d8696;
+    --card: rgba(255,255,255,0.07);
+    --card-bd: rgba(255,255,255,0.13);
+    --shadow: 0 12px 40px rgba(0,0,0,0.35);
+    --soft: rgba(255,255,255,0.06);
+    --soft-bd: rgba(255,255,255,0.12);
+    --gold: #fcd34d;
+    --emer: #6ee7b7;
+    --sky: #7dd3fc;
+    --orange: #fdba74;
+    --violet: #c4b5fd;
+    --pink: #f9a8d4;
+    --rose: #fda4af;
+    --orb1: rgba(16,185,129,0.20);
+    --orb2: rgba(124,58,237,0.25);
+    --orb3: rgba(245,158,11,0.15);
+    --track: rgba(255,255,255,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+      --bg: #060814; --text: #e9edf6; --muted: #aeb7c6; --dim: #7d8696;
+      --card: rgba(255,255,255,0.07); --card-bd: rgba(255,255,255,0.13);
+      --shadow: 0 12px 40px rgba(0,0,0,0.35);
+      --soft: rgba(255,255,255,0.06); --soft-bd: rgba(255,255,255,0.12);
+      --gold: #fcd34d; --emer: #6ee7b7; --sky: #7dd3fc; --orange: #fdba74;
+      --violet: #c4b5fd; --pink: #f9a8d4; --rose: #fda4af;
+      --orb1: rgba(16,185,129,0.20); --orb2: rgba(124,58,237,0.25); --orb3: rgba(245,158,11,0.15);
+      --track: rgba(255,255,255,0.10);
+    }
+  }
+
+  * { font-family: 'Prompt', sans-serif; }
+  html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+  body { background: var(--bg); color: var(--text); transition: background .3s ease, color .3s ease; }
+
+  .glass { background: var(--card); border: 1px solid var(--card-bd); border-radius: 24px;
+           box-shadow: var(--shadow); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .subcard { background: var(--soft); border: 1px solid var(--soft-bd); }
+  .chip { background: var(--soft); border: 1px solid var(--soft-bd); }
+  .t-mut { color: var(--muted); } .t-dim { color: var(--dim); }
+  .t-gold { color: var(--gold); } .t-emer { color: var(--emer); } .t-sky { color: var(--sky); }
+  .t-orange { color: var(--orange); } .t-violet { color: var(--violet); } .t-pink { color: var(--pink); } .t-rose { color: var(--rose); }
+  .tint-gold   { background: color-mix(in srgb, var(--gold) 10%, transparent);   border: 1px solid color-mix(in srgb, var(--gold) 32%, transparent); }
+  .tint-emer   { background: color-mix(in srgb, var(--emer) 10%, transparent);   border: 1px solid color-mix(in srgb, var(--emer) 32%, transparent); }
+  .tint-sky    { background: color-mix(in srgb, var(--sky) 10%, transparent);    border: 1px solid color-mix(in srgb, var(--sky) 32%, transparent); }
+  .tint-orange { background: color-mix(in srgb, var(--orange) 10%, transparent); border: 1px solid color-mix(in srgb, var(--orange) 32%, transparent); }
+  .tint-violet { background: color-mix(in srgb, var(--violet) 10%, transparent); border: 1px solid color-mix(in srgb, var(--violet) 32%, transparent); }
+  .tint-pink   { background: color-mix(in srgb, var(--pink) 10%, transparent);   border: 1px solid color-mix(in srgb, var(--pink) 32%, transparent); }
+  .tint-rose   { background: color-mix(in srgb, var(--rose) 10%, transparent);   border: 1px solid color-mix(in srgb, var(--rose) 32%, transparent); }
+  .bd-gold { border-color: color-mix(in srgb, var(--gold) 45%, transparent) !important; }
+  .bd-emer { border-color: color-mix(in srgb, var(--emer) 45%, transparent) !important; }
+  .bd-sky { border-color: color-mix(in srgb, var(--sky) 45%, transparent) !important; }
+  .bd-orange { border-color: color-mix(in srgb, var(--orange) 45%, transparent) !important; }
+  .bd-violet { border-color: color-mix(in srgb, var(--violet) 45%, transparent) !important; }
+  .bd-pink { border-color: color-mix(in srgb, var(--pink) 45%, transparent) !important; }
+
+  .orb { position: fixed; border-radius: 9999px; filter: blur(110px); pointer-events: none; z-index: 0; }
+  .orb1 { background: var(--orb1); } .orb2 { background: var(--orb2); } .orb3 { background: var(--orb3); }
+
+  .battrack { background: var(--track); }
+  .tabwrap { background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .tabbtn { background: var(--soft); border: 1px solid var(--soft-bd); color: var(--text); }
+  .tabbtn-on { background: linear-gradient(90deg, #fbbf24, #f97316); color: #1f2430; border: 1px solid transparent;
+               box-shadow: 0 6px 18px rgba(245,158,11,0.30); }
+  .navbtn { background: linear-gradient(90deg, #fbbf24, #f97316); color: #1f2430; }
+  .navbtn:disabled { opacity: .4; }
+  .navbtn2 { background: var(--soft); border: 1px solid var(--soft-bd); color: var(--text); }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--soft); }
+  ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--gold) 45%, transparent); border-radius: 8px; }
+  .fade-in { animation: fadeIn .45s ease both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- Leaflet ---------- */
+  .leaflet-container { background: var(--bg); font-family: 'Prompt', sans-serif; border-radius: 18px; z-index: 1; }
+  .stepmark { display: inline-flex; align-items: center; gap: 3px; background: var(--card); backdrop-filter: blur(8px);
+    border: 2px solid var(--mk, #f59e0b); color: var(--text); border-radius: 999px; padding: 3px 8px;
+    font-size: 12px; font-weight: 700; box-shadow: 0 2px 10px rgba(0,0,0,0.28); white-space: nowrap;
+    transition: transform .25s ease, opacity .25s ease; transform-origin: center; }
+  .stepmark .em { font-size: 13px; }
+  .sd1 { --mk: #0ea5e9; } .sd2 { --mk: #10b981; } .sd3 { --mk: #f59e0b; } .sd4 { --mk: #8b5cf6; }
+  .stepmark.future { opacity: .45; filter: grayscale(.35); }
+  .stepmark.current { transform: scale(1.22);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--mk) 35%, transparent), 0 4px 14px rgba(0,0,0,0.30); }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="orb orb1 w-[480px] h-[480px] -top-24 -left-24"></div>
+<div class="orb orb2 w-[520px] h-[520px] top-1/3 -right-40"></div>
+<div class="orb orb3 w-[420px] h-[420px] bottom-0 left-1/4"></div>
+
+<div id="root" class="relative z-10"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ---------- Helpers ---------- */
+const Glass = ({ children, className = "" }) => (
+  <div className={"glass " + className}>{children}</div>
+);
+
+const Chip = ({ children, className = "" }) => (
+  <span className={"chip inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] md:text-xs font-medium " + className}>
+    {children}
+  </span>
+);
+
+const MapLink = ({ q, label }) => (
+  <a href={"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q)} target="_blank" rel="noreferrer"
+     className="t-sky inline-flex items-center gap-1 text-[13px] hover:opacity-80 underline underline-offset-2">
+    📍 {label || "เปิดแผนที่"}
+  </a>
+);
+
+const BattBar = ({ from, to, note }) => (
+  <div className="mt-2">
+    <div className="t-emer flex justify-between text-[12px] mb-1">
+      <span>🔋 แบตถึง ≈ {from}%</span>
+      <span>ชาร์จเป็น ≈ {to}%</span>
+    </div>
+    <div className="battrack h-2.5 rounded-full overflow-hidden relative">
+      <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-lime-400" style={{ width: to + "%" }}></div>
+      <div className="absolute top-0 h-full w-[2px]" style={{ left: from + "%", background: "var(--text)", opacity: .55 }}></div>
+    </div>
+    {note && <div className="t-dim text-[12px] mt-1">{note}</div>}
+  </div>
+);
+
+const typeStyle = {
+  drive:  { icon: "🚗", ring: "bd-sky",    badge: "ขับรถ",   badgeCls: "tint-sky t-sky" },
+  charge: { icon: "⚡", ring: "bd-emer",   badge: "จุดชาร์จ", badgeCls: "tint-emer t-emer" },
+  food:   { icon: "🍽️", ring: "bd-orange", badge: "ของอร่อย", badgeCls: "tint-orange t-orange" },
+  temple: { icon: "🙏", ring: "bd-gold",   badge: "จุดทำบุญ", badgeCls: "tint-gold t-gold" },
+  hotel:  { icon: "🏨", ring: "bd-violet", badge: "ที่พัก",   badgeCls: "tint-violet t-violet" },
+  fun:    { icon: "🌅", ring: "bd-pink",   badge: "ชิล",     badgeCls: "tint-pink t-pink" },
+};
+
+const TimelineItem = ({ item }) => {
+  const s = typeStyle[item.type] || typeStyle.fun;
+  return (
+    <div className="flex gap-3">
+      <div className="flex flex-col items-center">
+        <div className={"subcard w-9 h-9 md:w-10 md:h-10 shrink-0 rounded-2xl flex items-center justify-center text-base md:text-lg " + s.ring}>{s.icon}</div>
+        <div className="w-px flex-1 my-1" style={{ background: "var(--soft-bd)" }}></div>
+      </div>
+      <div className="pb-5 flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="t-gold font-semibold text-[14px] md:text-sm tabular-nums">{item.t}</span>
+          <span className={"px-2 py-0.5 rounded-full text-[11px] font-medium " + s.badgeCls}>{s.badge}</span>
+          {item.km && <span className="t-dim text-[12px]">~{item.km} กม.</span>}
+        </div>
+        <div className="font-semibold mt-1 leading-snug text-[15.5px] md:text-base">{item.title}</div>
+        {item.desc && <div className="t-mut text-[14.5px] md:text-[15px] mt-1 leading-relaxed">{item.desc}</div>}
+        {item.batt && <BattBar from={item.batt[0]} to={item.batt[1]} note={item.battNote} />}
+        {item.maps && <div className="mt-1.5"><MapLink q={item.maps} /></div>}
+        {item.warn && <div className="tint-rose t-rose mt-2 text-[13px] rounded-xl px-3 py-2 leading-relaxed">⚠️ {item.warn}</div>}
+        {item.tip && <div className="tint-gold mt-2 text-[13px] rounded-xl px-3 py-2 leading-relaxed">💡 {item.tip}</div>}
+      </div>
+    </div>
+  );
+};
+
+/* ---------- Data: 4 Days ---------- */
+const DAYS = [
+  {
+    id: 1, dow: "จันทร์", date: "20 ก.ค.", title: "กทม. → อุดรธานี", km: "≈ 564 กม.", emoji: "🛣️",
+    sub: "วันขับยาววันเดียวของทริป — แวะ 2 จุดตามจังหวะกาแฟ+ข้าวเที่ยง คนพัก รถชาร์จ ไม่มีรอเปล่า",
+    timeline: [
+      { t: "06:00", type: "drive", title: "ออกจาก กทม. (แบต 100%)", desc: "ชาร์จเต็มจากบ้านคืนก่อนออก เส้นพหลโยธิน → มิตรภาพ (ทล.2) สลับคนขับทุก ~2 ชม.", km: 250 },
+      { t: "08:40", type: "charge", title: "จุดชาร์จ #1 — โคราช (ถ.มิตรภาพ)", desc: "PTT EV Station PluZ หรือ PEA VOLTA ริมมิตรภาพก่อนเข้าเมืองโคราช ชาร์จ ~25 นาที จิบกาแฟ เข้าห้องน้ำ", batt: [55, 90], maps: "PTT EV Station PluZ นครราชสีมา มิตรภาพ" },
+      { t: "09:15", type: "drive", title: "โคราช → ขอนแก่น", km: 200, desc: "ทางตรงยาว วิ่งสบาย 100–110 กม./ชม. ถนอมแบต" },
+      { t: "11:30", type: "food", title: "เที่ยง — แซบนัว ครัวอีสาน (ขอนแก่น)", desc: "ร้านดังริมมิตรภาพ: ไก่ย่างเขาสวนกวาง ต้มแซ่บกระดูกอ่อน ส้มตำปูปลาร้า ปลาเผา (ตัวเลือกสำรอง: วนิดารสวิเศษ — ผัดหมี่ขอนแก่นเจ้าดัง)", maps: "แซบนัว ครัวอีสาน ขอนแก่น" },
+      { t: "11:45", type: "charge", title: "จุดชาร์จ #2 — ชาร์จระหว่างกินข้าว", desc: "PEA VOLTA / PTT PluZ ย่านมิตรภาพขอนแก่น เสียบไว้แล้วไปกิน — อิ่มพอดีรถเต็ม", batt: [54, 90], maps: "PEA VOLTA ขอนแก่น มิตรภาพ" },
+      { t: "12:45", type: "drive", title: "ขอนแก่น → อุดรธานี", km: 115, desc: "ช่วงสุดท้ายของวัน ชั่วโมงนิดๆ ถึงเลย" },
+      { t: "14:15", type: "hotel", title: "เช็คอิน Centara Hotel Udon (จองแล้ว ✓)", desc: "Superior Twin รวมอาหารเช้า 1,883 ฿/ห้อง — ติด Central Plaza อุดร เดินห้างได้เลย เข้าห้อง อาบน้ำ งีบสั้นๆ เก็บแรงไว้พรุ่งนี้วันบุญใหญ่", batt: [70, 70], battNote: "ถึงอุดรเหลือ ~70% เดี๋ยวเติมเต็มตอนเย็น", maps: "Centara Hotel Udon" },
+      { t: "16:30", type: "fun", title: "เดินเล่นหนองประจักษ์", desc: "สวนกลางเมือง ยืดเส้นยืดสายหลังนั่งรถทั้งวัน ถ่ายรูปตึกเหลือง-พระอาทิตย์ตก", maps: "หนองประจักษ์ อุดรธานี" },
+      { t: "17:30", type: "food", title: "เย็น — VT แหนมเนือง (สาขาใหญ่)", desc: "ตำนานอุดร เปิด 06:00–21:00 — แหนมเนืองเซ็ตใหญ่ หมูย่างนุ่ม น้ำจิ้มสูตรเด็ด ซื้อกลับเป็นของฝากได้ (สายชิมอัปเกรด: ซาหมวย & ซันส์ อีสาน modern ระดับประเทศ — ต้องจองล่วงหน้า)", maps: "VT แหนมเนือง อุดรธานี" },
+      { t: "19:00", type: "charge", title: "UD Town + ชาร์จรถให้เต็มคืนนี้", desc: "เดิน night market ย่อยอาหาร ระหว่างนั้นเสียบรถที่จุดชาร์จ Central อุดร (ติดโรงแรมเลย) หรือ PTT ใกล้เคียง ให้พรุ่งนี้เริ่มที่ ~100%", batt: [70, 100], maps: "UD Town อุดรธานี" },
+    ],
+    tips: "ก.ค. เป็นหน้าฝน — เจอฝนช่วงเขาใหญ่/ปากช่องบ่อย ลดความเร็ว เปิดไฟ ระยะชาร์จที่วางไว้เผื่อฝน+แอร์แล้ว"
+  },
+  {
+    id: 2, dow: "อังคาร", date: "21 ก.ค.", title: "คำชะโนด → เลียบโขงเข้าหนองคาย", km: "≈ 200 กม.", emoji: "🐉",
+    sub: "วันบุญหลัก #1 — ชุดขาวทั้งคณะ กราบปู่ศรีสุทโธ แล้ววิ่งเลียบโขงผ่านถิ่นบั้งไฟพญานาค ไปนอนริมโขง",
+    timeline: [
+      { t: "06:30", type: "food", title: "เช้าโรงแรม + เช็คเอาท์", desc: "กินให้อิ่ม (บนเกาะคำชะโนดห้ามนำอาหารเข้า) เก็บกระเป๋าขึ้นรถ — คืนนี้นอนหนองคาย" },
+      { t: "07:15", type: "drive", title: "อุดร → คำชะโนด (อ.บ้านดุง)", km: 93, desc: "เส้น ทล.22 → ทล.2096/2097 ถนนดี วิ่งสบาย ~1.5 ชม. แบตเต็มไม่ต้องแวะชาร์จทั้งวัน" },
+      { t: "08:45", type: "temple", title: "ถึงคำชะโนด (เปิด 08:00–16:30 ไม่ต้องจองคิว)", desc: "ไปถึงช่วงเช้าคนยังน้อย อากาศยังไม่ร้อน — ซื้อพวงมาลัย/ดอกไม้สด ชุดขันธ์ 5 มีขายหน้าทางเข้า", maps: "คำชะโนด วังนาคินทร์ บ้านดุง", tip: "วันอังคารธรรมดา (ไม่ใช่วันพระ/วันหยุด) คิวไม่ยาว เดินสบาย" },
+      { t: "09:00", type: "temple", title: "ไหว้ 3 จุดบนเกาะ (~2–2.5 ชม.)", desc: "① ศาลปู่ศรีสุทโธ–ย่าศรีปทุมมา ขอพรการเงิน-โชคลาภ ② ต้นมะเดื่อยักษ์ ③ บ่อน้ำศักดิ์สิทธิ์ (จุดกำเนิดตำนานพญานาค)", warn: "กฎเกาะ: ห้ามจุดธูป-เทียนบนเกาะ (ไหว้ด้วยดอกไม้) · ห้ามโยนเหรียญลงบ่อน้ำ · ห้ามปล่อยปลา/สัตว์น้ำ · แต่งกายสุภาพเท่านั้น" },
+      { t: "11:45", type: "food", title: "เที่ยง — ครัวอยุธยา คำชะโนด", desc: "ร้านดังใกล้ทางเข้า เปิด 07:00–20:00: ไก่ย่าง ส้มตำ หมูย่าง (สำรอง: ร้านอาหารคุณยาย ศูนย์อาหารบ้านดุง)", maps: "ครัวอยุธยา คำชะโนด บ้านดุง" },
+      { t: "13:00", type: "drive", title: "คำชะโนด → หนองคาย (เส้นเลียบโขง)", km: 100, desc: "ขึ้น ทล.212 เลียบแม่น้ำโขง ผ่านรัตนวาปี–โพนพิสัย ถิ่นตำนานบั้งไฟพญานาค 🐉 — วิวสวย แวะจุดชมโขงถ่ายรูปได้ (~1.5–1.75 ชม.)" },
+      { t: "14:45", type: "hotel", title: "เช็คอิน Amanta Hotel Nongkhai (จองแล้ว ✓)", desc: "ดีล 44% เหลือ 1,578 ฿/ห้อง รวมอาหารเช้า — ริมโขง ห่างแม่น้ำ ~100 ม. ใกล้ตลาดท่าเสด็จ มี rooftop bar + ที่จอดรถฟรี", maps: "Amanta Hotel Nongkhai" },
+      { t: "16:00", type: "fun", title: "โบนัสสายมู — ศาลาแก้วกู่", desc: "อุทยานปฏิมากรรมสุดอลัง พญานาค 7 เศียรองค์ยักษ์ + เทวรูปหลายศาสนา ค่าเข้าหลักสิบบาท — สายมูถ่ายรูปกันยาวๆ (เปิดถึง ~17:30)", maps: "ศาลาแก้วกู่ หนองคาย" },
+      { t: "17:45", type: "fun", title: "ตลาดท่าเสด็จ + เดินริมโขง", desc: "หมูยอ แหนม กุนเชียง ผ้าพื้นเมือง ของจากฝั่งลาว — เดินย่อยริมแม่น้ำรอมื้อเย็น", maps: "ตลาดท่าเสด็จ หนองคาย" },
+      { t: "18:30", type: "food", title: "เย็น — แดงแหนมเนือง (ริมโขง)", desc: "ตำนานหนองคาย วิวแม่น้ำโขง: แหนมเนือง กุ้งพันอ้อย ปอเปี๊ยะทอด หมูยอ — เทียบรส VT เมื่อวานได้เลยว่าทีมไหน", maps: "แดงแหนมเนือง หนองคาย" },
+      { t: "19:45", type: "charge", title: "เสียบชาร์จ + Rooftop Amanta", desc: "ชาร์จที่ PTT PluZ / PEA VOLTA ในเมืองหนองคายให้กลับไป ~95% แล้วปิดคืนด้วยไฟฝั่งลาว-วิวโขงจาก rooftop bar", batt: [65, 95] },
+    ],
+    tips: "ขอพรปู่ศรีสุทโธให้ตั้งจิตชัด ขอทีละเรื่อง และถ้าบนไว้ อย่าลืมกลับมาแก้บนตามสัญญา — นี่คือธรรมเนียมสำคัญที่สุดของคำชะโนด"
+  },
+  {
+    id: 3, dow: "พุธ", date: "22 ก.ค.", title: "2 พระธาตุ → ลงไปนอนโคราช", km: "≈ 410 กม.", emoji: "🛕",
+    sub: "วันบุญหลัก #2–3 ช่วงเช้า — บ่ายไหลลงใต้ยาวถึงโคราช นอน Centara ติดห้าง พรุ่งนี้เหลือนิดเดียว",
+    timeline: [
+      { t: "07:00", type: "food", title: "เช้าที่ Amanta (รวมในค่าห้องแล้ว ✓)", desc: "อิ่มฟรีจากดีลที่จอง — สายไข่กระทะอยากลองของถิ่น: ร้านทานตะวัน (ไข่กระทะ ไส้กรอกญวน) อยู่ใกล้ๆ", maps: "ร้านทานตะวัน หนองคาย" },
+      { t: "07:45", type: "drive", title: "เช็คเอาท์ → วัดพระธาตุบังพวน", km: 22, desc: "ทล.211 เส้นหนองคาย–ท่าบ่อ ~30 นาที กระเป๋าขึ้นรถให้เรียบร้อย" },
+      { t: "08:15", type: "temple", title: "วัดพระธาตุบังพวน (~1.5–2 ชม.)", desc: "กราบพระธาตุบรรจุพระบรมสารีริกธาตุ + เดินสาย สัตตมหาสถาน ครบ 7 จุด — ที่เดียวในโลกที่ยังครบจากโบราณ ปิดด้วยบ่อน้ำพญานาค (สระมุจลินท์) สายนาคห้ามพลาด", maps: "วัดพระธาตุบังพวน หนองคาย", tip: "เดินตามลำดับ 7 จุด: โพธิบัลลังก์ → อนิมมิสเจดีย์ → รัตนจงกรม → รัตนฆรเจดีย์ → อชาปาลนิโครธ → มุจลินท์ → ราชายตนะ" },
+      { t: "10:15", type: "drive", title: "ย้อนกลับเข้าเมืองหนองคาย", km: 22 },
+      { t: "10:45", type: "temple", title: "พระธาตุหล้าหนอง (พระธาตุกลางน้ำ)", desc: "กราบองค์พระธาตุจำลองริมโขง แล้วมองออกไปกลางแม่น้ำ — ตำแหน่งองค์จริงที่จมเมื่อปี 2390 ห่างฝั่ง ~180 ม.", maps: "พระธาตุหล้าหนอง หนองคาย", warn: "ก.ค. น้ำโขงขึ้นสูง องค์จริงกลางน้ำมักมองไม่เห็น (หน้าแล้งโผล่ ~3 ม.) — บุญอยู่ที่การสักการะองค์จำลอง+ตั้งจิตถึงพระบรมธาตุ ไม่ต้องเสียดาย" },
+      { t: "11:45", type: "temple", title: "โบนัสบุญ #4 — วัดโพธิ์ชัย หลวงพ่อพระใส", desc: "พระพุทธรูปศักดิ์สิทธิ์คู่เมืองหนองคาย ห่างแค่ ~2 กม. อยู่ขาออกเมืองพอดี — มาถึงถิ่นแล้วไม่กราบถือว่าพลาด", maps: "วัดโพธิ์ชัย หนองคาย" },
+      { t: "12:30", type: "food", title: "เที่ยงเบาๆ — เมนูญวนถิ่นริมโขง", desc: "ข้าวเปียกเส้น / ก๋วยจั๊บญวน ย่านตลาดท่าเสด็จ มีให้เลือกหลายเจ้า — กินพอดีท้องก่อนขับยาว", maps: "ข้าวเปียกเส้น หนองคาย" },
+      { t: "13:30", type: "drive", title: "หนองคาย → ขอนแก่น", km: 170, desc: "ทล.2 ลงใต้ผ่านอุดร ~2 ชม. — สลับคนขับจากเมื่อเช้า" },
+      { t: "15:30", type: "charge", title: "แวะครึ่งทาง — กาแฟ + ชาร์จ ขอนแก่น", desc: "PTT EV Station PluZ / PEA VOLTA ริมมิตรภาพ ~25 นาที ยืดเส้น เข้าห้องน้ำ เติมคาเฟอีน", batt: [55, 90], maps: "PTT EV Station PluZ ขอนแก่น" },
+      { t: "16:00", type: "drive", title: "ขอนแก่น → โคราช", km: 190, desc: "เลกสุดท้ายของวัน ~2 ชม. ถึงก่อนมืดพอดี" },
+      { t: "18:00", type: "hotel", title: "เช็คอิน Centara Korat (จองแล้ว ✓)", desc: "Deluxe Twin รวมอาหารเช้า 1,959 ฿/ห้อง — โรงแรมใหม่ในโครงการ Central Korat เดินทะลุห้างได้ ของกิน-ของซื้อครบ", batt: [56, 56], battNote: "ถึงโคราชเหลือ ~56%", maps: "Centara Korat" },
+      { t: "18:45", type: "charge", title: "เสียบชาร์จเต็ม — พรุ่งนี้ไม่ต้องแวะเลย", desc: "จุดชาร์จในห้าง Central Korat หรือ PTT มิตรภาพใกล้ๆ (เช็คแอปก่อน) — เอาให้ 100% คืนนี้ แล้วขากลับวิ่งรวดเดียวถึงบ้าน", batt: [56, 100] },
+      { t: "19:15", type: "food", title: "เย็น — Central Korat / ของดีเมืองย่า", desc: "ร้านในห้างครบทุกแนว หรือออกไปลอง หมี่โคราช-ไก่ย่าง ต้นตำรับ — ฉลองคืนสุดท้ายแบบไม่ต้องขับไปไหนไกล" },
+    ],
+    tips: "วันนี้ขับเยอะสุดของครึ่งหลัง (410 กม.) แต่ตัดเป็น 3 ท่อนสั้น มีพักทุก ~2 ชม. — แลกกับพรุ่งนี้เหลือแค่ 250 กม. แบบไม่ต้องชาร์จระหว่างทางสักครั้ง"
+  },
+  {
+    id: 4, dow: "พฤหัสบดี", date: "23 ก.ค.", title: "โคราช → กทม.", km: "≈ 250 กม.", emoji: "🏁",
+    sub: "ขากลับฉบับจิ๋ว — แบตเต็มจากเมื่อคืน ไม่ต้องแวะชาร์จ เที่ยงมิชลินปากช่อง ถึงบ้านบ่ายสาม",
+    timeline: [
+      { t: "07:30", type: "food", title: "เช้าที่ Centara Korat (รวมในค่าห้องแล้ว ✓)", desc: "กินสบายๆ ไม่ต้องรีบ — วันนี้ขับแค่ 250 กม. แบตเต็ม 100% ตั้งแต่ตื่น" },
+      { t: "09:00", type: "temple", title: "โบนัสบุญ #5 — กราบย่าโม ลาเมือง", desc: "อนุสาวรีย์ท้าวสุรนารี กลางเมืองโคราช ห่างโรงแรมไม่กี่นาที — ขอพรเดินทางปลอดภัยส่งท้ายทริป", maps: "อนุสาวรีย์ท้าวสุรนารี โคราช" },
+      { t: "09:45", type: "drive", title: "ออกโคราช → ปากช่อง", km: 90, desc: "ลงเขาลำตะคอง ใช้ regen braking เก็บไฟคืนเข้าแบต วิวเขื่อน-ภูเขาสวย" },
+      { t: "11:00", type: "fun", title: "(เลือกได้) คาเฟ่เขาใหญ่ ถ.ธนะรัชต์", desc: "แวะยืดเส้น ถ่ายรูป จิบกาแฟวิวเขา ก่อนมื้อเที่ยง — เส้นนี้คาเฟ่เพียบ", maps: "คาเฟ่ ถนนธนะรัชต์ เขาใหญ่" },
+      { t: "11:45", type: "food", title: "เที่ยงส่งท้าย — เป็นลาว (ปากช่อง/เขาใหญ่)", desc: "ร้านอีสานรางวัล Michelin Bib Gourmand ถ.ธนะรัชต์: แกงเห็ดสามอย่าง ลาบ ไก่ย่าง — ปิดทริปบุญด้วยมื้อระดับรางวัล", maps: "เป็นลาว ปากช่อง" },
+      { t: "13:00", type: "drive", title: "ปากช่อง → กทม.", km: 170, desc: "ช่วงสุดท้าย! มอเตอร์เวย์/มิตรภาพ ถึงก่อนชั่วโมงเร่งด่วนแบบขาดลอย" },
+      { t: "15:00", type: "fun", title: "ถึง กทม. โดยสวัสดิภาพ 🎉", desc: "เหลือแบต ~50% โดยไม่แวะชาร์จเลยทั้งวัน — จบทริป 4 วัน ~1,430 กม. ครบ 3 เป้าบุญหลัก + โบนัสอีก 5 จุด บุญเต็มกระเป๋า", batt: [50, 50], battNote: "ถึงบ้านค่อยเสียบชาร์จ" },
+    ],
+    tips: "ถึงบ้านบ่ายสาม มีเวลาทั้งเย็นพักผ่อน แกะของฝาก — นี่คือกำไรของการนอนไล่เมืองลงมาเรื่อยๆ: อุดร → หนองคาย → โคราช"
+  },
+];
+
+/* ---------- Data: Map Simulation Steps (พิกัดโดยประมาณเพื่อภาพรวม) ---------- */
+const STEPS = [
+  { d: 1, t: "06:00", icon: "🏠", name: "ออกจาก กทม.", desc: "แบตเต็ม 100% มุ่งหน้าถนนมิตรภาพ สลับคนขับทุก ~2 ชม.", coord: [13.7563, 100.5018], z: 10, batt: "100%", maps: "กรุงเทพมหานคร" },
+  { d: 1, t: "08:40", icon: "⚡", name: "ชาร์จ #1 — โคราช", desc: "PTT PluZ / PEA VOLTA ริมมิตรภาพ ~25 นาที กาแฟ+ห้องน้ำ (55→90%)", coord: [14.9730, 102.0830], z: 12, km: 250, batt: "55→90%", maps: "PTT EV Station PluZ นครราชสีมา" },
+  { d: 1, t: "11:30", icon: "🍽️", name: "เที่ยงแซบนัว + ชาร์จ #2 ขอนแก่น", desc: "ไก่ย่างเขาสวนกวาง ต้มแซ่บ ส้มตำ — เสียบชาร์จระหว่างกิน (54→90%)", coord: [16.4322, 102.8236], z: 12, km: 200, batt: "54→90%", maps: "แซบนัว ครัวอีสาน ขอนแก่น" },
+  { d: 1, t: "14:15", icon: "🏨", name: "Centara Udon (คืนที่ 1)", desc: "เช็คอิน พัก แล้วเย็นไป VT แหนมเนือง + UD Town เสียบชาร์จให้เต็มคืนนี้", coord: [17.4156, 102.7859], z: 13, km: 115, batt: "70→100%", maps: "Centara Hotel Udon" },
+  { d: 2, t: "08:45", icon: "🐉", name: "คำชะโนด — วันบุญหลัก #1", desc: "ชุดขาวทั้งคณะ ไหว้ปู่ศรีสุทโธ-ย่าศรีปทุมมา ต้นมะเดื่อยักษ์ บ่อน้ำศักดิ์สิทธิ์ แล้วเที่ยงครัวอยุธยา", coord: [17.6150, 103.3470], z: 14, km: 93, batt: "~83%", maps: "คำชะโนด วังนาคินทร์" },
+  { d: 2, t: "13:45", icon: "🌊", name: "เลียบโขง — โพนพิสัย", desc: "ทล.212 เลียบแม่น้ำโขง ผ่านรัตนวาปี-โพนพิสัย ถิ่นบั้งไฟพญานาค แวะถ่ายรูปจุดชมโขง", coord: [18.0200, 103.0780], z: 13, km: 55, batt: "~73%", maps: "โพนพิสัย หนองคาย" },
+  { d: 2, t: "14:45", icon: "🏨", name: "Amanta หนองคาย (คืนที่ 2)", desc: "เช็คอิน → ศาลาแก้วกู่ → ตลาดท่าเสด็จ → เย็นแดงแหนมเนือง + rooftop — เสียบชาร์จกลับไป ~95%", coord: [17.8783, 102.7420], z: 14, km: 45, batt: "65→95%", maps: "Amanta Hotel Nongkhai" },
+  { d: 3, t: "08:15", icon: "🛕", name: "พระธาตุบังพวน — บุญหลัก #2", desc: "พระบรมสารีริกธาตุ + สัตตมหาสถานครบ 7 จุดแห่งเดียวในโลก + บ่อน้ำพญานาค", coord: [17.7760, 102.6350], z: 14, km: 22, batt: "~91%", maps: "วัดพระธาตุบังพวน หนองคาย" },
+  { d: 3, t: "10:45", icon: "🌊", name: "พระธาตุกลางน้ำ — บุญหลัก #3", desc: "กราบองค์จำลองริมโขง มององค์จริงกลางแม่น้ำ (ก.ค. น้ำสูง อาจมองไม่เห็น)", coord: [17.8840, 102.7560], z: 15, km: 22, batt: "~87%", maps: "พระธาตุหล้าหนอง หนองคาย" },
+  { d: 3, t: "11:45", icon: "🙏", name: "วัดโพธิ์ชัย — หลวงพ่อพระใส", desc: "โบนัสบุญ #4 พระคู่เมืองหนองคาย แล้วเที่ยงข้าวเปียกเส้นย่านท่าเสด็จก่อนออกเดินทาง", coord: [17.8810, 102.7520], z: 15, km: 2, batt: "~87%", maps: "วัดโพธิ์ชัย หนองคาย" },
+  { d: 3, t: "15:30", icon: "⚡", name: "กาแฟ + ชาร์จ ขอนแก่น", desc: "แวะครึ่งทาง ~25 นาที ยืดเส้น เติมคาเฟอีน (55→90%)", coord: [16.4322, 102.8236], z: 12, km: 170, batt: "55→90%", maps: "PTT EV Station PluZ ขอนแก่น" },
+  { d: 3, t: "18:00", icon: "🏨", name: "Centara Korat (คืนที่ 3)", desc: "เช็คอิน เดินทะลุห้าง Central Korat กินเย็น — เสียบชาร์จเต็ม 100% พรุ่งนี้ไม่ต้องแวะ", coord: [14.9920, 102.1180], z: 13, km: 190, batt: "56→100%", maps: "Centara Korat" },
+  { d: 4, t: "09:00", icon: "🙏", name: "กราบย่าโม ลาเมือง", desc: "โบนัสบุญ #5 อนุสาวรีย์ท้าวสุรนารี ขอพรเดินทางปลอดภัยส่งท้าย", coord: [14.9747, 102.0983], z: 15, km: 5, batt: "~100%", maps: "อนุสาวรีย์ท้าวสุรนารี" },
+  { d: 4, t: "11:45", icon: "🍽️", name: "เที่ยงมิชลิน — เป็นลาว", desc: "Bib Gourmand ถ.ธนะรัชต์ เขาใหญ่: แกงเห็ดสามอย่าง ลาบ ไก่ย่าง (แวะคาเฟ่เขาใหญ่ก่อนได้)", coord: [14.6000, 101.3800], z: 13, km: 95, batt: "~83%", maps: "เป็นลาว ปากช่อง" },
+  { d: 4, t: "15:00", icon: "🎉", name: "ถึง กทม. โดยสวัสดิภาพ", desc: "จบทริป ~1,430 กม. เหลือแบต ~50% — ครบ 3 เป้าบุญหลัก + โบนัส 5 จุด บุญเต็มกระเป๋า", coord: [13.7563, 100.5018], z: 10, km: 170, batt: "~50%", maps: "กรุงเทพมหานคร" },
+];
+const DAY_COLORS = { 1: "#0ea5e9", 2: "#10b981", 3: "#f59e0b", 4: "#8b5cf6" };
+const DAY_LABELS = { 1: "Day 1 · จ.20", 2: "Day 2 · อ.21", 3: "Day 3 · พ.22", 4: "Day 4 · พฤ.23" };
+
+/* ---------- Data: Mu Outfits ---------- */
+const OUTFITS = [
+  {
+    day: "จันทร์ 20 ก.ค.", event: "วันเดินทาง", emoji: "🚗",
+    main: "ครีม / เหลืองอ่อน / ส้มอ่อน-น้ำตาล", mainColors: ["#FFF7E0", "#FFE08A", "#E8A85C"],
+    why: "สีมงคลเสริมการงาน-การเดินทางของวันจันทร์ เริ่มทริปให้ราบรื่น",
+    avoid: "สีแดง (กาลกิณีวันจันทร์)", avoidColor: "#DC2626",
+    extra: "เน้นใส่สบาย นั่งรถนาน — ผ้ายืด รองเท้าถอดง่าย"
+  },
+  {
+    day: "อังคาร 21 ก.ค.", event: "คำชะโนด 🐉 วันบุญใหญ่", emoji: "🤍",
+    main: "ชุดขาวล้วน / ขาวครีม ทั้งคณะ", mainColors: ["#FFFFFF", "#FAF6EE", "#F3EAD8"],
+    why: "ธรรมเนียมคำชะโนด — นุ่งขาวถวายความเคารพปู่ศรีสุทโธ ย่าศรีปทุมมา (ธรรมเนียมสถานที่ใหญ่กว่าสีรายวัน)",
+    avoid: "ดำล้วน · แขนกุด · ขาสั้น/กระโปรงสั้น (ห้ามเข้าเกาะ)", avoidColor: "#1F2937",
+    extra: "เคล็ดแก้ทาง: ตำราสีบางฉบับถือว่า 'ขาว' เป็นกาลกิณีวันอังคาร — แก้ด้วย accent ชมพู/ม่วง (สีเดชวันอังคาร) เช่น สไบ ผ้าพันคอ หรือกระเป๋า ครบทั้งเคารพปู่ย่าและถูกโฉลกวัน",
+    accent: ["#EC4899", "#8B5CF6"]
+  },
+  {
+    day: "พุธ 22 ก.ค.", event: "พระธาตุบังพวน + กลางน้ำ", emoji: "🛕",
+    main: "ขาว / ครีม + accent ฟ้า-น้ำเงิน", mainColors: ["#FFFFFF", "#E0F2FE", "#3B82F6"],
+    why: "ขาว-ครีมเหมาะกับการกราบพระบรมสารีริกธาตุ ฟ้า-น้ำเงินคือสีมงคลวันพุธ (พ้องกับสายน้ำโขงพอดี)",
+    avoid: "สีชมพู (กาลกิณีวันพุธ)", avoidColor: "#EC4899",
+    extra: "แต่งสุภาพปิดไหล่-เข่า เดินสัตตมหาสถานกลางแจ้ง — พกหมวก/ร่มกันทั้งแดดทั้งฝน"
+  },
+  {
+    day: "พฤหัสฯ 23 ก.ค.", event: "เดินทางกลับ", emoji: "🏁",
+    main: "เหลือง / ขาว / ส้มสดใส", mainColors: ["#FDE047", "#FFFFFF", "#FB923C"],
+    why: "สีมงคลวันพฤหัสฯ เสริมความสำเร็จ-บารมี ปิดทริปแบบดวงพุ่ง",
+    avoid: "ม่วง · ดำ (กาลกิณีวันพฤหัสฯ)", avoidColor: "#7C3AED",
+    extra: "ใส่สบายขับรถยาว — ถึงบ้านแบบอิ่มบุญ"
+  },
+];
+
+const OFFERINGS = [
+  "พาน 1 ใบ (จัดขันธ์ 5 ครั้งแรกที่ขอพรปู่)",
+  "ดอกไม้สีขาว 5 คู่ + เทียนขาว 5 คู่",
+  "ธูป 16 ดอก (จุดได้เฉพาะจุดที่กำหนดด้านนอก — บนเกาะห้ามจุด)",
+  "น้ำเปล่า 1 แก้ว",
+  "พวงมาลัยดอกไม้สด (มีขายหน้าทางเข้า จัดชุดสำเร็จให้เลย)",
+  "เงินสดย่อย ใส่ตู้บุญตามศรัทธา",
+];
+
+/* ---------- Data: Checklist ---------- */
+const CHECKLIST = [
+  { group: "🔌 รถ EV (Zeekr X)", items: ["ชาร์จเต็ม 100% คืนก่อนออกเดินทาง", "โหลดแอป: EV Station PluZ · PEA VOLTA · EleXA · PlugShare", "ผูกบัตรเครดิตในแอปชาร์จล่วงหน้า + เช็คตู้ว่าง real-time ก่อนแวะ", "สายชาร์จ AC ติดรถ (เผื่อชาร์จโรงแรม)", "เช็คลมยาง น้ำฉีดกระจก ใบปัดน้ำฝน (หน้าฝน!)"] },
+  { group: "🤍 สายมู", items: ["ชุดขาว 1–2 ชุด/คน (วันคำชะโนด)", "สไบ/ผ้าพันคอ accent ชมพู-ม่วง", "เสื้อผ้าสุภาพปิดไหล่-เข่า สำหรับวัด", "เงินสดย่อย แบงค์ 20 เยอะๆ สำหรับตู้บุญ", "จดคำขอพรให้ชัดก่อนไป — ขอทีละเรื่อง"] },
+  { group: "🌧️ หน้าฝน ก.ค.", items: ["ร่มพับ 2 คัน + เสื้อกันฝนพกพา", "รองเท้าแตะ/รองเท้าถอดง่าย กันลื่น (เข้าวัดถอดบ่อย)", "ถุงกันน้ำใส่มือถือ/กล้อง", "เสื้อคลุมบาง (ฝนตกแล้วเย็น)"] },
+  { group: "🎒 ทั่วไป", items: ["บัตรประชาชนทุกคน", "ยาประจำตัว + ยาแก้เมารถ", "Power bank + สายชาร์จ", "แว่นกันแดด หมวก", "กระติกน้ำ — บนเกาะคำชะโนดห้ามนำอาหารเข้า แต่เตรียมน้ำไว้ดื่มก่อน-หลัง"] },
+];
+
+/* ---------- Overview data ---------- */
+const ROUTE = ["กทม.", "โคราช ⚡", "ขอนแก่น ⚡🍽️", "อุดรธานี 🏨", "คำชะโนด 🐉", "โพนพิสัย 🌊", "หนองคาย 🏨", "พระธาตุบังพวน 🛕", "พระธาตุกลางน้ำ 🛕", "ขอนแก่น ⚡", "โคราช 🏨", "ปากช่อง 🍽️", "กทม. 🏁"];
+
+const MERITS = [
+  { n: "1", name: "คำชะโนด (วังนาคินทร์)", d: "อ.บ้านดุง อุดรธานี — กราบปู่ศรีสุทโธ ย่าศรีปทุมมา ดินแดนพญานาคอันดับหนึ่งของไทย ขอพรโชคลาภ การเงิน", day: "อังคาร 21 ก.ค.", maps: "คำชะโนด วังนาคินทร์" },
+  { n: "2", name: "วัดพระธาตุบังพวน", d: "หนองคาย — พระบรมสารีริกธาตุ + สัตตมหาสถานครบ 7 แห่งเดียวในโลก + บ่อน้ำพญานาค", day: "พุธ 22 ก.ค.", maps: "วัดพระธาตุบังพวน" },
+  { n: "3", name: "พระธาตุหล้าหนอง (กลางน้ำ)", d: "ริมโขงหนองคาย — สักการะพระธาตุกลางลำน้ำโขง + องค์จำลองริมฝั่ง", day: "พุธ 22 ก.ค.", maps: "พระธาตุหล้าหนอง หนองคาย" },
+];
+
+const HOTELS = [
+  { name: "Centara Hotel Udon", city: "อุดรธานี · คืน จ.20 ก.ค. · จองแล้ว ✓", price: "1,883.20 ฿/ห้อง (รวมภาษี + อาหารเช้า)", star: "4 ★",
+    d: "Superior Twin · Exclusive Member Savings — ติด Central Plaza อุดร เดินห้าง/หาของกินง่าย จุดชาร์จ EV ในห้าง", maps: "Centara Hotel Udon" },
+  { name: "Amanta Hotel Nongkhai", city: "หนองคาย · คืน อ.21 ก.ค. · จองแล้ว ✓", price: "1,577.63 ฿/ห้อง (ดีล 44% รวมภาษี + อาหารเช้า)", star: "4 ★",
+    d: "อันดับต้นๆ ของหนองคาย ห่างริมโขง ~100 ม. ใกล้ตลาดท่าเสด็จ มี rooftop bar ชมวิวโขง + ที่จอดรถฟรี", maps: "Amanta Hotel Nongkhai" },
+  { name: "Centara Korat", city: "โคราช · คืน พ.22 ก.ค. · จองแล้ว ✓", price: "1,958.53 ฿/ห้อง (รวมภาษี + อาหารเช้า)", star: "4 ★",
+    d: "Deluxe Twin · Exclusive Member Savings — โรงแรมใหม่ในโครงการ Central Korat เดินทะลุห้างได้ สะดวกสุดสำหรับคืนสุดท้าย", maps: "Centara Korat" },
+];
+
+const BUDGET_DETAIL = [
+  { icon: "🏨", title: "ที่พัก — จองแล้ว ✓ (ราคาจริง รวมภาษี+อาหารเช้า)", color: "t-violet", total: "10,838.72 ฿ (2 ห้อง)", rows: [
+    ["Centara Udon · Superior Twin (คืน จ.20)", "1,883.20 /ห้อง"],
+    ["Amanta Nongkhai · ดีล 44% (คืน อ.21)", "1,577.63 /ห้อง"],
+    ["Centara Korat · Deluxe Twin (คืน พ.22)", "1,958.53 /ห้อง"],
+    ["รวม 3 คืน ต่อห้อง", "5,419.36"],
+    ["× 2 ห้อง (นอน 3–4 คน)", "10,838.72"],
+  ], note: "⚠️ บุ๊กกิ้งตอนนี้เป็น 1 ห้อง/คืน (2 adults) — อย่าลืมกด Add A Room เพิ่มห้องที่ 2 ทั้ง 3 คืน" },
+  { icon: "⚡", title: "ค่าชาร์จ EV (~255 kWh ทั้งทริป)", color: "t-emer", total: "≈ 1,650 – 2,000 ฿", rows: [
+    ["Day 1 · กทม.→อุดร 564 กม. (~100 kWh)", "650–790"],
+    ["Day 2 · คำชะโนด→หนองคาย 193 กม. (~35 kWh)", "230–280"],
+    ["Day 3 · 2 พระธาตุ→โคราช 410 กม. (~74 kWh)", "480–580"],
+    ["Day 4 · โคราช→กทม. 258 กม. (~46 kWh)", "300–360"],
+  ], note: "คิดที่ DC 6.5–7.9 ฿/หน่วย ผสม AC ห้าง/โรงแรม — ถูกกว่าเติมน้ำมันราว 60%" },
+  { icon: "🍽️", title: "อาหาร (4 คน)", color: "t-orange", total: "≈ 4,700 – 6,400 ฿", rows: [
+    ["เช้า ×3 วัน (21–23) — รวมในค่าห้องแล้ว", "0 ฿ ✓"],
+    ["เที่ยง ×4 — แซบนัว · ครัวอยุธยา · ข้าวเปียก · เป็นลาว", "2,200–2,900"],
+    ["เย็น ×3 — VT · แดงแหนมเนือง · Central Korat", "2,100–2,900"],
+    ["กาแฟ/ของว่างระหว่างชาร์จ", "400–600"],
+  ]},
+  { icon: "🙏", title: "ทำบุญ + ของฝาก + อื่นๆ", color: "t-gold", total: "≈ 1,600 – 3,600 ฿", rows: [
+    ["ชุดขันธ์ 5 + พวงมาลัย คำชะโนด", "200–400"],
+    ["ตู้บุญ/สังฆทาน 3 วัด + ศาลเจ้า", "500–1,000"],
+    ["ค่าเข้าศาลาแก้วกู่ (4 คน)", "~240"],
+    ["ของฝากท่าเสด็จ · หมูยอ · แหนม", "500–1,500"],
+    ["ทางด่วน/มอเตอร์เวย์", "200–500"],
+  ]},
+];
+
+/* ---------- Map Simulator ---------- */
+const tileUrl = (theme) => theme === "dark"
+  ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+  : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+
+const markHtml = (s, i, state) =>
+  '<div class="stepmark sd' + s.d + ' ' + state + '"><span class="em">' + s.icon + '</span><b>' + (i + 1) + '</b></div>';
+
+const MapSim = ({ theme, step, setStep }) => {
+  const elRef = useRef(null);
+  const mapRef = useRef(null);
+  const layerRef = useRef(null);
+  const markersRef = useRef([]);
+  const lineRef = useRef(null);
+  const cur = STEPS[step];
+
+  const applyStep = (i, fly) => {
+    const map = mapRef.current; if (!map) return;
+    lineRef.current.setLatLngs(STEPS.slice(0, i + 1).map(s => s.coord));
+    markersRef.current.forEach((m, j) => {
+      const state = j === i ? "current" : (j < i ? "" : "future");
+      m.setIcon(L.divIcon({ className: "", html: markHtml(STEPS[j], j, state), iconAnchor: [22, 14] }));
+      m.setZIndexOffset(j === i ? 1000 : 0);
+    });
+    if (fly) map.flyTo(STEPS[i].coord, STEPS[i].z || 12, { duration: 0.9 });
+  };
+
+  useEffect(() => {
+    const map = L.map(elRef.current, { scrollWheelZoom: true, tap: true });
+    mapRef.current = map;
+    layerRef.current = L.tileLayer(tileUrl(theme), {
+      subdomains: "abcd", maxZoom: 19,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © CARTO'
+    }).addTo(map);
+    lineRef.current = L.polyline([], { color: "#f59e0b", weight: 3, opacity: 0.85, dashArray: "6 8" }).addTo(map);
+    markersRef.current = STEPS.map((s, i) =>
+      L.marker(s.coord, { icon: L.divIcon({ className: "", html: markHtml(s, i, "future"), iconAnchor: [22, 14] }) })
+        .addTo(map).on("click", () => setStep(i))
+    );
+    map.setView(STEPS[step].coord, STEPS[step].z || 10);
+    setTimeout(() => { map.invalidateSize(); applyStep(step, false); }, 80);
+    return () => map.remove();
+  }, []);
+
+  useEffect(() => { if (layerRef.current) layerRef.current.setUrl(tileUrl(theme)); }, [theme]);
+  useEffect(() => { applyStep(step, true); }, [step]);
+
+  const fitAll = () => {
+    const map = mapRef.current; if (!map) return;
+    map.fitBounds(L.latLngBounds(STEPS.map(s => s.coord)).pad(0.12));
+  };
+
+  return (
+    <div className="space-y-4 fade-in">
+      <Glass className="p-4 md:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="font-bold text-lg md:text-xl">🗺️ จำลองการเดินทาง — กดดูทีละจุด</div>
+            <div className="t-mut text-[13px] md:text-sm mt-0.5">กด "ถัดไป" เพื่อไล่เส้นทางทีละท่อน หรือจิ้ม marker บนแผนที่ได้เลย · พิกัดโดยประมาณ — นำทางจริงใช้ปุ่ม Google Maps</div>
+          </div>
+          <button onClick={fitAll} className="navbtn2 px-4 py-2.5 rounded-xl text-[13px] font-semibold">🔭 ดูทั้งเส้นทาง</button>
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3">
+          {Object.keys(DAY_LABELS).map(d => (
+            <span key={d} className="t-mut inline-flex items-center gap-1.5 text-[12px]">
+              <span className="w-3 h-3 rounded-full inline-block" style={{ background: DAY_COLORS[d] }}></span>{DAY_LABELS[d]}
+            </span>
+          ))}
+        </div>
+      </Glass>
+
+      <div className="grid lg:grid-cols-[1.45fr,1fr] gap-4 items-start">
+        <Glass className="p-2 md:p-3">
+          <div ref={elRef} className="w-full h-[380px] md:h-[520px] rounded-2xl overflow-hidden"></div>
+        </Glass>
+
+        <Glass className="p-5 lg:sticky lg:top-20">
+          <div className="flex items-center justify-between gap-2">
+            <Chip><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: DAY_COLORS[cur.d] }}></span> {DAY_LABELS[cur.d]}</Chip>
+            <span className="t-dim text-[13px] tabular-nums">จุดที่ {step + 1} / {STEPS.length}</span>
+          </div>
+          <div className="battrack h-1.5 rounded-full overflow-hidden mt-3">
+            <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500" style={{ width: ((step + 1) / STEPS.length) * 100 + "%" }}></div>
+          </div>
+          <div className="flex items-start gap-3 mt-4">
+            <div className="text-4xl md:text-5xl leading-none">{cur.icon}</div>
+            <div className="min-w-0">
+              <div className="t-gold font-semibold text-[14px] tabular-nums">{cur.t} น.</div>
+              <div className="font-bold text-[17px] md:text-lg leading-snug">{cur.name}</div>
+            </div>
+          </div>
+          <div className="t-mut text-[14.5px] md:text-[15px] leading-relaxed mt-2">{cur.desc}</div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {cur.km && <Chip>🚗 ~{cur.km} กม. จากจุดก่อนหน้า</Chip>}
+            {cur.batt && <Chip className="t-emer">🔋 {cur.batt}</Chip>}
+          </div>
+          <div className="mt-3"><MapLink q={cur.maps} label="นำทางจริงด้วย Google Maps" /></div>
+          <div className="grid grid-cols-2 gap-2.5 mt-5">
+            <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}
+              className="navbtn2 h-12 rounded-2xl font-bold text-[15px]">◀ ก่อนหน้า</button>
+            <button onClick={() => setStep(Math.min(STEPS.length - 1, step + 1))} disabled={step === STEPS.length - 1}
+              className="navbtn h-12 rounded-2xl font-bold text-[15px]">ถัดไป ▶</button>
+          </div>
+          {step === STEPS.length - 1 && <div className="tint-emer t-emer text-center text-[13px] rounded-xl px-3 py-2 mt-3">🎉 ครบทุกจุดแล้ว — ทริปนี้พร้อมออกเดินทาง!</div>}
+        </Glass>
+      </div>
+    </div>
+  );
+};
+
+/* ---------- Views ---------- */
+const Overview = () => (
+  <div className="space-y-5 fade-in">
+    <div className="grid md:grid-cols-3 gap-4">
+      {MERITS.map(m => (
+        <Glass key={m.n} className="p-5 relative overflow-hidden">
+          <div className="t-gold absolute -top-3 -right-1 text-[80px] font-extrabold opacity-10 select-none">{m.n}</div>
+          <Chip className="tint-gold t-gold mb-2">เป้าบุญหลัก #{m.n} · {m.day}</Chip>
+          <div className="font-bold text-[17px] leading-snug">{m.name}</div>
+          <div className="t-mut text-[14.5px] mt-1.5 leading-relaxed">{m.d}</div>
+          <div className="mt-2"><MapLink q={m.maps} /></div>
+        </Glass>
+      ))}
+    </div>
+
+    <Glass className="p-5">
+      <div className="t-gold font-bold mb-3">🗺️ เส้นทางรวม ≈ 1,430 กม.</div>
+      <div className="flex flex-wrap items-center gap-y-2">
+        {ROUTE.map((r, i) => (
+          <React.Fragment key={i}>
+            <span className="subcard px-3 py-1.5 rounded-xl text-[13px] md:text-sm whitespace-nowrap">{r}</span>
+            {i < ROUTE.length - 1 && <span className="t-gold mx-1.5 opacity-60">→</span>}
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="t-dim text-[12.5px] mt-3">⚡ = จุดชาร์จ · 🍽️ = มื้อหลัก · 🏨 = ค้างคืน — นอนไล่เมืองลงมา: อุดร (20) → หนองคาย (21) → โคราช (22) เก็บกระเป๋าทุกเช้า แลกกับวันสุดท้ายเหลือแค่ 250 กม. ไม่ต้องแวะชาร์จ ถึงบ้านบ่ายสาม ✓</div>
+    </Glass>
+
+    <div className="grid md:grid-cols-2 gap-4">
+      <Glass className="p-5">
+        <div className="t-emer font-bold mb-2">⚡ Zeekr X รุ่นเริ่มต้น — หลักคิดการชาร์จ</div>
+        <ul className="t-mut text-[14.5px] space-y-1.5 leading-relaxed">
+          <li>• แบต LFP ~61 kWh · วิ่งจริงทางไกล ~330–350 กม./ชาร์จ (WLTP 415 กม.)</li>
+          <li>• DC fast charge รับได้สูง — แวะ 20–40 นาทีก็ไปต่อได้ยาว</li>
+          <li>• สูตรทริปนี้: <b className="t-emer">แวะทุก ~200–250 กม. ตรงจังหวะกาแฟ/ข้าวพอดี</b> — ไม่มีนั่งเฝ้ารถเปล่าๆ สักนาที</li>
+          <li>• แบตไม่ลงต่ำกว่า ~50% ในแผนเลย = เผื่อฝน แอร์ และอ้อมทางได้สบาย — วันสุดท้ายไม่ต้องแวะชาร์จด้วยซ้ำ</li>
+          <li>• ค่าไฟ ~4.5–7.9 ฿/หน่วย → ทั้งทริป ~1,650–2,000 ฿ (ถูกกว่าน้ำมันกว่าครึ่ง)</li>
+        </ul>
+      </Glass>
+      <Glass className="p-5">
+        <div className="t-violet font-bold mb-2">💰 สรุปงบ (4 คน · 2 ห้อง)</div>
+        <div className="space-y-2">
+          <div className="flex justify-between text-[14px] pb-2" style={{ borderBottom: "1px solid var(--soft-bd)" }}><span className="t-mut">🏨 ที่พัก 3 คืน — จองแล้ว ✓</span><span className="font-medium whitespace-nowrap">10,838.72 ฿</span></div>
+          <div className="flex justify-between text-[14px] pb-2" style={{ borderBottom: "1px solid var(--soft-bd)" }}><span className="t-mut">⚡ ค่าชาร์จ EV (~255 kWh)</span><span className="font-medium whitespace-nowrap">1,650 – 2,000 ฿</span></div>
+          <div className="flex justify-between text-[14px] pb-2" style={{ borderBottom: "1px solid var(--soft-bd)" }}><span className="t-mut">🍽️ อาหาร (เช้าฟรี 3 วัน)</span><span className="font-medium whitespace-nowrap">4,700 – 6,400 ฿</span></div>
+          <div className="flex justify-between text-[14px] pb-2" style={{ borderBottom: "1px solid var(--soft-bd)" }}><span className="t-mut">🙏 ทำบุญ + ของฝาก + ทางด่วน</span><span className="font-medium whitespace-nowrap">1,600 – 3,600 ฿</span></div>
+          <div className="flex justify-between font-bold pt-1">
+            <span>รวมทั้งทริป</span><span className="t-gold">≈ 18,800 – 22,800 ฿</span>
+          </div>
+          <div className="t-dim text-right text-[12.5px]">≈ 4,700–5,700 ฿/คน (หาร 4) · แตกรายละเอียดด้านล่าง ⬇️</div>
+        </div>
+      </Glass>
+    </div>
+
+    <div className="grid md:grid-cols-3 gap-4">
+      {HOTELS.map((h, i) => (
+        <Glass key={i} className="p-5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="font-bold leading-snug">{h.name}</div>
+            <Chip className="tint-violet t-violet whitespace-nowrap">{h.star}</Chip>
+          </div>
+          <div className="t-dim text-[12.5px] mt-0.5">{h.city}</div>
+          <div className="t-gold font-semibold text-[14px] mt-1.5">{h.price}</div>
+          <div className="t-mut text-[14px] mt-1.5 leading-relaxed">{h.d}</div>
+          <div className="mt-2"><MapLink q={h.maps} /></div>
+        </Glass>
+      ))}
+    </div>
+
+    <Glass className="p-5">
+      <div className="font-bold text-lg mb-1">💸 Budget แตกรายละเอียด (4 คน · 2 ห้อง)</div>
+      <div className="t-dim text-[12.5px] mb-4">ที่พัก = ราคาจริงตามบุ๊กกิ้ง · หมวดอื่นเป็น estimate เผื่อช่วงไว้แล้ว</div>
+      <div className="grid md:grid-cols-2 gap-4">
+        {BUDGET_DETAIL.map((g, i) => (
+          <div key={i} className="subcard rounded-2xl p-4">
+            <div className={"font-semibold mb-2 text-[14px] " + g.color}>{g.icon} {g.title}</div>
+            <div className="space-y-1.5">
+              {g.rows.map((r, j) => (
+                <div key={j} className="flex justify-between gap-3 text-[13.5px] pb-1.5" style={{ borderBottom: "1px solid var(--soft-bd)" }}>
+                  <span className="t-mut">{r[0]}</span>
+                  <span className="whitespace-nowrap">{r[1]}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between font-bold text-[14px] mt-2">
+              <span>รวม</span><span className={g.color}>{g.total}</span>
+            </div>
+            {g.note && <div className="tint-gold text-[12px] rounded-lg px-2.5 py-1.5 mt-2 leading-relaxed">{g.note}</div>}
+          </div>
+        ))}
+      </div>
+      <div className="tint-gold mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl px-4 py-3">
+        <span className="font-bold">รวมทั้งทริป (4 คน)</span>
+        <span className="t-gold font-extrabold text-lg">≈ 18,800 – 22,800 ฿</span>
+      </div>
+      <div className="t-dim text-right text-[12.5px] mt-1.5">≈ 4,700–5,700 ฿/คน · จ่ายแล้ว: ที่พัก 2 ห้อง 10,838.72 ฿ ✓ · เหลือเผื่อจ่ายหน้างาน ~8,000–12,000 ฿</div>
+    </Glass>
+
+    <Glass className="p-5">
+      <div className="t-rose font-bold mb-2">🌧️ Heads-up หน้าฝน (ก.ค.)</div>
+      <ul className="t-mut text-[14.5px] space-y-1.5 leading-relaxed">
+        <li>• ฝนตกบ่อยช่วงบ่าย — แผนนี้จัดให้ไหว้/เดินกลางแจ้งช่วงเช้าทั้งหมดแล้ว</li>
+        <li>• พระธาตุกลางน้ำ: น้ำโขงสูง องค์จริงอาจจมมิด — สักการะองค์จำลองริมฝั่งแทน บุญเท่ากัน</li>
+        <li>• ถนนลื่นช่วงเขาใหญ่/ปากช่อง — ลดความเร็ว ระยะชาร์จในแผนเผื่อไว้แล้ว</li>
+        <li>• ข้อดีของหน้าฝน: คนน้อยกว่า hi-season เยอะ ไหว้สบาย ถ่ายรูปสวย ฟ้าหลังฝนใส</li>
+      </ul>
+    </Glass>
+  </div>
+);
+
+const DayView = ({ day }) => (
+  <div className="fade-in">
+    <Glass className="p-4 md:p-5 mb-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="text-3xl md:text-4xl">{day.emoji}</div>
+        <div className="flex-1 min-w-[200px]">
+          <div className="t-gold text-[12px] md:text-xs font-semibold">DAY {day.id} · {day.dow} {day.date} 2569</div>
+          <div className="text-lg md:text-xl font-bold leading-tight">{day.title}</div>
+          <div className="t-mut text-[13.5px] md:text-sm mt-0.5">{day.sub}</div>
+        </div>
+        <Chip className="tint-sky t-sky">🚗 {day.km}</Chip>
+      </div>
+    </Glass>
+    <Glass className="p-4 md:p-6">
+      {day.timeline.map((item, i) => <TimelineItem key={i} item={item} />)}
+      <div className="tint-emer mt-1 text-[14px] rounded-2xl px-4 py-3 leading-relaxed">
+        ✨ <b>Tips วันนี้:</b> {day.tips}
+      </div>
+    </Glass>
+  </div>
+);
+
+const OutfitView = () => (
+  <div className="space-y-4 fade-in">
+    <Glass className="p-5">
+      <div className="t-pink font-bold text-lg">👗 แผนแต่งตัวพลังมู — 4 วัน 4 พลัง</div>
+      <div className="t-mut text-[14px] mt-1">อิงสีมงคล-กาลกิณีประจำวันตามตำราโหราศาสตร์ไทย + ธรรมเนียมเฉพาะของแต่ละสถานที่ศักดิ์สิทธิ์</div>
+    </Glass>
+    <div className="grid md:grid-cols-2 gap-4">
+      {OUTFITS.map((o, i) => (
+        <Glass key={i} className="p-5">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{o.emoji}</span>
+            <div>
+              <div className="font-bold">{o.day}</div>
+              <div className="t-gold text-[12px]">{o.event}</div>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            {o.mainColors.map((c, j) => <span key={j} className="w-8 h-8 rounded-full shadow" style={{ background: c, border: "2px solid var(--card-bd)" }}></span>)}
+            {o.accent && <span className="t-dim text-[12px] ml-1">+ accent</span>}
+            {o.accent && o.accent.map((c, j) => <span key={"a"+j} className="w-5 h-5 rounded-full" style={{ background: c, border: "1px solid var(--card-bd)" }}></span>)}
+          </div>
+          <div className="text-[14.5px] font-semibold mt-2">{o.main}</div>
+          <div className="t-mut text-[14px] mt-1 leading-relaxed">{o.why}</div>
+          <div className="mt-2.5 flex items-start gap-2 text-[14px]">
+            <span className="w-4 h-4 mt-0.5 rounded-full shrink-0 relative" style={{ background: o.avoidColor, border: "1px solid var(--card-bd)" }}>
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white font-bold">✕</span>
+            </span>
+            <span className="t-rose"><b>เลี่ยง:</b> {o.avoid}</span>
+          </div>
+          <div className="subcard t-mut mt-2 text-[13px] rounded-xl px-3 py-2 leading-relaxed">💡 {o.extra}</div>
+        </Glass>
+      ))}
+    </div>
+    <Glass className="p-5">
+      <div className="t-gold font-bold mb-2">🪷 ของไหว้คำชะโนด (ชุดขันธ์ 5 ฉบับขอพรปู่ครั้งแรก)</div>
+      <ul className="t-mut text-[14.5px] space-y-1.5">
+        {OFFERINGS.map((x, i) => <li key={i}>• {x}</li>)}
+      </ul>
+      <div className="t-dim text-[12.5px] mt-3">ไม่ต้องเตรียมจากกรุงเทพฯ ก็ได้ — หน้าทางเข้ามีแม่ค้าจัดชุดสำเร็จครบทุกอย่าง ราคาเป็นมิตร อุดหนุนคนท้องถิ่นได้บุญต่อ</div>
+    </Glass>
+    <Glass className="p-5">
+      <div className="t-emer font-bold mb-2">🐉 มารยาท-เคล็ดบนเกาะคำชะโนด</div>
+      <div className="t-mut grid md:grid-cols-2 gap-x-6 gap-y-1.5 text-[14px] leading-relaxed">
+        <div>• ตั้งจิตขอพร <b>ทีละเรื่อง</b> ชัดๆ — สายปู่ศรีสุทโธเด่นเรื่องการเงิน โชคลาภ</div>
+        <div>• บนแล้วต้องกลับมา<b>แก้บน</b> — กฎเหล็กของที่นี่</div>
+        <div>• ห้ามจุดธูปเทียนบนเกาะ — ไหว้ด้วยดอกไม้/พวงมาลัย</div>
+        <div>• ห้ามโยนเหรียญลงบ่อน้ำศักดิ์สิทธิ์</div>
+        <div>• ห้ามปล่อยปลา/สัตว์น้ำลงแหล่งน้ำ</div>
+        <div>• พูดจาสุภาพตลอดเวลาที่อยู่บนเกาะ ถอดรองเท้าตามจุดที่กำหนด</div>
+      </div>
+    </Glass>
+  </div>
+);
+
+const ChecklistView = () => {
+  const [checked, setChecked] = useState({});
+  const toggle = (k) => setChecked(p => ({ ...p, [k]: !p[k] }));
+  const total = CHECKLIST.reduce((s, g) => s + g.items.length, 0);
+  const done = Object.values(checked).filter(Boolean).length;
+  return (
+    <div className="space-y-4 fade-in">
+      <Glass className="p-5">
+        <div className="flex items-center justify-between">
+          <div className="font-bold text-lg">✅ เช็คลิสต์ก่อนออกเดินทาง</div>
+          <Chip className={done === total ? "tint-emer t-emer" : ""}>{done}/{total} พร้อมแล้ว</Chip>
+        </div>
+        <div className="battrack h-2 rounded-full mt-3 overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 transition-all duration-500" style={{ width: (total ? (done/total)*100 : 0) + "%" }}></div>
+        </div>
+        {done === total && <div className="t-emer text-[14px] mt-2 font-medium">🎉 ครบทุกข้อ — ทริปนี้ต้องจัดเลย ออกเดินทางได้!</div>}
+      </Glass>
+      <div className="grid md:grid-cols-2 gap-4">
+        {CHECKLIST.map((g, gi) => (
+          <Glass key={gi} className="p-5">
+            <div className="font-bold mb-3">{g.group}</div>
+            <div className="space-y-2.5">
+              {g.items.map((it, ii) => {
+                const k = gi + "-" + ii;
+                return (
+                  <label key={k} className="flex items-start gap-2.5 cursor-pointer group">
+                    <span onClick={() => toggle(k)}
+                      className={"w-5 h-5 mt-0.5 shrink-0 rounded-md flex items-center justify-center text-[11px] transition-all " + (checked[k] ? "bg-emerald-500 text-white font-bold" : "subcard")}>
+                      {checked[k] ? "✓" : ""}
+                    </span>
+                    <span onClick={() => toggle(k)} className={"text-[14.5px] leading-relaxed transition-all " + (checked[k] ? "t-dim line-through" : "")}>{it}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </Glass>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ---------- App ---------- */
+const TABS = [
+  { id: "ov", label: "🧭 ภาพรวม" },
+  { id: "map", label: "🗺️ จำลองเส้นทาง" },
+  { id: "d1", label: "Day 1 · เดินทาง" },
+  { id: "d2", label: "Day 2 · คำชะโนด 🐉" },
+  { id: "d3", label: "Day 3 · 2 พระธาตุ 🛕" },
+  { id: "d4", label: "Day 4 · กลับ กทม." },
+  { id: "mu", label: "👗 ชุดมู" },
+  { id: "ck", label: "✅ เช็คลิสต์" },
+];
+
+const THEME_LABELS = { auto: "🌗 Auto", light: "☀️ สว่าง", dark: "🌙 มืด" };
+
+const App = () => {
+  const [tab, setTab] = useState("ov");
+  const [mode, setMode] = useState(() => { try { return localStorage.getItem("tt-theme") || "auto"; } catch (e) { return "auto"; } });
+  const [sysDark, setSysDark] = useState(() => window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const [simStep, setSimStep] = useState(0);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const fn = (e) => setSysDark(e.matches);
+    mq.addEventListener ? mq.addEventListener("change", fn) : mq.addListener(fn);
+    return () => { mq.removeEventListener ? mq.removeEventListener("change", fn) : mq.removeListener(fn); };
+  }, []);
+
+  const resolved = mode === "auto" ? (sysDark ? "dark" : "light") : mode;
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", resolved);
+    try { localStorage.setItem("tt-theme", mode); } catch (e) {}
+  }, [resolved, mode]);
+
+  const cycleTheme = () => setMode(m => m === "auto" ? "light" : m === "light" ? "dark" : "auto");
+
+  return (
+    <div className="max-w-5xl mx-auto px-3 md:px-4 py-5 md:py-10">
+      <Glass className="p-5 md:p-8 mb-5 relative overflow-hidden">
+        <div className="absolute -right-6 -top-8 text-[110px] opacity-[0.07] select-none">🐉</div>
+        <div className="flex items-start justify-between gap-3">
+          <Chip className="tint-gold t-gold mb-3">ทริปทำบุญสายมู · อีสานเหนือ</Chip>
+          <button onClick={cycleTheme} className="navbtn2 shrink-0 px-3.5 py-2 rounded-xl text-[13px] font-semibold" title="สลับธีม สว่าง/มืด/ตามระบบ">
+            {THEME_LABELS[mode]}
+          </button>
+        </div>
+        <h1 className="text-[22px] md:text-4xl font-extrabold leading-snug md:leading-tight">
+          คำชะโนด – พระธาตุบังพวน – พระธาตุกลางน้ำ
+        </h1>
+        <div className="t-mut text-[14px] md:text-base mt-2">เส้นทางพญานาค 3 จุดบุญหลัก · ขับ EV แบบไม่เหนื่อย ไม่ลุ้นแบต</div>
+        <div className="flex flex-wrap gap-2 mt-4">
+          <Chip>📅 จันทร์ 20 – พฤหัสฯ 23 ก.ค. 2569</Chip>
+          <Chip>🚗 Zeekr X · ≈1,430 กม.</Chip>
+          <Chip>👥 3–4 คน</Chip>
+          <Chip>🏨 อุดร → หนองคาย → โคราช · จองครบ ✓</Chip>
+          <Chip>💰 ≈18,800–22,800 ฿/คณะ</Chip>
+        </div>
+      </Glass>
+
+      <div className="tabwrap sticky top-0 z-[600] -mx-3 md:-mx-4 px-3 md:px-4 py-2 mb-4">
+        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={"px-4 py-2.5 rounded-2xl text-[13.5px] md:text-sm font-semibold whitespace-nowrap transition-all " +
+                (tab === t.id ? "tabbtn-on" : "tabbtn")}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === "ov" && <Overview />}
+      {tab === "map" && <MapSim theme={resolved} step={simStep} setStep={setSimStep} />}
+      {tab === "d1" && <DayView day={DAYS[0]} />}
+      {tab === "d2" && <DayView day={DAYS[1]} />}
+      {tab === "d3" && <DayView day={DAYS[2]} />}
+      {tab === "d4" && <DayView day={DAYS[3]} />}
+      {tab === "mu" && <OutfitView />}
+      {tab === "ck" && <ChecklistView />}
+
+      <Glass className="p-5 mt-6 text-[12.5px] t-dim leading-relaxed">
+        <b style={{ color: "var(--muted)" }}>หมายเหตุ:</b> โรงแรมจองครบ 3 คืนแล้ว ✓ (ราคาจริงตามบุ๊กกิ้ง) ส่วนค่าชาร์จ/ร้าน/เวลาเปิดเป็น estimate ณ มิ.ย. 2569 — ก่อนเดินทาง:
+        ① ไป 3–4 คน อย่าลืม Add A Room เพิ่มห้องที่ 2 ทั้ง 3 คืน ② เช็คเวลาเปิดคำชะโนด (เพจ Khamchanod Official — ปกติ 08:00–16:30 ไม่ต้องจองคิว)
+        ③ เปิดแอปชาร์จเช็คตู้ว่างก่อนถึงทุกครั้ง ④ โรงแรม 3 เมือง = เก็บกระเป๋าทุกเช้า จัดกระเป๋าแบบหยิบง่ายไว้
+        <div className="mt-2">🧭 TourLead — ไม่ใช่แค่บอกทาง แต่พาไปถึงที่หมาย · อัปเดต 11 มิ.ย. 2569</div>
+      </Glass>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
