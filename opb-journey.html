@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPB Sponsor Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  colors: { navy:'#2C425D', ink:'#1F2A44', blue:'#2455C1', sun:'#F5C342', mist:'#EEF3FA', soft:'#64748B' },
+  fontFamily: { sans: ['Montserrat','Prompt','sans-serif'] }
+}}}
+</script>
+<style>
+  body{font-family:'Montserrat','Prompt',sans-serif;line-height:1.75;-webkit-font-smoothing:antialiased}
+  :lang(th){font-family:'Prompt','Montserrat',sans-serif}
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body class="bg-white text-ink">
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.10/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useEffect, useRef } = React;
+
+/* ── เนื้อหา (แก้ตรงนี้ได้เลย) ─────────────────────────── */
+const STEPS = [
+  {
+    key: 'opp', tag: 'จุดตั้งต้น', title: 'OPP · One Person Business',
+    when: 'เวทีเมื่อวาน',
+    lead: 'คนฟังกลับบ้านไปพร้อม 3 ไอเดียนี้',
+    ideas: [
+      ['เถ้าแก่ ≠ OPB', 'OPB = CEO + ระบบ'],
+      ['S → B', 'ทุกธุรกิจเริ่มจากทำเอง แล้วต้องหาอะไรมาทำให้เป็นระบบ'],
+      ['ตัวเรา + ระบบ + พาร์ทเนอร์', 'ธุรกิจที่เดินต่อได้ แม้เราหยุดทำ'],
+    ],
+  },
+  {
+    key: 'sort', tag: 'ขั้น 1', title: 'คัดคน', when: 'คืนนั้น · 10 นาที',
+    lead: 'แบ่งคนที่มาฟังเป็น 3 กอง ทักกองร้อนก่อน',
+    piles: [
+      ['ร้อน', 'ถาม หรือทักระหว่างงาน', '#E07B24'],
+      ['อุ่น', 'ฟังจนจบ ไม่ได้ถาม', '#F5C342'],
+      ['เย็น', 'ออกก่อนจบ', '#94A3B8'],
+    ],
+    rule: 'มีรหัสแอมเวย์อยู่แล้ว → ส่งกลับผู้แนะนำเดิม จบ',
+  },
+  {
+    key: 'chat', tag: 'ขั้น 2', title: 'ทัก', when: 'ภายใน 24 ชม. · LINE',
+    lead: 'สั้น 2 บับเบิล ปิดด้วยเวลาให้เลือก',
+    chats: [
+      { label: 'กองร้อน', lines: [
+        ['me', '[ชื่อ] ขอบคุณที่มาเมื่อวานครับ เห็นถามเรื่อง [สิ่งที่เขาถาม] ไว้'],
+        ['me', 'ขอโทรคุยต่อสักสิบห้านาทีได้ไหมครับ พรุ่งนี้สองทุ่ม หรือเสาร์ช่วงสาย'],
+      ]},
+      { label: 'กองอุ่น', lines: [
+        ['me', '[ชื่อ] ขอบคุณที่ฟังจนจบครับ'],
+        ['me', 'ที่ผมถามบนเวทีว่า "ตอนนี้ทำอะไรอยู่ เพื่อให้ได้อะไรมา" [ชื่อ]ตอบตัวเองว่าอะไรครับ'],
+      ]},
+    ],
+  },
+  {
+    key: 'call', tag: 'ขั้น 3', title: 'โทรคุย 3 คำถาม', when: '15 นาที',
+    lead: 'คำถามเดียวกับบนสไลด์ · ฟังให้มากกว่าพูด',
+    qs: [
+      ['เราเอาไหม?', 'ถ้าอีก 3 ปีชีวิตยังเหมือนวันนี้ทุกอย่าง โอเคไหมครับ', 'อยากเปลี่ยนจริง หรือแค่บ่น'],
+      ['มีคนอยากได้เยอะไหม?', 'รอบตัวมีคนบ่นเรื่องน้ำหนัก สุขภาพ พ่อแม่ป่วย เยอะไหมครับ', 'มีตลาดใกล้ตัวไหม'],
+      ['วางมือได้ไหม?', 'งานตอนนี้ ถ้าหยุดสักเดือน รายได้เป็นยังไงครับ', 'เขาเป็น E หรือ S'],
+    ],
+    branch: 'ข้อแรกไม่ผ่าน → ไม่คุยธุรกิจต่อ ชวนมาดูแลตัวเองเป็นลูกค้าแทน',
+  },
+  {
+    key: 'meet', tag: 'ขั้น 4', title: 'นัดเจอ', when: 'ปิดท้ายสายเดิม',
+    chats: [{ lines: [
+      ['me', 'งั้นนั่งคุยกันจริงจังสักครั้งครับ ครึ่งชั่วโมง ผมมีแบบประเมิน Life Check ทำเสร็จจะเห็นว่าตอนนี้อยู่ตรงไหน'],
+      ['me', 'อังคารหกโมงเย็น หรือเสาร์สิบโมงเช้า สะดวกอันไหนครับ'],
+      ['you', 'เสาร์ครับ'],
+      ['me', 'ได้ครับ ก่อนเจอลองนึกรายจ่ายต่อเดือนไว้คร่าว ๆ นะครับ เดี๋ยวส่งนัดเข้า LINE'],
+    ]}],
+  },
+  {
+    key: 'scan', tag: 'ขั้น 5', title: 'Life Check · สแกนค่าชีวิต', when: '30 นาที · เจอตัว หรือ Zoom',
+    lead: 'คอร์สลดน้ำหนักเราสแกนค่าร่างกาย · ธุรกิจเราสแกนค่าชีวิต',
+    scans: [
+      ['เป้า', 'อีก 5 ปี ชีวิตแบบที่อยากได้ หน้าตาเป็นยังไง'],
+      ['ค่าเวลา', 'รายได้ต่อเดือน ÷ ชั่วโมงทำงานจริง (รวมเดินทาง)'],
+      ['ถ้าหยุดวันนี้', 'อยู่ได้กี่เดือน มีรายได้ที่ไม่ต้องลงแรงไหม'],
+      ['ชีวิตยาว', 'อายุตอนนี้ → เกษียณ → 85 ปี เหลือกี่ปีที่ไม่มีเงินเดือน'],
+      ['เวลาว่างจริง', 'ต่อสัปดาห์ เอามาสร้างอะไรได้กี่ชั่วโมง'],
+    ],
+    result: 'แปลผล = ชี้ช่องว่างระหว่าง "เป้า" กับ "ทางที่เดินอยู่"',
+  },
+  {
+    key: 'plan', tag: 'ขั้น 6', title: 'เล่าแผน · เขาคือ CEO', when: 'ต่อจากแปลผล',
+    chats: [{ lines: [
+      ['me', 'ทุกธุรกิจเริ่มจากเป็น S ครับ ผมก็เคย คำถามคือเราจะหาอะไรมาปรับให้เป็น B'],
+      ['me', 'ในธุรกิจของ[ชื่อ] [ชื่อ]คือ CEO สินค้ากับหลังบ้านบริษัทดูให้ วิธีดูแลลูกค้ากับเครื่องมือผมกับจิ้นดูให้'],
+      ['me', 'ถ้าจะเริ่ม ตอนนี้ยังติดอะไรอยู่ครับ'],
+    ]}],
+    rule: 'รายได้ → เปิดเอกสารแผนบริษัทให้ดูกลไก · ไม่ยกตัวเลขของเราหรือเคส',
+  },
+  {
+    key: 'close', tag: 'ขั้น 7', title: 'เลือกทาง', when: 'ปิดจบ',
+    paths: [
+      ['เริ่มธุรกิจ', 'เริ่มจากลดชัดของตัวเองก่อน', true],
+      ['ลดชัดก่อน', 'เป็นลูกค้าคอร์ส · มีคนทักแล้วกลับมาคุย'],
+      ['ผู้แนะนำ', 'บอกต่อ ชี้เป้า'],
+      ['ลูกค้า', 'ใช้สินค้า ดูแลตัวเอง'],
+    ],
+  },
+  {
+    key: 'first30', tag: 'หลังตกลง', title: '30 วันแรก · เราประกบ', when: 'พาร์ทเนอร์ดีทำแบบนี้',
+    weeks: [
+      ['สัปดาห์ 1', 'ชั่งค่า วางคอร์สของตัวเอง · เขียน 100 รายชื่อ · ติด BiB'],
+      ['สัปดาห์ 2', 'ลงคอร์ส · โพสต์ชีวิตจริง 2 ครั้ง ไม่ขาย'],
+      ['สัปดาห์ 3', 'มีคนทัก → 7 Steps ขั้น 2–4 · เคสแรกเรานั่งข้าง ๆ'],
+      ['สัปดาห์ 4', 'ทบทวน 9 Core · ตั้งเป้าเดือน 2'],
+    ],
+  },
+];
+
+const DONTS = ['โชว์สลิป รายได้ รถ ทริป เพื่อชวน', 'ชวนคนที่มีรหัสในสายอื่น', 'คุยธุรกิจกับคนที่ยังไม่ "เอา"', 'ส่งแผนทาง LINE'];
+
+/* ── ชิ้นส่วน ─────────────────────────────────────────── */
+function Reveal({ children, className = '' }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { el.classList.add('in'); io.disconnect(); } }, { threshold: 0.12 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return <div ref={ref} className={`reveal ${className}`}>{children}</div>;
+}
+
+function Bubble({ who, text }) {
+  const me = who === 'me';
+  return (
+    <div className={`flex ${me ? 'justify-start' : 'justify-end'}`}>
+      <p className={`max-w-[88%] px-4 py-2.5 text-[16px] leading-relaxed rounded-3xl ${me ? 'bg-mist text-ink rounded-bl-md' : 'bg-blue text-white rounded-br-md'}`}>{text}</p>
+    </div>
+  );
+}
+
+function Chat({ chat }) {
+  return (
+    <div className="space-y-2">
+      {chat.label && <p className="text-[13px] font-semibold text-soft tracking-wide">{chat.label}</p>}
+      {chat.lines.map(([w, t], i) => <Bubble key={i} who={w} text={t} />)}
+    </div>
+  );
+}
+
+function Rule({ text }) {
+  return (
+    <p className="flex items-start gap-2 text-[15px] text-[#B45309]">
+      <svg className="w-4 h-4 mt-1.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-.75 4h1.5v5h-1.5V6zm0 6.5h1.5V14h-1.5v-1.5z"/></svg>
+      <span>{text}</span>
+    </p>
+  );
+}
+
+function Step({ s, i, last }) {
+  const isStart = s.key === 'opp';
+  return (
+    <section className="relative pl-14 sm:pl-20 pb-16">
+      {!last && <span className="absolute left-[19px] sm:left-[27px] top-12 bottom-0 w-[2px] bg-gradient-to-b from-blue/40 to-blue/10" aria-hidden="true" />}
+      <span className={`absolute left-0 top-0 w-10 h-10 sm:w-14 sm:h-14 rounded-full grid place-items-center font-bold text-[15px] sm:text-lg ${isStart ? 'bg-sun text-navy' : 'bg-blue text-white'} shadow-[0_6px_20px_-6px_rgba(36,85,193,.5)]`}>
+        {isStart ? '★' : i}
+      </span>
+
+      <Reveal>
+        <p className="text-[13px] font-semibold tracking-widest text-blue uppercase">{s.tag} <span className="text-soft normal-case tracking-normal font-normal">· {s.when}</span></p>
+        <h2 className="mt-1 text-[26px] sm:text-[32px] font-bold leading-tight text-navy">{s.title}</h2>
+        {s.lead && <p className="mt-2 text-[17px] text-soft">{s.lead}</p>}
+
+        <div className="mt-6 space-y-5">
+          {s.ideas && (
+            <ol className="space-y-4">
+              {s.ideas.map(([k, v], j) => (
+                <li key={j} className="flex gap-4 items-baseline">
+                  <span className="font-bold text-sun text-xl w-6">{j + 1}</span>
+                  <div><p className="font-semibold text-[19px] text-navy">{k}</p><p className="text-[16px] text-soft">{v}</p></div>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {s.piles && (
+            <div className="flex flex-wrap gap-x-8 gap-y-3">
+              {s.piles.map(([n, d, c]) => (
+                <div key={n} className="flex items-center gap-3">
+                  <span className="w-3.5 h-3.5 rounded-full" style={{ background: c }} />
+                  <span className="font-semibold text-[18px]">{n}</span>
+                  <span className="text-[15px] text-soft">{d}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {s.chats && <div className="space-y-6 max-w-xl">{s.chats.map((c, j) => <Chat key={j} chat={c} />)}</div>}
+
+          {s.qs && (
+            <ol className="space-y-7">
+              {s.qs.map(([q, ask, listen], j) => (
+                <li key={j} className="max-w-xl">
+                  <p className="font-bold text-[20px] text-navy"><span className="text-blue mr-2">{j + 1}</span>{q}</p>
+                  <div className="mt-2"><Bubble who="me" text={ask} /></div>
+                  <p className="mt-2 text-[15px] text-soft">ฟังหา → <span className="text-ink font-medium">{listen}</span></p>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {s.scans && (
+            <div className="max-w-xl">
+              <ul className="divide-y divide-slate-100">
+                {s.scans.map(([k, v], j) => (
+                  <li key={k} className="py-3 flex gap-4 items-baseline">
+                    <span className="text-[13px] font-semibold text-blue w-6">{['ก', 'ข', 'ค', 'ง', 'จ'][j]}</span>
+                    <span className="font-semibold text-[18px] w-28 shrink-0">{k}</span>
+                    <span className="text-[16px] text-soft">{v}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 text-[17px] font-medium text-navy">{s.result}</p>
+            </div>
+          )}
+
+          {s.paths && (
+            <ul className="space-y-3 max-w-xl">
+              {s.paths.map(([n, d, main], j) => (
+                <li key={n} className="flex items-baseline gap-4">
+                  <span className={`text-[13px] font-semibold w-14 shrink-0 ${main ? 'text-blue' : 'text-soft'}`}>{main ? 'เสนอก่อน' : 'ถ้าไม่'}</span>
+                  <span className={`font-semibold text-[18px] ${main ? 'text-navy' : 'text-ink'}`}>{n}</span>
+                  <span className="text-[15px] text-soft">{d}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {s.weeks && (
+            <ul className="space-y-3 max-w-xl">
+              {s.weeks.map(([w, d]) => (
+                <li key={w} className="flex gap-4 items-baseline">
+                  <span className="text-[14px] font-semibold text-blue w-20 shrink-0">{w}</span>
+                  <span className="text-[16px]">{d}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {s.branch && <Rule text={s.branch} />}
+          {s.rule && <Rule text={s.rule} />}
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
+function App() {
+  return (
+    <main className="max-w-3xl mx-auto px-5 sm:px-8">
+      <header className="pt-16 pb-14">
+        <p className="text-[13px] font-semibold tracking-widest text-blue uppercase">UP Wellness · Sponsor Journey</p>
+        <h1 className="mt-3 text-[34px] sm:text-[46px] font-extrabold leading-[1.15] text-navy">
+          จาก OPP<br/>ถึงพาร์ทเนอร์คนใหม่
+        </h1>
+        <p className="mt-4 text-[18px] text-soft max-w-xl">เราไม่ได้หาลูกทีม เราหาคนที่อยากเปลี่ยนจาก <b className="text-navy">S</b> เป็น <b className="text-navy">B</b> แล้วเป็นพาร์ทเนอร์ที่ดีให้เขา</p>
+        <div className="mt-8 flex flex-wrap items-center gap-2 text-[14px] text-soft">
+          {['OPP', 'คัดคน', 'ทัก', '3 คำถาม', 'นัด', 'Life Check', 'เล่าแผน', 'เลือกทาง', '30 วัน'].map((t, i, a) => (
+            <span key={t} className="flex items-center gap-2"><span className={i === 0 ? 'text-navy font-semibold' : ''}>{t}</span>{i < a.length - 1 && <span className="text-blue/40">→</span>}</span>
+          ))}
+        </div>
+      </header>
+
+      <div>{STEPS.map((s, i) => <Step key={s.key} s={s} i={i} last={i === STEPS.length - 1} />)}</div>
+
+      <Reveal className="pb-20">
+        <div className="pl-14 sm:pl-20">
+          <p className="text-[13px] font-semibold tracking-widest text-[#B45309] uppercase">ไม่ทำ</p>
+          <ul className="mt-3 space-y-1.5 text-[16px]">
+            {DONTS.map(d => <li key={d} className="flex gap-3"><span className="text-[#B45309]">✕</span>{d}</li>)}
+          </ul>
+          <p className="mt-12 text-[22px] sm:text-[26px] font-bold text-navy leading-snug">One Person Business<br/><span className="text-blue">ธุรกิจที่เดินต่อได้ แม้คุณจะหยุดทำ</span></p>
+        </div>
+      </Reveal>
+    </main>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
